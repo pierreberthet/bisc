@@ -1,0 +1,1708 @@
+#LyX 2.1 created this file. For more info see http://www.lyx.org/
+\lyxformat 474
+\begin_document
+\begin_header
+\textclass article
+\begin_preamble
+\date{}
+\end_preamble
+\use_default_options true
+\maintain_unincluded_children false
+\language english
+\language_package default
+\inputencoding auto
+\fontencoding global
+\font_roman default
+\font_sans default
+\font_typewriter default
+\font_math auto
+\font_default_family default
+\use_non_tex_fonts false
+\font_sc false
+\font_osf false
+\font_sf_scale 100
+\font_tt_scale 100
+\graphics default
+\default_output_format default
+\output_sync 0
+\bibtex_command default
+\index_command default
+\paperfontsize default
+\spacing single
+\use_hyperref false
+\papersize default
+\use_geometry true
+\use_package amsmath 1
+\use_package amssymb 1
+\use_package cancel 1
+\use_package esint 1
+\use_package mathdots 1
+\use_package mathtools 1
+\use_package mhchem 1
+\use_package stackrel 1
+\use_package stmaryrd 1
+\use_package undertilde 1
+\cite_engine basic
+\cite_engine_type default
+\biblio_style plain
+\use_bibtopic false
+\use_indices false
+\paperorientation portrait
+\suppress_date false
+\justification true
+\use_refstyle 1
+\index Index
+\shortcut idx
+\color #008000
+\end_index
+\leftmargin 2cm
+\rightmargin 2cm
+\secnumdepth 3
+\tocdepth 3
+\paragraph_separation indent
+\paragraph_indentation default
+\quotes_language english
+\papercolumns 1
+\papersides 1
+\paperpagestyle default
+\tracking_changes false
+\output_changes false
+\html_math_output 0
+\html_css_as_file 0
+\html_be_strict false
+\end_header
+
+\begin_body
+
+\begin_layout Title
+Spatial Pattern Optimization for Intra-Cortical Stimulation with High Density
+ MEA 
+\end_layout
+
+\begin_layout Section*
+Background
+\end_layout
+
+\begin_layout Standard
+The capabilities of invasive 
+\emph on
+in-vivo 
+\emph default
+neural recording-stimulating systems made of multiple contact, so called
+ Multi Electrode Arrays (MEA), is improving lately, mainly because of advances
+ in fabrication processes and miniaturization capabilities.
+ While there are many examples of successful very high density MEA developed
+ for 
+\emph on
+in-vitro
+\emph default
+ recordings (Berdondini, other ref, ecc), the challenge of 
+\emph on
+in-vivo 
+\emph default
+recordings lies in the fact that there are much stricter size and power
+ consumption limitations.
+ New prototypes have been developed in the last years which attempt to overcome
+ this limitation and to reach 
+\emph on
+in-vitro
+\emph default
+ high density also for 
+\emph on
+in-vivo 
+\emph default
+systems.
+ This challenge is well motivated: such micro system, in fact, have the
+ potential of extracting information not only about some neurons like tetrodes,
+ but they could record, identify, and even localize hundreds of neurons
+ in the proximity of the electrodes (localizing ref).
+ The problem of going in the tens of micro-scale spacing, when dealing with
+ neural recording, is mainly about noise.
+ The smaller the electrodes are, the higher the noise; with such a diminished
+ SNR it gets more challenging to identify spike waveforms and the spike
+ detection-sorting can result in accuracies.
+ On the other hand, though, the higer density of electrodes assures a high
+ number of simultaneous recordings, giving the possibility to reduce noise
+ by applying array processing techniques (e.g.
+ spatial averaging).
+ The integration of these high density MEA in CMOS technology can be achieved
+ through the use of Electrolyte-Oxide-Semiconductor Field-Effect-Transistor
+ (EOSFET).
+ The gate of the transistor itself serves as sensor and it is coupled through
+ a dielectric layer in order to increase the capacitive component.
+ Purely capacitive contacts, could also be used to stimulate the tissue
+ with different approaches.
+ One of the latest example is given by the ENIAC chip (ref), a closed-loop
+ fully encapsulated chip for neural recording and stimulation, which applies
+ tri-phasic constant currents pulses by providing balanced voltage ramps.
+ Another recent prototype worth mentioning was developed by (thewes ref):
+ a 16 by 16 matrix of EOSFET with 15 
+\begin_inset Formula $\mu$
+\end_inset
+
+m pitch was fabricated on a single shank of 300 
+\begin_inset Formula $\mu$
+\end_inset
+
+m width.
+ The system only performed recording (no stimulation) and it was tailored
+ for Local Field Potentials (LFPs), but integration with stimulation could
+ be possible either with a switching system and direct access to the gate
+ of the EOSFETs, or with a parallel circuitry and interleaved electrodes.
+ The former approach would not allow simultaneous recording and stimulation,
+ but it would yield a higher resolution, whereas the latter would be capable
+ of simulataneous recording and stimulation at the expense of contact density.
+\end_layout
+
+\begin_layout Standard
+A system capable of both recording and stimulating neural tissue is very
+ interesting especially in order to perform closed-loop experiments, in
+ which stimulation is triggered from certain features extracted from recording
+ the same neural sites.
+ Such implants become very fascinating because they have the capability
+ of inducing neuroplasticity 
+\emph on
+in-vivo
+\emph default
+, i.e.
+ they can make neurons learn.
+ Jackson et al.
+ showed that by stimulating for 48 hours a 
+\emph on
+target
+\emph default
+ neuron in the motor cortex 5 ms after a second 
+\emph on
+trigger
+\emph default
+ neuron fired an action potential, the 
+\emph on
+trigger-to-target 
+\emph default
+connection was greatly enhanced up to 10 days after conditioning was stopped.
+ Many following studies tried to use these spike-triggered stimulation to
+ improve neural rehabilitation and recovery (cortico spinal fetz, nudo).
+\end_layout
+
+\begin_layout Standard
+The main problem of recording-stimulation systems is the asymmetry between
+ the two modalities.
+ While for recordings it is relatively easy to reach a single-neuron discriminat
+ion by using spike sorting techniques, that allow to identify different
+ neuron based on their recorded waveform features, stimulation is much more
+ rough.
+ Hundreds of 
+\begin_inset Formula $\mu$
+\end_inset
+
+A are injected (or drawn) from electrodes and they spread radially in all
+ directions.
+ This results in a diffuse activation of neurons surrounding the stimulation
+ site.
+ Rebesco et al.
+ demonstrated that by applying spike-triggered stimulation in a rat somatosensor
+y cortex, not only the connection between 
+\emph on
+trigger 
+\emph default
+and 
+\emph on
+target 
+\emph default
+was strengthened, but also many 
+\emph on
+non-target
+\emph default
+ connections were affected and the entire neural network of recorded neurons
+ changed its behavior.
+\end_layout
+
+\begin_layout Standard
+When studying neuroplasticity, it is definitely of great importance to be
+ as selective as possible in order to be able to limit parasitic effect
+ and to have a better controlled environment.
+ Recent studies have demonstrated great promise, showing that from MEA recording
+s it is possible to localize neuronal somas in the surrounding of the electrodes.
+ In Ruz et al., 144 neurons were localized (soma position) 
+\emph on
+in-vivo 
+\emph default
+with a 32 electrode MEA with an area of 275 x 36 
+\begin_inset Formula $\mu$
+\end_inset
+
+m
+\begin_inset Formula $^{2}$
+\end_inset
+
+(spacing 22-25 
+\begin_inset Formula $\mu$
+\end_inset
+
+m).
+ From another recent work (ref) performed with high density (HD) MEA (17.5
+ 
+\begin_inset Formula $\mu$
+\end_inset
+
+m pitch) 
+\emph on
+in-vitro
+\emph default
+, not only neurons were localized, but such a high density was also used
+ to reconstruct the axonal arbors using the redundancy of recordings and
+ spike-triggered average.
+ 
+\end_layout
+
+\begin_layout Standard
+Certainly, 
+\emph on
+in-vivo 
+\emph default
+recordings are more noisy and less controllable, but it may be possible
+ to exploit HD MEA to estimate the position of neurons surrounding the MEA
+ and also to estimate the direction of propagation of the axon hillock,
+ i.e.
+ the axon tract more proximal to the neuronal soma.
+ In this work we assume that the previous information is available and we
+ exploit the same MEA to tailor stimulation spatial patterns to be as selective
+ and as effective as possible.
+ The goal is to show that spatial patterns can be optimize in order to depolariz
+e/hyperpolarize specific identified neurons, while not activating others.
+ 
+\begin_inset Newline newline
+\end_inset
+
+We show that it is possible to selectively activate neurons which are as
+ close as 5 
+\begin_inset Formula $\mu$
+\end_inset
+
+m from each other (much less than actual cortical separation), but with
+ a different axon direction.
+ The main limitation of this approach, though, is that in order to keep
+ optimization fast and implementable online, simple models are used for
+ the MEA stimulation, which introduce estimation errors, that should be
+ quantified with more sophisticated models.
+ 
+\end_layout
+
+\begin_layout Section*
+Methods
+\end_layout
+
+\begin_layout Subsection*
+Models
+\end_layout
+
+\begin_layout Standard
+The computational framework for performing the simulations was completely
+ developed in Python, using custom models for the MEA and LFPy (ref), based
+ on Neuron (ref), for the simulation of neural activation and responses.
+\end_layout
+
+\begin_layout Standard
+The 
+\series bold
+MEA
+\series default
+ was modeled as a grid (10 x 10) of monopolar current sources on a semi-infinite
+ plane, with a pitch of 15 
+\begin_inset Formula $\mu$
+\end_inset
+
+m, resembling the prototype described in (thewes).
+ The semi-infinite plane approximation os due to the fact that electrodes
+ lie on a shank, facing the neural tissue only from one side.
+ The maximum current deliverable from each electrode was set to 50 
+\begin_inset Formula $\mu$
+\end_inset
+
+A.
+ With this model, the potential at position 
+\begin_inset Formula $\vec{r}$
+\end_inset
+
+ is: 
+\begin_inset Formula 
+\[
+V(\vec{r})=\sum_{i}\frac{I_{i}}{2\pi\sigma\left|\vec{r}-\vec{r}_{i}\right|}=\sum_{i}\alpha_{i}I_{i}
+\]
+
+\end_inset
+
+
+\begin_inset Newline newline
+\end_inset
+
+where 
+\family roman
+\series medium
+\shape up
+\size normal
+\emph off
+\bar no
+\strikeout off
+\uuline off
+\uwave off
+\noun off
+\color none
+
+\begin_inset Formula $\vec{r}_{i}$
+\end_inset
+
+ and 
+\begin_inset Formula $I_{i}$
+\end_inset
+
+ are the position and current of the i-th electrode and 
+\begin_inset Formula $\sigma$
+\end_inset
+
+ is the conductivity of the tissue, assumed to be isotropic and homogeneous.
+ This model is clearly to simple to represent the reality of stimulating
+ a tissue especially because the tissue is not homogeneous and isotropic
+ as there are a moltitude of dendrites, axons, glial cells, vessels, etc.
+ On the other hand, this model is very simple and linear in the currents,
+ which makes it very interesting and fast for optimization problems.
+\end_layout
+
+\begin_layout Standard
+The 
+\series bold
+neurons 
+\series default
+were modeled in a different way for optimization and evaluation.
+ Neuron cables are usually modeled with the so called cable equation, which
+ describes the spatio-temporal dynamics of a linear tract of cylindric made
+ of discrete compartments.
+ When the length of each compartment tend to 0, the cable equation can be
+ expressed in a continuous form:
+\begin_inset Formula 
+\[
+\lambda^{2}\frac{\partial^{2}V_{m}}{\partial x^{2}}+\tau_{m}\frac{\partial V_{m}}{\partial x}-V_{m}=-\lambda^{2}\frac{\partial^{2}V_{e}}{\partial x^{2}}
+\]
+
+\end_inset
+
+
+\begin_inset Newline newline
+\end_inset
+
+in which 
+\begin_inset Formula $\lambda$
+\end_inset
+
+ and 
+\begin_inset Formula $\tau_{m}$
+\end_inset
+
+ are the spatial and temporal constant, respectively; 
+\begin_inset Formula $V_{m}$
+\end_inset
+
+ and 
+\begin_inset Formula $V_{e}$
+\end_inset
+
+ are the membrane potential, and the external potential and 
+\begin_inset Formula $x$
+\end_inset
+
+ is the axon direction.
+ The right-hand side of the cable equation governs the generation of spikes
+ and can be used to predict their location along the axon.
+ For this reason it is referred as 
+\emph on
+activation function 
+\emph default
+(AF) (Rattay 1990).
+ 
+\end_layout
+
+\begin_layout Standard
+In order to excite the neurons, thus, the second derivative of the potential
+ along the axon direction must be higher than a certain threshold.
+ For optimization of the spatial pattern a neuron is represented by a single
+ segment starting from the soma location, with the direction and length
+ of the axon hillock.
+ Hence a 
+\emph on
+geometric neuron
+\emph default
+ consists of a 3D point (soma), an alignment (axon hillock direction), and
+ a length (which was set to 15 
+\begin_inset Formula $\mu$
+\end_inset
+
+m).
+ Moreover, since the second order derivative must be computed numerically
+ along the 3D axon direction, also a number of discrete points along the
+ axon is specified and it was set to 3 (which basically gives a positive
+ 2
+\begin_inset Formula $^{nd}$
+\end_inset
+
+ derivative if the central potential (at 7.5 
+\begin_inset Formula $\mu$
+\end_inset
+
+m) is smaller than the edges (0 and 15 
+\begin_inset Formula $\mu$
+\end_inset
+
+m), and viceversa).
+\end_layout
+
+\begin_layout Standard
+When the optimal spatial pattern is generated, it is evaluated on more sophistic
+ated neuronal models in the LFPy environment.
+ From linear passive models implementing the cable equation, to multi-compartime
+ntal models with more complex geometry, passing through simple linear active
+ models (WORK IN PROGRESS).
+ In this way we can evaluate the efficacy of the optimization and the simple
+ model described above is sufficient to target and activate neurons lying
+ in the surrounding of the MEA.
+\end_layout
+
+\begin_layout Subsection*
+Optimization
+\end_layout
+
+\begin_layout Standard
+The optimization framework is implemented using DEAP package (ref).
+ Genetic algorithm have been selected for different reasons:
+\end_layout
+
+\begin_layout Itemize
+the high number of degrees of freedom (in the 10x10 configuration there
+ are 100 parameters) would make other numerical optimization very time consuming
+\end_layout
+
+\begin_layout Itemize
+it can be easily customized in terms of fitness function, random generation,
+ mutation operations, and constraints
+\end_layout
+
+\begin_layout Itemize
+it is relatively fast and therefore it could be suitable for an online setup
+\end_layout
+
+\begin_layout Standard
+Genetic algorithms perform optimization with a stochastic approach, by randomly
+ sampling the solution space (in this case the 100 currents to be assigned
+ to each electrode) and evaluating them with a fitness function.
+ Therefore, the fitness function plays a very important role and represents
+ the key to achieve a good optimization.
+ Let us summarize what we want to achieve with stimulation so that it would
+ be easier to understand how the fitness is built.
+ First of all, we want to depolarize the target neuron(s) by applying a
+ positive AF along its axon.
+ It should be emphasized that the goal is not to maximize the AF as it would
+ result in a diffuse and not focalized stimulation, but it is enough to
+ exceed the threshold by a safety margin.
+ Second, when other surrounding neurons are present, we want to find a spatial
+ pattern that does not generate a spike.
+ Also in this case we would like a certain margin, so we can set the AF
+\emph on
+ 
+\emph default
+along surrounding axons to be lightly hyperpolarized.
+ Third, we would prefer a sparse solution, for it would be easier to implement
+ and it would consume less power (power efficiency is very important especially
+ for implanted devices).
+ This said, the fitness function have 3 objectives:
+\end_layout
+
+\begin_layout Enumerate
+Activation of target neuron: for all points in which the AF
+\emph on
+ 
+\emph default
+is evaluated, add 1 if it's above threshold, or subtract the difference
+ between the AF
+\emph on
+ 
+\emph default
+value and the threshold normalized over the difference between the activation
+ threshold and the non activation threshold.
+\end_layout
+
+\begin_layout Enumerate
+Light hyperpolarization of surrounding neurons: same as point 1.
+ but inverted (add 1 when AF
+\emph on
+ 
+\emph default
+is below non activation threshold, otherwise add the normalized difference)
+\end_layout
+
+\begin_layout Enumerate
+Solution sparsity: sum o zero-current electrodes
+\end_layout
+
+\begin_layout Standard
+The 3 objectives are maximized and they are given the same weight.
+ The solution will then represent a trade-off among these three objectives
+ .
+\end_layout
+
+\begin_layout Standard
+In order to keep an eye on a physical implementation of the system, some
+ constraints on the value of currents are added.
+ In particular the currents can go from -50
+\begin_inset Formula $\mu$
+\end_inset
+
+A to +50
+\begin_inset Formula $\mu$
+\end_inset
+
+A , but the can only have 5
+\begin_inset Formula $\mu$
+\end_inset
+
+A steps; therefore currents can have 21 different values, but a negative
+ current would be the opposite of the positive one, so only 10 values (excluding
+ 0) can be generated.
+\end_layout
+
+\begin_layout Standard
+Selection of the solutions to be mated was performed with a selection tournament
+ approach.
+ Two-point crossover was used as crossover operator and crossover was applied
+ with 80% probability.
+ Mutation was applied to 10% of the population and it consisted of 2 steps:
+ in the first step a gaussian mutation was applied with 20% probability
+ to each current value; then, in order to favor sparse solution 10% of the
+ current values were randomly set to 0.
+ The best solutions of each iteration were always kept in the offspring.
+\end_layout
+
+\begin_layout Standard
+The genetic algorithm was run for 50 generations and the population was
+ made of 100 individuals.
+\end_layout
+
+\begin_layout Section*
+Results (preliminary)
+\end_layout
+
+\begin_layout Subsection*
+Single Neuron
+\end_layout
+
+\begin_layout Standard
+As anticipated in the previous section, the optimization is tailored to
+ deal with multiple neurons (a target and some surroundings).
+ We tried to run the optimization also for a single neuron lying 10 
+\begin_inset Formula $\mu$
+\end_inset
+
+m away from the MEA (x = 10) and with different orientations in the plane
+ parallel to the MEA (y-z plane).
+ From the cable equation and the AF, the best way to stimulate an axon would
+ be with a cathodic current (durand, rattay), i.e.
+ a sink.
+ Fig 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig:Single-neuron-activation"
+
+\end_inset
+
+ shows the potential on the yz plane at x=10
+\begin_inset Formula $\mu$
+\end_inset
+
+m and it can be noticed that the spatial patterns is basically cathodic
+ (blue represents a potential trough).
+ Some spurious currents appear in the left and central panel, but they would
+ have most probably disappear with a higher number of generations due to
+ the sparsity mutation.
+ It should be noticed that at this stage the algorithm does not try to focalize
+ the activation as no information of surrounding neurons is provided.
+ (horizontal inclination is not presented but for symmetry along y and z
+ axis it should give the exact same results).
+\end_layout
+
+\begin_layout Standard
+\begin_inset Float figure
+placement H
+wide false
+sideways false
+status open
+
+\begin_layout Plain Layout
+\begin_inset space \hfill{}
+\end_inset
+
+
+\begin_inset Graphics
+	filename images/1 neuron/cent_zdir/mea_field_1neur_cent_z.png
+	lyxscale 10
+	scale 25
+
+\end_inset
+
+
+\begin_inset Graphics
+	filename images/1 neuron/nocent_45yz/mea_field_1neur_nocent_45yz.png
+	lyxscale 10
+	scale 25
+
+\end_inset
+
+
+\begin_inset Graphics
+	filename images/1 neuron/nocent_zdir/mea_field_1neur_nocent_z.png
+	lyxscale 10
+	scale 25
+
+\end_inset
+
+
+\begin_inset space \hfill{}
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+\begin_inset Caption Standard
+
+\begin_layout Plain Layout
+\begin_inset CommandInset label
+LatexCommand label
+name "fig:Single-neuron-activation"
+
+\end_inset
+
+Single neuron activation with different alignments and positions
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Subsection*
+Multiple Neurons
+\end_layout
+
+\begin_layout Standard
+The application optimization starts to be of interest when we throw in some
+ surrounding neurons.
+ Let us start by adding a neighbor to the target neuron and check the results!
+ 
+\end_layout
+
+\begin_layout Subsubsection*
+Two Neurons 
+\end_layout
+
+\begin_layout Standard
+In Fig 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig:2 neurons"
+
+\end_inset
+
+, 3 different configurations are shown: on the left 2 neurons separated
+ by 20 
+\begin_inset Formula $\mu$
+\end_inset
+
+m aligned in the z direction; in the center panel the 2 neurons are 5 
+\begin_inset Formula $\mu$
+\end_inset
+
+m apart and with 45 degrees divergence (they overlap); in the right panel
+ the divergence is only 30 degrees.
+ In all 3 cases the spatial pattern manages to depolarize the target neuron
+ and hyperpolarize the surround neuron, as shown in Fig 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig:2 neurons: target act"
+
+\end_inset
+
+ and 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig:neurons-2 : surround act"
+
+\end_inset
+
+, respectively.
+ Fig shows a matrix with the current values.
+\end_layout
+
+\begin_layout Standard
+\begin_inset Float figure
+placement H
+wide false
+sideways false
+status open
+
+\begin_layout Plain Layout
+\begin_inset space \hfill{}
+\end_inset
+
+
+\begin_inset Graphics
+	filename images/2 neurons/zdir_20um/mea_field_2neur_nocent_z_20u.png
+	lyxscale 10
+	scale 25
+
+\end_inset
+
+
+\begin_inset Graphics
+	filename images/2 neurons/45degdiv_5um/mea_field_2neur_nocent_45deg_5um.png
+	lyxscale 10
+	scale 25
+
+\end_inset
+
+
+\begin_inset Graphics
+	filename images/2 neurons/30degdiv_5um/mea_field_2neur_nocent_30degdiv_5um.png
+	lyxscale 10
+	scale 25
+
+\end_inset
+
+
+\begin_inset space \hfill{}
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+\begin_inset Caption Standard
+
+\begin_layout Plain Layout
+\begin_inset CommandInset label
+LatexCommand label
+name "fig:2 neurons"
+
+\end_inset
+
+2 neuron activation with different alignments and divergence
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Float figure
+placement H
+wide false
+sideways false
+status open
+
+\begin_layout Plain Layout
+\begin_inset space \hfill{}
+\end_inset
+
+
+\begin_inset Graphics
+	filename images/2 neurons/zdir_20um/mea_target_2neur_nocent_z_20u.png
+	lyxscale 10
+	scale 25
+
+\end_inset
+
+
+\begin_inset Graphics
+	filename images/2 neurons/45degdiv_5um/mea_target_2neur_nocent_45deg_5um.png
+	lyxscale 10
+	scale 25
+
+\end_inset
+
+
+\begin_inset Graphics
+	filename images/2 neurons/30degdiv_5um/mea_target_2neur_nocent_30degdiv_5um.png
+	lyxscale 10
+	scale 25
+
+\end_inset
+
+
+\begin_inset space \hfill{}
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+\begin_inset Caption Standard
+
+\begin_layout Plain Layout
+\begin_inset CommandInset label
+LatexCommand label
+name "fig:2 neurons: target act"
+
+\end_inset
+
+Target activation for configurations in Fig 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig:2 neurons"
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Float figure
+placement H
+wide false
+sideways false
+status open
+
+\begin_layout Plain Layout
+\begin_inset space \hfill{}
+\end_inset
+
+
+\begin_inset Graphics
+	filename images/2 neurons/zdir_20um/mea_surround_2neur_nocent_z_20u.png
+	lyxscale 10
+	scale 25
+
+\end_inset
+
+
+\begin_inset Graphics
+	filename images/2 neurons/45degdiv_5um/mea_surround_2neur_nocent_45deg_5um.png
+	lyxscale 10
+	scale 25
+
+\end_inset
+
+
+\begin_inset Graphics
+	filename images/2 neurons/30degdiv_5um/mea_surround_2neur_nocent_30degdiv_5um.png
+	lyxscale 10
+	scale 25
+
+\end_inset
+
+
+\begin_inset space \hfill{}
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+\begin_inset Caption Standard
+
+\begin_layout Plain Layout
+\begin_inset CommandInset label
+LatexCommand label
+name "fig:neurons-2 : surround act"
+
+\end_inset
+
+Surround activation for configurations in Fig 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig:2 neurons"
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Float figure
+placement H
+wide false
+sideways false
+status open
+
+\begin_layout Plain Layout
+\begin_inset space \hfill{}
+\end_inset
+
+
+\begin_inset Graphics
+	filename images/2 neurons/zdir_20um/mea_currents_2neur_nocent_z_20u.png
+	lyxscale 10
+	scale 25
+
+\end_inset
+
+
+\begin_inset Graphics
+	filename images/2 neurons/45degdiv_5um/mea_currents_2neur_nocent_45deg_5um.png
+	lyxscale 10
+	scale 25
+
+\end_inset
+
+
+\begin_inset Graphics
+	filename images/2 neurons/30degdiv_5um/mea_currents_2neur_nocent_30degdiv_5um.png
+	lyxscale 10
+	scale 25
+
+\end_inset
+
+
+\begin_inset space \hfill{}
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+\begin_inset Caption Standard
+
+\begin_layout Plain Layout
+\begin_inset CommandInset label
+LatexCommand label
+name "fig:neurons-2 : currents"
+
+\end_inset
+
+Currents (nA) for configurations in Fig 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig:2 neurons"
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Subsubsection*
+Three Neurons
+\end_layout
+
+\begin_layout Standard
+3 different configurations have been tested involving 3 neurons, and the
+ potential at x = 10
+\begin_inset Formula $\mu$
+\end_inset
+
+m are shown in Fig.
+ 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig:3 neurons"
+
+\end_inset
+
+.
+ In all 3 cases the algorithm is capable of finding a spatial pattern that
+ meets the requirements, even for highly tangled cases (such as the right
+ panel, in which the target and surround neurons are 5 
+\begin_inset Formula $\mu$
+\end_inset
+
+m spaced and with only 30 degrees divergence).
+ In all 3 configurations the targets are reliably depolarized (Fig.
+ 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig:3 neurons: target act-1"
+
+\end_inset
+
+) and surround neurons fluctuate around zero (Fig.
+ 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig:neurons-3 : surround act-1"
+
+\end_inset
+
+), while the solution maintains an significant amount of zero-currents (Fig.
+ 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig:neurons-3: currents-1"
+
+\end_inset
+
+).
+\end_layout
+
+\begin_layout Standard
+\begin_inset Float figure
+placement H
+wide false
+sideways false
+status open
+
+\begin_layout Plain Layout
+\begin_inset space \hfill{}
+\end_inset
+
+
+\begin_inset Graphics
+	filename images/3 neurons/45_20um/mea_field_3neur_nocent_45_20u.png
+	lyxscale 10
+	scale 25
+
+\end_inset
+
+
+\begin_inset Graphics
+	filename images/3 neurons/45degdiv_5um/mea_field_3neur_nocent_45degdiv_5um.png
+	lyxscale 10
+	scale 25
+
+\end_inset
+
+
+\begin_inset Graphics
+	filename images/3 neurons/30degdiv_5um/mea_field_3neur_nocent_30_5u.png
+	lyxscale 10
+	scale 25
+
+\end_inset
+
+
+\begin_inset space \hfill{}
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+\begin_inset Caption Standard
+
+\begin_layout Plain Layout
+\begin_inset CommandInset label
+LatexCommand label
+name "fig:3 neurons"
+
+\end_inset
+
+3 neuron activation with different alignments and divergence
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Float figure
+placement H
+wide false
+sideways false
+status open
+
+\begin_layout Plain Layout
+\begin_inset space \hfill{}
+\end_inset
+
+
+\begin_inset Graphics
+	filename images/3 neurons/45_20um/mea_target_3neur_nocent_45_20u.png
+	lyxscale 10
+	scale 25
+
+\end_inset
+
+
+\begin_inset Graphics
+	filename images/3 neurons/45degdiv_5um/mea_target_3neur_nocent_45degdiv_5um.png
+	lyxscale 10
+	scale 25
+
+\end_inset
+
+
+\begin_inset Graphics
+	filename images/3 neurons/30degdiv_5um/mea_target_3neur_nocent_30_5u.png
+	lyxscale 10
+	scale 25
+
+\end_inset
+
+
+\begin_inset space \hfill{}
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+\begin_inset Caption Standard
+
+\begin_layout Plain Layout
+\begin_inset CommandInset label
+LatexCommand label
+name "fig:3 neurons: target act-1"
+
+\end_inset
+
+Target activation for configurations in Fig 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig:3 neurons"
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Float figure
+placement H
+wide false
+sideways false
+status open
+
+\begin_layout Plain Layout
+\begin_inset space \hfill{}
+\end_inset
+
+
+\begin_inset Graphics
+	filename images/3 neurons/45_20um/mea_surround_3neur_nocent_45_20u.png
+	lyxscale 15
+	scale 25
+
+\end_inset
+
+
+\begin_inset Graphics
+	filename images/3 neurons/45degdiv_5um/mea_surround_3neur_nocent_45degdiv_5um.png
+	lyxscale 15
+	scale 25
+
+\end_inset
+
+
+\begin_inset Graphics
+	filename images/3 neurons/30degdiv_5um/mea_surround_3neur_nocent_30_5u.png
+	lyxscale 15
+	scale 25
+
+\end_inset
+
+
+\begin_inset space \hfill{}
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+\begin_inset Caption Standard
+
+\begin_layout Plain Layout
+\begin_inset CommandInset label
+LatexCommand label
+name "fig:neurons-3 : surround act-1"
+
+\end_inset
+
+Surround activation for configurations in Fig 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig:3 neurons"
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Float figure
+placement H
+wide false
+sideways false
+status open
+
+\begin_layout Plain Layout
+\begin_inset space \hfill{}
+\end_inset
+
+
+\begin_inset Graphics
+	filename images/3 neurons/45_20um/mea_currents_3neur_nocent_45_20u.png
+	lyxscale 10
+	scale 25
+
+\end_inset
+
+
+\begin_inset Graphics
+	filename images/3 neurons/45degdiv_5um/mea_currents_3neur_nocent_45degdiv_5um.png
+	lyxscale 10
+	scale 25
+
+\end_inset
+
+
+\begin_inset Graphics
+	filename images/3 neurons/30degdiv_5um/mea_currents_3neur_nocent_30_5u.png
+	lyxscale 10
+	scale 25
+
+\end_inset
+
+
+\begin_inset space \hfill{}
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+\begin_inset Caption Standard
+
+\begin_layout Plain Layout
+\begin_inset CommandInset label
+LatexCommand label
+name "fig:neurons-3: currents-1"
+
+\end_inset
+
+Currents (nA) for configurations in Fig 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig:3 neurons"
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+It is also interesting to look at the distribution of the second derivative,
+ i.e.
+ the AF, along different directions.
+ Fig 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig:neurons-3 dv2"
+
+\end_inset
+
+ shows how the AF changes along the z, the y axis, and the target neuron
+ axis (built as a weighted average between y and z components based on target
+ alignment) of the second configuration.
+ It can be appreciated visually how the potential is shaped so as to meet
+ the optimization objectives.
+ On the left panel it is clear that the AF is very high for the target neuron.
+\end_layout
+
+\begin_layout Standard
+\begin_inset Float figure
+placement H
+wide false
+sideways false
+status open
+
+\begin_layout Plain Layout
+\align center
+\begin_inset Graphics
+	filename images/3 neurons/45degdiv_5um/mea_dv2_z_3neur_nocent_45degdiv_5um.png
+	lyxscale 40
+	scale 50
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+\align center
+\begin_inset Caption Standard
+
+\begin_layout Plain Layout
+\begin_inset CommandInset label
+LatexCommand label
+name "fig:neurons-3 dv2"
+
+\end_inset
+
+Currents (nA) for configurations in Fig 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig:3 neurons"
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Subsubsection*
+Five Neurons
+\end_layout
+
+\begin_layout Standard
+
+\family roman
+\series medium
+\shape up
+\size normal
+\emph off
+\bar no
+\strikeout off
+\uuline off
+\uwave off
+\noun off
+\color none
+An optimization with five neurons with 5
+\begin_inset Formula $\mu$
+\end_inset
+
+m spacing and different orientation have been performed, and also in this
+ case the optimization is well performing.
+ From the potential in Fig.
+ 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig:neurons-5 filed"
+
+\end_inset
+
+ the target neuron can hardly be seen, but from Fig.
+ 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig:neurons-5:act"
+
+\end_inset
+
+ left panel it can be seen that the target neuron is depolarized, while
+ surround neurons are left in an almost neutral environment (right panel).
+\end_layout
+
+\begin_layout Standard
+\begin_inset Float figure
+placement H
+wide false
+sideways false
+status open
+
+\begin_layout Plain Layout
+\align center
+\begin_inset Graphics
+	filename images/5 neurons/variusdiv_5um/mea_field_5neur_5u.png
+	lyxscale 40
+	scale 40
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+\align center
+\begin_inset Caption Standard
+
+\begin_layout Plain Layout
+\begin_inset CommandInset label
+LatexCommand label
+name "fig:neurons-5 filed"
+
+\end_inset
+
+Currents (nA) for configurations in Fig 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig:3 neurons"
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Float figure
+placement H
+wide false
+sideways false
+status open
+
+\begin_layout Plain Layout
+\begin_inset space \hfill{}
+\end_inset
+
+
+\begin_inset Graphics
+	filename images/5 neurons/variusdiv_5um/mea_target_5neur_5u.png
+	lyxscale 10
+	scale 35
+
+\end_inset
+
+
+\begin_inset Graphics
+	filename images/5 neurons/variusdiv_5um/mea_surround_5neur_5u.png
+	lyxscale 10
+	scale 35
+
+\end_inset
+
+
+\begin_inset space \hfill{}
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+\begin_inset Caption Standard
+
+\begin_layout Plain Layout
+\begin_inset CommandInset label
+LatexCommand label
+name "fig:neurons-5:act"
+
+\end_inset
+
+Currents (nA) for configurations in Fig 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig:3 neurons"
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+The solution is still sparse enough, as shown in Fig.
+ and the distribution of AF in the different directions is shown in Fig.
+ , but it is very challenging to interpret it due to the intricate scenario.
+\end_layout
+
+\begin_layout Standard
+\begin_inset Float figure
+placement H
+wide false
+sideways false
+status open
+
+\begin_layout Plain Layout
+\align center
+\begin_inset Graphics
+	filename images/5 neurons/variusdiv_5um/mea_currents_5neur_5u.png
+	lyxscale 40
+	scale 40
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+\align center
+\begin_inset Caption Standard
+
+\begin_layout Plain Layout
+\begin_inset CommandInset label
+LatexCommand label
+name "fig:neurons-5 filed-1"
+
+\end_inset
+
+Currents (nA) for configurations in Fig 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig:3 neurons"
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Float figure
+placement H
+wide false
+sideways false
+status open
+
+\begin_layout Plain Layout
+\align center
+\begin_inset Graphics
+	filename images/5 neurons/variusdiv_5um/mea_dv2_z_5neur_5u.png
+	lyxscale 40
+	scale 50
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+\align center
+\begin_inset Caption Standard
+
+\begin_layout Plain Layout
+\begin_inset CommandInset label
+LatexCommand label
+name "fig:neurons-5 filed-2"
+
+\end_inset
+
+Currents (nA) for configurations in Fig 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig:3 neurons"
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Section*
+Discussions 
+\end_layout
+
+\begin_layout Standard
+Skype?
+\end_layout
+
+\end_body
+\end_document

@@ -1,0 +1,6 @@
+// Delete apical and dendrites from the whole cell model
+forsec "apic" delete_section()
+forsec "dend" delete_section()
+for i=1,axonNum-1 {
+	axon[i] delete_section()
+			}

@@ -1,0 +1,136 @@
+proc celldef() {
+  topol()
+  subsets()
+  geom()
+  biophys()
+  geom_nseg()
+}
+
+nnode 		= 	6	//Netter's Atlas of Neuroscience {}
+
+apicNum		=	1
+axonNum		=	1
+myNum		=	nnode
+nodeNum		=	nnode
+
+create soma,  axon[axonNum], apic[apicNum], my[myNum], node[nodeNum]
+
+//axon[0] is AIS
+
+proc topol() { local i
+
+connect axon(0), soma(0.5)
+connect apic(0), soma(0.5)
+connect my[0](0), axon[0](1)
+	
+for i=1, nnode-1 {
+	connect node[i-1](0), my[i-1](1)  
+	connect my[i](0), node[i-1](1)
+		}
+connect node[5](0), my[5](1)
+
+basic_shape()
+
+}
+
+proc basic_shape() { local i
+
+soma {pt3dclear()
+  pt3dadd(0, 0, 10, 20) pt3dadd(0, 0, -10, 20)}
+
+apic[0] {pt3dclear()
+  pt3dadd(0, 0, 0, 1.2) pt3dadd(0, 0, 20, 1.2)}
+
+
+axon[0] {pt3dclear()
+  pt3dadd(0, 0, 0, 2) pt3dadd(0, 0, -20, 2)}
+
+node {pt3dclear()}
+my {pt3dclear()}
+
+//for i=0, nnode-1 {
+// myelin segment length: biology{layer 5 pyramidal cells: 30-200, Salzer 1997: 1500um} model{1000-3000 um}
+//node length: biology {0.4 - 3.7 um} model{3-10 um}
+	my[0] {
+		pt3dadd(0, 0, -20, 2)
+		pt3dadd(0, 0, -120, 2)
+		}
+	node[0] {
+  		pt3dadd(0, 0, -120, 1.3) 	
+		pt3dadd(0, 0, -121, 1.3)
+		}
+	my[1] {
+		pt3dadd(0, 0, -121, 2)
+		pt3dadd(0, 0, -221, 2)
+		}
+	node[1] {
+  		pt3dadd(0, 0, -221, 1.3) 	
+		pt3dadd(0, 0, -222, 1.3)
+		}
+	my[2] {
+		pt3dadd(0, 0, -222, 2)
+		pt3dadd(0, 0, -322, 2)
+		}
+	node[2] {
+  		pt3dadd(0, 0, -322, 1.3) 	
+		pt3dadd(0, 0, -323, 1.3)
+		}
+	my[3] {
+		pt3dadd(0, 0, -323, 2)
+		pt3dadd(0, 0, -423, 2)
+		}
+	node[3] {
+  		pt3dadd(0, 0, -423, 1.3) 	
+		pt3dadd(0, 0, -424, 1.3)
+		}
+	my[4] {
+		pt3dadd(0, 0, -424, 2)
+		pt3dadd(0, 0, -524, 2)
+		}
+	node[4] {
+  		pt3dadd(0, 0, -524, 1.3) 	
+		pt3dadd(0, 0, -525, 1.3)
+		}
+	my[5] {
+		pt3dadd(0, 0, -525, 2)
+		pt3dadd(0, 0, -625, 2)
+		}
+	node[5] {
+  		pt3dadd(0, 0, -625, 1.3) 	
+		pt3dadd(0, 0, -626, 1.3)
+		}
+//	print i
+//	print -20-i*(1+100)
+//	print -20-i*(1+100)-100
+//	}
+
+}
+
+objref all, somatic, axonal, apical
+proc subsets() { local i
+  objref all, somatic, axonal, apical
+  all = new SectionList()
+    axon all.append()
+    soma all.append()
+    apic all.append()
+
+
+  somatic = new SectionList()
+    soma somatic.append()
+
+  axonal = new SectionList()
+    axon axonal.append()
+
+  apical = new SectionList()
+    apic apical.append()
+
+}
+proc geom() {
+}
+proc geom_nseg() {
+}
+proc biophys() {
+}
+access soma
+
+celldef()
