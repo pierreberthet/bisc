@@ -4,3 +4,5 @@ forsec "dend" delete_section()
 for i=1,axonNum-1 {
 	axon[i] delete_section()
 			}
+
+forsec "soma" delete_section()			

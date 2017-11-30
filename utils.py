@@ -22,17 +22,33 @@ def built_for_mpi_comm(cell, glb_vext, glb_vmem, v_idxs, widx, rank):
 
 
 def built_for_mpi_space(cell, rank):
-   '''
+    '''
     Return a dict of array useful for plotting cells in 3D space, in parallel simulation (cell objet can not be communicated directly between thread).
-   '''
-   return {'totnsegs':cell.totnsegs, 'rank':rank,\
+    '''
+    return {'totnsegs':cell.totnsegs, 'rank':rank,\
             'xstart':cell.xstart, 'ystart':cell.ystart, 'zstart':cell.zstart,\
             'xmid':cell.xmid, 'ymid':cell.ymid, 'zmid':cell.zmid,\
             'xend':cell.xend, 'yend':cell.yend, 'zend':cell.zend }
 
-   
-def create_bisc_array():
 
+def return_first_spike_time_and_idx(vmem):
+    crossings = []
+    if np.max(vmem) < -20:
+        print "No spikes detected"
+        return [None, None]
+ 
+    for comp_idx in range(vmem.shape[0]):
+        for t_idx in range(1, vmem.shape[1]):
+            if vmem[comp_idx, t_idx - 1] < -20 <= vmem[comp_idx, t_idx]:
+                crossings.append([t_idx, comp_idx])
+    crossings = np.array(crossings)
+    first_spike_comp_idx = np.argmin(crossings[:, 0])
+
+    return crossings[first_spike_comp_idx]
+
+
+def create_bisc_array():
+ 
     return bisc_array
 
 

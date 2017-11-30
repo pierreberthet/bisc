@@ -58,8 +58,8 @@ if RANK==0:
     #morph = join('morphologies', 'axon.hoc') # Mainen&Sejnowski, 1996
     morph = join(folder,'cell_simple.hoc')
     custom_code = [join(folder, 'Cell parameters.hoc'),
-                    join(folder, 'charge.hoc')]
-                    #,join(folder, 'pruning.hoc')]
+                    join(folder, 'charge.hoc')#]
+                    ,join(folder, 'pruning.hoc')]
 
 if RANK==1:
     folder = "morphologies/cell_hallermann_myelin"
@@ -75,8 +75,8 @@ if RANK==1:
     morph = join(folder,'cell_simple_long.hoc')
     #morph = join(folder,'cell1.hoc') # Hay model
     custom_code = [join(folder, 'Cell parameters.hoc'),
-                    join(folder, 'charge.hoc')]
-                    #,join(folder, 'pruning.hoc')]
+                    join(folder, 'charge.hoc')#]
+                    ,join(folder, 'pruning.hoc')]
  
 
 
@@ -102,7 +102,7 @@ cell_parameters = {          # various cell parameters,
 #assign cell positions
 x_cell_pos = np.linspace(-10., 1000., n_cells)
 y_cell_pos = np.linspace(-10., 10., n_cells)
-z_cell_pos = np.linspace(-200., 0., n_cells)
+z_cell_pos = np.linspace(-500., 0., n_cells)
 
 #re-seed the random number generator
 #cell_seed = global_seed + cell_id
@@ -115,7 +115,8 @@ cell = LFPy.Cell(**cell_parameters)
 cell.set_rotation(y=cell_id*np.pi/2)
 #cell.set_rotation(y=np.pi/2)
 #cell.set_pos(y=y_cell_pos[cell_id])
-#cell.set_rotation(x=np.pi/2)
+#if RANK == 0:
+#    cell.set_rotation(x=np.pi/2)
 #cell.set_rotation(y=cell_id*np.pi/2)
 #cell.set_rotation(z=np.pi/2)
 #cell.set_rotation(x=0, y=0, z=z_rotation[cell_id])
@@ -138,7 +139,7 @@ pulse = np.zeros(n_tsteps)
 pulse[pulse_start:(pulse_start+pulse_duration)] = 1.
 
 #cortical_surface_height = np.max(cell.zend) +20 
-cortical_surface_height = 50 
+cortical_surface_height = 150 
 
 # Parameters for the external field
 sigma = 0.3
@@ -154,7 +155,8 @@ if RANK == 0:
 
 if 'my[0]' in cell.allsecnames:
     #zs = [cell.get_idx('apic[0]')[0], cell.get_idx('soma')[0], cell.get_idx('axon[0]')[0], cell.get_idx('node[0]')[0],cell.get_idx('my[0]')[int(len(cell.get_idx('my[0]'))/2)], cell.get_idx('node[1]')[len(cell.get_idx('node[1]'))-1], cell.get_idx(cell.allsecnames[len(cell.allsecnames)-1])[0] ]
-    zs = [cell.get_idx('apic[0]')[0], cell.get_idx('soma')[0], cell.get_idx('axon[0]')[0]]
+    #zs = [cell.get_idx('apic[0]')[0], cell.get_idx('soma')[0], cell.get_idx('axon[0]')[0]]
+    zs = [cell.get_idx('axon[0]')[0]]
     [zs.append(cell.get_idx('node')[idx]) for idx in range(len(cell.get_idx('node')))]
     #[zs.append(cell.get_idx('my')[::10][idx]) for idx in range(len(cell.get_idx('my')[::10]))  ]
 else:
@@ -177,7 +179,7 @@ c_idxs = lambda z,y: plt.cm.jet(1.* z / len(y) )
 
 
     
-amp = -20000
+amp = -40000
 #source_amps = np.array([1, 1, 0, 0, 1, 0, 1, 1]) * amp
 source_amps = np.array([0, 0, 0, 0, 1, 0, 0, 0]) * amp
 ExtPot = surface_electrodes.ImposedPotentialField(source_amps, source_xs, source_ys, source_zs, sigma)
@@ -198,6 +200,9 @@ glb_vext = v_cell_ext
 
 # Run simulation, electrode object argument in cell.simulate
 cell.simulate(rec_imem=True, rec_vmem=True)
+spike_time_loc = utils.return_first_spike_time_and_idx(cell.vmem)
+if spike_time_loc[0]!=None:
+    print("spike! in cell {0} at time {1} and position {2} segment {3}".format(cell_id, spike_time_loc[0], cell.get_idx_name(spike_time_loc[1])[1], cell.get_idx_name(spike_time_loc[1])[0]   ))
 glb_vmem = cell.vmem
 COMM.Barrier()
 
@@ -254,9 +259,9 @@ if RANK==0:
     ##### ? yinfo = np.zeros(total_n_runs)
     
     
-    ax1 = plt.subplot(131, title="Cell model", aspect=1, projection='3d',  xlabel="x [$\mu$m]", ylabel="y [$\mu$m]", zlabel="z [$\mu$m]", xlim=[-1000,1000], ylim=[-1000, 1000], zlim=[-1800, 200])
-    #[ax1.plot([cell.xstart[idx], cell.xend[idx]], [cell.ystart[idx], cell.yend[idx]], [cell.zstart[idx], cell.zend[idx]], '-',
-    #          c='k', clip_on=False) for idx in range(cell.totnsegs)]
+    ax1 = plt.subplot(131, title="3D view", aspect=1, projection='3d',  xlabel="x [$\mu$m]", ylabel="y [$\mu$m]", zlabel="z [$\mu$m]", xlim=[-1000,1000], ylim=[-1000, 1000], zlim=[-1800, 200])
+    [ax1.plot([cell.xstart[idx], cell.xend[idx]], [cell.ystart[idx], cell.yend[idx]], [cell.zstart[idx], cell.zend[idx]], '-',
+              c='k', clip_on=False) for idx in range(cell.totnsegs)]
     for nc in range(0,SIZE):
         [ax1.plot([cells[nc]['xstart'][idx], cells[nc]['xend'][idx]], [cells[nc]['ystart'][idx], cells[nc]['yend'][idx]], [cells[nc]['zstart'][idx], cells[nc]['zend'][idx]], '-',
                   c='k', clip_on=False) for idx in range(cells[nc]['totnsegs'])]

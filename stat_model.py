@@ -129,6 +129,9 @@ for s in spread:
     # Run simulation, electrode object argument in cell.simulate
     print "running simulation {0} of {1}".format(num, total_n_runs)
     cell.simulate(rec_imem=True, rec_vmem=True)
+    spike_time_loc = utils.return_first_spike_time_and_idx(cell.vmem)
+    if spike_time_loc[0]!=None:
+        print("spike! at time {0} and position {1} segment {2}".format(spike_time_loc[0], cell.get_idx_name(spike_time_loc[1])[1], cell.get_idx_name(spike_time_loc[1])[0]   ))
     glb_vmem.append(cell.vmem)
     #cells.append(cell)
     cell = LFPy.Cell(**cell_parameters)

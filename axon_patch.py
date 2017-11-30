@@ -88,7 +88,7 @@ cell_parameters = {          # various cell parameters,
 }
 
 #assign cell positions
-x_cell_pos = np.linspace(-150., 150., n_cells)
+x_cell_pos = np.linspace(-150., 1000., n_cells)
 y_cell_pos = np.linspace(-100., 100., n_cells)
 #z_cell_pos = np.linspace(-100., 0., n_cells)
 
@@ -124,7 +124,7 @@ pulse_duration = 400
 pulse = np.zeros(n_tsteps)
 pulse[pulse_start:(pulse_start+pulse_duration)] = 1.
 
-cortical_surface_height = np.max(cell.zend) +20 
+cortical_surface_height = np.max(cell.zend) + 150 
 
 # Parameters for the external field
 sigma = 0.3
@@ -218,16 +218,17 @@ if RANK==0:
     
     #fig = plt.figure()
     fig = plt.figure(figsize=[18, 7])
+    fig.suptitle("Evolution of Vmem with increasing current stimulations")
     fig.subplots_adjust(wspace=0.6)
 
 
-    ax2 = plt.subplot(132, projection='3d', title="Vmem evolution cell "+str(cells[0]['rank']), xlabel="t [ms]", ylabel="Vext [mV]", zlabel="Vmem [mV]")
+    ax2 = plt.subplot(132, projection='3d', title="Vmem evolution cell "+str(cells[0]['rank']), xlabel="t [ms]", ylabel="Vext [mV]", zlabel="Vmem [mV]", ylim=[np.min([cells[0]['glb_vext'][0][v_idxs[widx]][int(pulse_start+pulse_duration/2)], cells[1]['glb_vext'][0][v_idxs[widx]][int(pulse_start+pulse_duration/2)]]), np.max([cells[0]['glb_vext'][num-1][v_idxs[widx]][int(pulse_start+pulse_duration/2)], cells[1]['glb_vext'][num-1][v_idxs[widx]][int(pulse_start+pulse_duration/2)]])], zlim=[np.min([np.min(cells[0]['glb_vmem'][0][v_idxs[widx]]), np.min(cells[1]['glb_vmem'][0][v_idxs[widx]])]), np.max([np.max(cells[0]['glb_vmem'][num-1][v_idxs[widx]]), np.max(cells[1]['glb_vmem'][num-1][v_idxs[widx]])])])
     color=iter(plt.cm.rainbow(np.linspace(0,1,total_n_runs)))
     for i in range(num):
         #ax2.plot_wireframe(t, glb_vext[i][v_idxs[0]], glb_vmem[i][v_idxs[0]], cmap=plt.cm.bwr )
         ax2.plot_wireframe(t, np.sign(np.min(glb_vext[i][v_idxs[widx]][pulse_start:(pulse_start+pulse_duration)]))*round( np.max(np.abs(glb_vext[i][v_idxs[widx]])), 2) , glb_vmem[i][v_idxs[widx]],  color=next(color) )
 
-    ax3 = plt.subplot(133, projection='3d', title="Vmem evolution cell "+str(cells[1]['rank'])+" depending on  external electric stimulations", xlabel="t [ms]", ylabel="Vext [mV]", zlabel="Vmem [mV]")
+    ax3 = plt.subplot(133, projection='3d', title="Vmem evolution cell "+str(cells[0]['rank']), xlabel="t [ms]", ylabel="Vext [mV]", zlabel="Vmem [mV]", ylim=[np.min([cells[0]['glb_vext'][0][v_idxs[widx]][int(pulse_start+pulse_duration/2)], cells[1]['glb_vext'][0][v_idxs[widx]][int(pulse_start+pulse_duration/2)]]), np.max([cells[0]['glb_vext'][num-1][v_idxs[widx]][int(pulse_start+pulse_duration/2)], cells[1]['glb_vext'][num-1][v_idxs[widx]][int(pulse_start+pulse_duration/2)]])], zlim=[np.min([np.min(cells[0]['glb_vmem'][0][v_idxs[widx]]), np.min(cells[1]['glb_vmem'][0][v_idxs[widx]])]), np.max([np.max(cells[0]['glb_vmem'][num-1][v_idxs[widx]]), np.max(cells[1]['glb_vmem'][num-1][v_idxs[widx]])])])
     color=iter(plt.cm.rainbow(np.linspace(0,1,total_n_runs)))
     for i in range(num):
         #ax3.plot_wireframe(t, glb_vext[i][v_idxs[0]], glb_vmem[i][v_idxs[0]], cmap=plt.cm.bwr )
@@ -237,13 +238,13 @@ if RANK==0:
     ##### ? yinfo = np.zeros(total_n_runs)
     
     
-    ax1 = plt.subplot(131, title="Cell model", aspect=1, projection='3d',  xlabel="x [$\mu$m]", ylabel="y [$\mu$m]", zlabel="z [$\mu$m]", xlim=[-1000,1000], ylim=[-1000, 1000], zlim=[-800, 200])
+    ax1 = plt.subplot(131, title="3D view", aspect=1, projection='3d',  xlabel="x [$\mu$m]", ylabel="y [$\mu$m]", zlabel="z [$\mu$m]", xlim=[-1000,1000], ylim=[-1000, 1000], zlim=[-800, 200])
     #[ax1.plot([cell.xstart[idx], cell.xend[idx]], [cell.ystart[idx], cell.yend[idx]], [cell.zstart[idx], cell.zend[idx]], '-',
     #          c='k', clip_on=False) for idx in range(cell.totnsegs)]
     for nc in range(0,SIZE):
         [ax1.plot([cells[nc]['xstart'][idx], cells[nc]['xend'][idx]], [cells[nc]['ystart'][idx], cells[nc]['yend'][idx]], [cells[nc]['zstart'][idx], cells[nc]['zend'][idx]], '-',
                   c='k', clip_on=False) for idx in range(cells[nc]['totnsegs'])]
-        #[ax1.plot([cells[nc]['xmid'][idx]], [cells[nc]['ymid'][idx]], [cells[nc]['zmid'][idx]], 'D', c= c_idxs(cells[nc]['v_idxs'].index(idx))) for idx in cells[nc]['v_idxs']]
+        [ax1.plot([cells[nc]['xmid'][idx]], [cells[nc]['ymid'][idx]], [cells[nc]['zmid'][idx]], 'D', c= c_idxs(cells[nc]['v_idxs'].index(idx))) for idx in cells[nc]['v_idxs']]
         [ax1.plot([cells[nc]['xmid'][idx]], [cells[nc]['ymid'][idx]], [cells[nc]['zmid'][idx]], 'D', c= 'k') for idx in cells[nc]['v_idxs']]
         #ax1.text(cells[nc]['xmid'][0], cells[nc]['ymid'][0], cells[nc]['zmid'][0], "cell {0}".format(cells[nc]['rank']))
         ax1.text(cells[nc]['xmid'][v_idxs[widx]], cells[nc]['ymid'][v_idxs[widx]], cells[nc]['zmid'][v_idxs[widx]], "cell {0}.".format(cells[nc]['rank']) + cells[nc]['name'])
