@@ -70,7 +70,19 @@ def plot_segment_vmem(cell, seg_name):
 
     return
 
+def get_limit(multid_array):
+    ma = multid_array[0][0]
+    mi = ma
 
+    for i in range():
+        if np.min()<mi:
+            mi = np.min()
+
+        if np.max()>ma:
+            ma = np.max()
+
+
+    return mi, ma
 
 
 

@@ -63,6 +63,19 @@ if RANK==0:
 
 if RANK==1:
     folder = "morphologies/cell_hallermann_myelin"
+    #folder = "morphologies/cell_hallermann_unmyelin"
+    #folder = "morphologies/simple_axon_hallermann"
+    #folder = "morphologies/HallermannEtAl2012"
+    neuron.load_mechanisms(join(folder))
+    #morph = 'patdemo/cells/j4a.hoc', # Mainen&Sejnowski, 1996
+    #morph = join(folder, '28_04_10_num19.hoc') # HallermannEtAl2012
+    #morph = join('morphologies', 'axon.hoc') # Mainen&Sejnowski, 1996
+    morph = join(folder,'cell_simple.hoc')
+    custom_code = [join(folder, 'Cell parameters.hoc'),
+                    join(folder, 'charge.hoc')]
+                    #,join(folder, 'pruning.hoc')]
+if RANK==2:
+    folder = "morphologies/cell_hallermann_myelin"
     #folder = "morphologies/hay_model"
     #folder = "morphologies/cell_hallermann_unmyelin"
     #folder = "morphologies/simple_axon_hallermann"
@@ -99,20 +112,20 @@ cell_parameters = {          # various cell parameters,
     "extracellular": True,
     'custom_code': custom_code }
 
+cell = LFPy.Cell(**cell_parameters)
 #assign cell positions
-x_cell_pos = np.linspace(-10., 1000., n_cells)
-y_cell_pos = np.linspace(-10., 10., n_cells)
-z_cell_pos = np.linspace(-1000., 0., n_cells)
+x_cell_pos = [-200., 200, 1000. ]
+y_cell_pos = [-200., -200, 200. ]
+z_cell_pos = [-1000., -1000-(np.sum(cell.length)), 0. ]
 
 #re-seed the random number generator
 #cell_seed = global_seed + cell_id
 #np.random.seed(cell_seed)
 
 
-cell = LFPy.Cell(**cell_parameters)
 
-    
-cell.set_rotation(y=cell_id*np.pi/2)
+xrot=[0.,2.,1.]    
+cell.set_rotation(y=xrot[cell_id]*np.pi/2)
 #cell.set_rotation(y=np.pi/2)
 #cell.set_pos(y=y_cell_pos[cell_id])
 #if RANK == 0:
@@ -280,6 +293,7 @@ if RANK==0:
     
     #ax.axes.set_yticks(yinfo)
     #ax.axes.set_yticklabels(yinfo)
-    plt.savefig('fig_single_3d_stick', dpi=300, format='png')
+    plt.savefig('fig_single_3d_stick_3cells', dpi=300, format='png')
     plt.show()
+
 
