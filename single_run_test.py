@@ -156,7 +156,8 @@ if RANK == 0:
     cells = []
 
 if 'my[0]' in cell.allsecnames:
-    #zs = [cell.get_idx('apic[0]')[0], cell.get_idx('soma')[0], cell.get_idx('axon[0]')[0], cell.get_idx('node[0]')[0],cell.get_idx('my[0]')[int(len(cell.get_idx('my[0]'))/2)], cell.get_idx('node[1]')[len(cell.get_idx('node[1]'))-1], cell.get_idx(cell.allsecnames[len(cell.allsecnames)-1])[0] ]
+    #zs = [cell.get_idx('apic[0]')[0], cell.get_idx('soma')[0], cell.get_idx('axon[0]')[0], cell.get_idx('node[0]')[0],cell.get_idx('my[0]')[int(len(cell.get_idx('my[0]'))/2)],\
+    # cell.get_idx('node[1]')[len(cell.get_idx('node[1]'))-1], cell.get_idx(cell.allsecnames[len(cell.allsecnames)-1])[0] ]
     #zs = [cell.get_idx('apic[0]')[0], cell.get_idx('soma')[0], cell.get_idx('axon[0]')[0]]
     zs = [cell.get_idx('axon[0]')[0]]
     [zs.append(cell.get_idx('node')[idx]) for idx in range(len(cell.get_idx('node')))]

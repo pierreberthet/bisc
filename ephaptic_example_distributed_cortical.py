@@ -48,7 +48,7 @@ class ImposedPotentialField:
 
 # Define cell parameters
 cell_params = {
-    'morphology' : join('cells', 'cells', 'j4a.hoc'), # from Mainen & Sejnowski, J Comput Neurosci, 1996
+    'morphology' : join('morphologies', 'cells', 'cells', 'j4a.hoc'), # from Mainen & Sejnowski, J Comput Neurosci, 1996
     'cm' : 1.0,         # membrane capacitance
     'Ra' : 150.,        # axial resistance
     'v_init' : -65.,    # initial crossmembrane potential

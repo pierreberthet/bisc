@@ -40,7 +40,7 @@ np.random.seed(global_seed)
 plt.close('all')
 
 
-COMM.Barrier()
+    
 
 ################################################################################
 # Main script, set parameters and create cell, synapse and electrode objects
@@ -165,8 +165,8 @@ source_zs = np.ones(len(source_xs)) * cortical_surface_height #- 141
 #source_amps = np.array([-1, -1, 1, 1, 1, 1, -1, -1]) * amp
 
 
-if RANK == 0:
     cells = []
+if RANK == 0:
 
 if 'my[0]' in cell.allsecnames:
     #zs = [cell.get_idx('apic[0]')[0], cell.get_idx('soma')[0], cell.get_idx('axon[0]')[0], cell.get_idx('node[0]')[0],cell.get_idx('my[0]')[int(len(cell.get_idx('my[0]'))/2)], cell.get_idx('node[1]')[len(cell.get_idx('node[1]'))-1], cell.get_idx(cell.allsecnames[len(cell.allsecnames)-1])[0] ]
@@ -284,6 +284,8 @@ if RANK==0:
         ax1.text(cells[nc]['xmid'][0], cells[nc]['ymid'][0], cells[nc]['zmid'][0], "cell {0}".format(cells[nc]['rank']))
     
     ax1.scatter(source_xs, source_ys, source_zs, c=source_amps)
+
+
     # PLOT a large array in order to mimic the BISC chip
     #x= np.arange(-500, 500, 50) #pitch is around 20 - 25 um
     #y= np.arange(-500, 500, 50)

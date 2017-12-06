@@ -1,0 +1,8 @@
+// Delete apical and dendrites from the whole stick cell model
+forsec "apic" delete_section()
+forsec "dend" delete_section()
+for i=1,axonNum-1 {
+	axon[i] delete_section()
+			}
+//Delete soma from the whole stick model
+forsec "soma" delete_section()			
