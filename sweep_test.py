@@ -7,7 +7,7 @@ import LFPy
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib
-# from mpl_toolkits.mplot3d import Axes3D
+from mpl_toolkits.mplot3d import Axes3D
 # from GeneticOptimization import MEAutility as MEA
 from os.path import join
 import utils
@@ -40,7 +40,8 @@ if RANK == 0:
     # morph = 'patdemo/cells/j4a.hoc', # Mainen&Sejnowski, 1996
     # morph = join(folder, '28_04_10_num19.hoc') # HallermannEtAl2012
     # morph = join('morphologies', 'axon.hoc') # Mainen&Sejnowski, 1996
-    morph = join(folder, 'cell_simple.hoc')
+    # morph = join(folder, 'cell_simple.hoc')
+    morph = join(folder, 'cell_simple_long.hoc')
     custom_code = [join(folder, 'Cell parameters.hoc'),
                    join(folder, 'charge.hoc'),
                    join(folder, 'pruning_full.hoc')]
@@ -56,12 +57,12 @@ if RANK == 1:
     # morph = join('morphologies', 'axon.hoc') # Mainen&Sejnowski, 1996
     morph = join(folder, 'cell_simple.hoc')
     custom_code = [join(folder, 'Cell parameters.hoc'),
-                   join(folder, 'charge.hoc'),
-                   join(folder, 'pruning.hoc')]
+                   join(folder, 'charge.hoc')]
+                   # join(folder, 'pruning_full.hoc')]
 if RANK == 2:
-    folder = "morphologies/cell_hallermann_myelin"
+    # folder = "morphologies/cell_hallermann_myelin"
     # folder = "morphologies/hay_model"
-    # folder = "morphologies/cell_hallermann_unmyelin"
+    folder = "morphologies/cell_hallermann_unmyelin"
     # folder = "morphologies/simple_axon_hallermann"
     # folder = "morphologies/HallermannEtAl2012"
     neuron.load_mechanisms(join(folder))
@@ -76,9 +77,9 @@ if RANK == 2:
     # ,join(folder, 'pruning.hoc')]
 
 if RANK == 3:
-    # folder = "morphologies/cell_hallermann_myelin"
+    folder = "morphologies/cell_hallermann_myelin"
     # folder = "morphologies/hay_model"
-    folder = "morphologies/cell_hallermann_unmyelin"
+    # folder = "morphologies/cell_hallermann_unmyelin"
     # folder = "morphologies/simple_axon_hallermann"
     # folder = "morphologies/HallermannEtAl2012"
     neuron.load_mechanisms(join(folder))
@@ -89,8 +90,8 @@ if RANK == 3:
     morph = join(folder, 'cell_simple.hoc')
     # morph = join(folder,'cell1.hoc') # Hay model
     custom_code = [join(folder, 'Cell parameters.hoc'),
-                   join(folder, 'charge.hoc'),
-                   join(folder, 'pruning_full.hoc')]
+                   join(folder, 'charge.hoc')]
+                   # join(folder, 'pruning_full.hoc')]
 
 if RANK == 4:
     # folder = "morphologies/cell_hallermann_myelin"
@@ -127,17 +128,20 @@ cell_parameters = {          # various cell parameters,
     'tstop': 50.,   # stop simulation at 200 ms. These can be overridden
                         # by setting these arguments in cell.simulation()
     "extracellular": True,
+    "pt3d": True,
     'custom_code': custom_code}
 
 COMM.Barrier()
 
-names = ["axon myelin", "soma axon myelin", "dendrite soma axon myelin", "axon nonmyelin"]
+names = ["axon myelin", "neuron myelin", "neuron nonmyelin", "axon nonmyelin"]
 
 cell = LFPy.Cell(**cell_parameters)
 # Assign cell positions
 # TEST with different distance between cells
-x_cell_pos = [-10, 0, 0, 10]
-y_cell_pos = [0, -10, 10, 0]
+# x_cell_pos = [-10, 0, 0, 10]
+# y_cell_pos = [0, -10, 10, 0]
+x_cell_pos = [0, 0, 0, 0]
+y_cell_pos = [15, 5, -5, -15]
 z_cell_pos = np.zeros(len(x_cell_pos))
 # z_cell_pos = [-1000., -1000 - (np.sum(cell.length)), 0.]
 
@@ -151,7 +155,8 @@ z_cell_pos = np.zeros(len(x_cell_pos))
 # cell.set_rotation(z=np.pi/2)
 # cell.set_rotation(x=0, y=0, z=z_rotation[cell_id])
 # cell.set_pos(x=x_cell_pos[cell_id], y=y_cell_pos[cell_id])
-cell.set_pos(x=x_cell_pos[cell_id], y=y_cell_pos[cell_id], z=z_cell_pos[cell_id])
+# cell.set_pos(x=x_cell_pos[cell_id], y=y_cell_pos[cell_id], z=z_cell_pos[cell_id])
+utils.reposition_stick_horiz(cell, x_cell_pos[cell_id], y_cell_pos[cell_id], z_cell_pos[cell_id])
 
 # cell.set_rotation(x=np.pi/2)
 # cell.set_rotation(y=np.pi/2)
@@ -178,36 +183,44 @@ cortical_surface_height = 50
 
 # Parameters for the external field
 sigma = 0.3
-source_xs = np.array([-50, -50, -10, -10, 10, 10, 50, 50])
-source_ys = np.array([-50, 50, -10, 10, 10, -10, -50, 50])
+source_xs = np.array([-50, -50, -15, -15, 15, 15, 50, 50])
+source_ys = np.array([-50, 50, -15, 15, 15, -15, -50, 50])
+
+# source_xs = np.array([-50, 0, 50, 0, 0])
+# source_ys = np.array([0, 50, 0, -50, 0])
 
 # source_geometry = np.array([0, 0, 1, 1, 1, 1, 0, 0])
+stim_amp = 1.
+n_stim_amp = -stim_amp / 4
+source_geometry = np.array([0, 0, 0, 0, stim_amp])
+# source_geometry = np.array([-stim_amp / 4, -stim_amp / 4, -stim_amp / 4, -stim_amp / 4, stim_amp])
+# source_geometry = np.array([stim_amp, stim_amp, stim_amp, stim_amp, -stim_amp])
+
 source_geometry = np.array([-1, -1, 1, 1, 1, 1, -1, -1])
 
-# source_amps = np.array([-1, -1, 1, 1, 1, 1, -1, -1]) * amp
-
 # while loop? For loop?
-spatial_resolution = 20
-max_distance = 1000
-distance = np.linspace(10, max_distance, spatial_resolution)
+spatial_resolution = 10
+max_distance = 300
+distance = np.linspace(30, max_distance, spatial_resolution)
 current = np.zeros((n_cells, spatial_resolution))
 c_vext = np.zeros((n_cells, spatial_resolution))
+ap_loc = np.zeros((n_cells, spatial_resolution), dtype=np.int)
 
 source_zs = np.ones(len(source_xs)) * distance[0]
 
 # Stimulation Parameters:
-max_current = 100000.   # mA
+max_current = -350000.   # mA
 current_resolution = 10
 # amp_range = np.exp(np.linspace(1, np.log(max_current), current_resolution))
-amp_range = np.linspace(1, max_current, current_resolution)
+amp_range = np.linspace(-1000, max_current, current_resolution)
 amp = amp_range[0]
-cells = []
+if cell_id == 0:
+    cells = []
 glb_vmem = []
 glb_vext = []
 num = 0
 
 # TO IMPROVE
-
 # zs = [int(.95*np.min(cell.zmid)), int(.5*np.min(cell.zmid)),
 #       int(.1934*np.min(cell.zmid)), 0, int(.95*np.max(cell.zmid))]
 
@@ -225,7 +238,7 @@ is_spike = False
 
 for depth in distance:
 
-    while amp < max_current and not is_spike:
+    while amp > max_current and not is_spike:
 
         amp = amp_range[click]
         source_zs = np.ones(len(source_xs)) * depth
@@ -234,8 +247,6 @@ for depth in distance:
 
         # Find external potential field at all cell positions as a function of time
         v_cell_ext = np.zeros((cell.totnsegs, n_tsteps))
-        v_cell_ext[:, :] = ExtPot.ext_field(cell.xmid, cell.ymid,
-                                            cell.zmid).reshape(cell.totnsegs, 1) * pulse.reshape(1, n_tsteps)
 
         # v_field_ext_stick = np.zeros((len(zs), n_tsteps))
         # v_field_ext_stick = ext_field(zs).reshape(len(zs), 1) * pulse.reshape(1, n_tsteps)
@@ -243,6 +254,11 @@ for depth in distance:
 
         # Insert external potential at cell
         cell = LFPy.Cell(**cell_parameters)
+        # cell.set_pos(x=x_cell_pos[cell_id], y=y_cell_pos[cell_id], z=z_cell_pos[cell_id])
+        utils.reposition_stick_horiz(cell, x_cell_pos[cell_id], y_cell_pos[cell_id], z_cell_pos[cell_id])
+        v_cell_ext[:, :] = ExtPot.ext_field(cell.xmid, cell.ymid,
+                                            cell.zmid).reshape(cell.totnsegs, 1) * pulse.reshape(1, n_tsteps)
+
         cell.insert_v_ext(v_cell_ext, t)
 
         # Run simulation, electrode object argument in cell.simulate
@@ -256,6 +272,7 @@ for depth in distance:
             print("spike! at time {0} and position {1}, cell {2} segment {3}".format(spike_time_loc[0],
                   cell.get_idx_name(spike_time_loc[1])[1], cell_id, cell.get_idx_name(spike_time_loc[1])[0]))
             c_vext[cell_id][np.where(distance == depth)] = v_cell_ext[spike_time_loc[1]][spike_time_loc[0]]
+            ap_loc[cell_id][np.where(distance == depth)] = spike_time_loc[1]
         # glb_vmem.append(cell.vmem)
         # cells.append(cell)
 
@@ -265,21 +282,34 @@ for depth in distance:
     is_spike = False
 COMM.Barrier()
 
+if RANK == 0:
+    cells.append(utils.built_for_mpi_space(cell, cell_id))
+    for i_proc in range(1, SIZE):
+        cells.append(COMM.recv(source=i_proc))
+else:
+    COMM.send(utils.built_for_mpi_space(cell, cell_id), dest=0)
+
+COMM.Barrier()
+
 if cell_id == 0:
     gather_current = []
     # plot_current = np.zeros((n_cells, spatial_resolution))
     # print len(utils.built_for_mpi_comm(cell, glb_vext, glb_vmem, v_idxs, RANK))
     # single_cells = [utils.built_for_mpi_comm(cell, glb_vext, glb_vmem, v_idxs, RANK)]
-    gather_current.append({"current": current[cell_id], "v_ext_at_pulse": c_vext[cell_id], "rank": cell_id})
+    gather_current.append({"current": current[cell_id], "v_ext_at_pulse": c_vext[cell_id],
+                          "ap_loc": ap_loc[cell_id], "rank": cell_id})
     for i_proc in range(1, n_cells):
         # single_cells = np.r_[single_cells, COMM.recv(source=i_proc)]
         gather_current.append(COMM.recv(source=i_proc))
 else:
     # print len(utils.built_for_mpi_comm(cell, glb_vext, glb_vmem, v_idxs, RANK))
-    COMM.send({"current": current[cell_id], "v_ext_at_pulse": c_vext[cell_id], "rank": cell_id}, dest=0)
+    COMM.send({"current": current[cell_id], "v_ext_at_pulse": c_vext[cell_id],
+              "ap_loc": ap_loc[cell_id], "rank": cell_id}, dest=0)
 
 COMM.Barrier()
 
+if cell_id == 0:
+    print gather_current[3]['ap_loc']
 
 # plot 3d view of evolution of vmem as a function of stimulation amplitude (legend)
 
@@ -310,53 +340,90 @@ COMM.Barrier()
 color = iter(plt.cm.rainbow(np.linspace(0, 1, n_cells)))
 
 if cell_id == 0:
+    figview = plt.figure(1)
+    axview = plt.subplot(111, title="3D view", aspect=1, projection='3d', xlabel="x [$\mu$m]", ylabel="y [$\mu$m]",
+                         zlabel="z [$\mu$m]", xlim=[-500, 500], ylim=[-250, 250], zlim=[-500, 500])
+    for nc in range(0, n_cells):
+        [axview.plot([cells[nc]['xstart'][idx], cells[nc]['xend'][idx]], [cells[nc]['ystart'][idx],
+                     cells[nc]['yend'][idx]], [cells[nc]['zstart'][idx], cells[nc]['zend'][idx]], '-',
+                     c='k', clip_on=False) for idx in range(cells[nc]['totnsegs'])]
+        [axview.scatter(cells[nc]['xmid'][ap], cells[nc]['ymid'][ap], cells[nc]['zmid'][ap],
+                        '*', c='r') for ap in gather_current[nc]['ap_loc']]
+        axview.text(cells[nc]['xmid'][0], cells[nc]['ymid'][0], cells[nc]['zmid'][0], names[cells[nc]['rank']])
+
+        # [axview.plot([cells[nc]['xmid'][idx]], [cells[nc]['ymid'][idx]], [cells[nc]['zmid'][idx]], 'D', c= c_idxs(cells[nc]['v_idxs'].index(idx))) for idx in cells[nc]['v_idxs']]
+        # [axview.plot([cells[nc]['xmid'][idx]], [cells[nc]['ymid'][idx]], [cells[nc]['zmid'][idx]], 'D', c= 'k') for idx in cells[nc]['v_idxs']]
+        # ax1.text(cells[nc]['xmid'][0], cells[nc]['ymid'][0], cells[nc]['zmid'][0], "cell {0}".format(cells[nc]['rank']))
+        # axview.text(cells[nc]['xmid'][v_idxs[widx]], cells[nc]['ymid'][v_idxs[widx]], cells[nc]['zmid'][v_idxs[widx]],
+        #             "cell {0}.".format(cells[nc]['rank']) + cells[nc]['name'])
+
+    axview.scatter(source_xs, source_ys, source_zs, c=source_amps)
+
     fig = plt.figure(figsize=[18, 7])
+    fig.suptitle("horizontal orientation, negative current")
     fig.subplots_adjust(wspace=.6)
     ax = plt.subplot(133, title="Stim threshold")
     # axd = ax.twinx()
-    ax.set_xlabel("depth [um]")
-    ax.set_ylabel("stimulation current [mA]")
+    ax.set_xlabel("depth [$\mu$m]")
+    ax.set_ylabel("stimulation current [$\mu$A]")
     # axd.set_ylabel("V_Ext [mV]")
     for i in range(n_cells):
-        ax.plot(gather_current[i]['current'] / 1000., color=next(color), label=names[i])
+        ax.plot(distance[:len(gather_current[i]['current'].nonzero()[0])],
+                gather_current[i]['current'][gather_current[i]['current'].nonzero()[0]] / 1000.,
+                color=next(color), label=names[i])
         # axd.plot(gather_current[i]['v_ext_at_pulse'], label="v_ext" + names[i])
-    plt.xticks(np.arange(spatial_resolution), [format(depth, ".0f") for depth in distance])
+    # plt.xticks(np.linspace(0, max_distance, 10))
+    # plt.locator_params(tight=True)
+    plt.gca().invert_yaxis()
     plt.legend(loc="upper left")
 
-    ax2 = plt.subplot(131, title="V_ext", xlabel="x [$\mu$um]", ylabel='z [$\mu$m]')
+    ax2 = plt.subplot(131, title="V_ext", xlabel="x [$\mu$m]", ylabel='z [$\mu$m]')
     source_amps = source_geometry * max_current
     ExtPot = utils.ImposedPotentialField(source_amps, source_xs, source_ys, source_zs, sigma)
-    plot_field_length = 400
-    v_field_ext_xz = np.zeros((100, 100))
-    xf = np.linspace(-plot_field_length, plot_field_length, 100)
-    zf = np.linspace(-plot_field_length, cortical_surface_height, 100)
+    plot_field_length = 1000
+    space_resolution = 200
+    v_field_ext_xz = np.zeros((space_resolution, space_resolution))
+    xf = np.linspace(-plot_field_length, plot_field_length, space_resolution)
+    zf = np.linspace(-plot_field_length, cortical_surface_height, space_resolution)
     for xidx, x in enumerate(xf):
         for zidx, z in enumerate(zf):
             v_field_ext_xz[xidx, zidx] = ExtPot.ext_field(x, 0, z)
+    v_field_ext_xy = np.zeros((space_resolution, space_resolution))
+    xf2 = np.linspace(-plot_field_length, plot_field_length, space_resolution)
+    yf2 = np.linspace(-plot_field_length, plot_field_length, space_resolution)
+    for xidx, x in enumerate(xf2):
+        for yidx, y in enumerate(yf2):
+            v_field_ext_xy[xidx, yidx] = ExtPot.ext_field(x, y, cortical_surface_height)
 
-    vmin = -1000
-    vmax = 1000
+    # vmin = -100
+    # vmax = 100
+    vmin = np.min([np.min(v_field_ext_xz), np.min(v_field_ext_xy)])
+    vmax = np.max([np.max(v_field_ext_xz), np.max(v_field_ext_xy)])
     logthresh = 0
+    # maxlog = int(np.ceil(np.log10(vmax)))
+    # minlog = int(np.ceil(np.log10(-vmin)))
+    # tick_locations = ([-(10 ** x) for x in xrange(minlog, -logthresh - 1, -1)] +
+    #                   [0.0] + [(10**x) for x in xrange(-logthresh, maxlog + 1)])
     imshow_dict = dict(origin='lower', interpolation='nearest',
-                       cmap=plt.cm.bwr, vmin=vmin, vmax=vmax,
+                       cmap=plt.cm.inferno, vmin=vmin, vmax=vmax,
                        norm=matplotlib.colors.SymLogNorm(10**-logthresh))
 
     img1 = ax2.imshow(v_field_ext_xz.T,
                       extent=[-plot_field_length, plot_field_length,
                               -plot_field_length, cortical_surface_height],
                       **imshow_dict)
-    cax = plt.axes([0.4, 0.1, 0.01, 0.33])
-    cb = plt.colorbar(img1, cax=cax, )
+    # cax = plt.axes([0.4, 0.1, 0.01, 0.33])
+    # cb = plt.colorbar(img1)
     # cb.set_ticks(tick_locations)
-    cb.set_label('mV', labelpad=-10)
+    # cb.set_label('mV', labelpad=-10)
 
     ax2.scatter(source_xs, np.ones(len(source_xs)) * cortical_surface_height, c=source_amps, s=100, vmin=-1.4,
                 vmax=1.4, edgecolor='k', lw=2, cmap=plt.cm.bwr, clip_on=False)
 
     [ax2.scatter(source_xs[i], np.ones(len(source_xs))[i] * cortical_surface_height,
-                 marker='_', s=50, lw=2, c='k') for i in np.where(source_amps > 0)]
-    [ax2.scatter(source_xs[i], np.ones(len(source_xs))[i] * cortical_surface_height,
                  marker='+', s=50, lw=2, c='k') for i in np.where(source_amps < 0)]
+    [ax2.scatter(source_xs[i], np.ones(len(source_xs))[i] * cortical_surface_height,
+                 marker='_', s=50, lw=2, c='k') for i in np.where(source_amps > 0)]
 
     ax3 = plt.subplot(132, title="Current source geometry", xlabel="x [$\mu$m]", ylabel='y [$\mu$m]')
     ax3.scatter(source_xs, source_ys, c=source_amps, s=100, vmin=-1.4, vmax=1.4,
@@ -364,22 +431,34 @@ if cell_id == 0:
     [ax3.scatter(source_xs[i], source_ys[i], marker='_', s=50, lw=2, c='k') for i in np.where(source_amps > 0)]
     [ax3.scatter(source_xs[i], source_ys[i], marker='+', s=50, lw=2, c='k') for i in np.where(source_amps < 0)]
 
-    v_field_ext_xy = np.zeros((100, 100))
-    xf = np.linspace(-plot_field_length, plot_field_length, 100)
-    yf = np.linspace(-plot_field_length, plot_field_length, 100)
-    for xidx, x in enumerate(xf):
-        for yidx, y in enumerate(yf):
-            v_field_ext_xy[xidx, yidx] = ExtPot.ext_field(x, y, cortical_surface_height)
+
 
     img2 = ax3.imshow(v_field_ext_xy.T,
                       extent=[-plot_field_length, plot_field_length,
                               -plot_field_length, plot_field_length],
                       **imshow_dict)
-    cax = plt.axes([0.4, 0.1, 0.01, 0.33])
-    cb = plt.colorbar(img2)
+    plt.colorbar(img2, label="mV")
+    # plt.colorbar(img1, ax=ax2, shrink=0.7, label="mV")
+    # plt.colorbar(img2, ax=ax3, shrink=0.7, label="mV")
+
+    # cax = plt.axes([0.335, 0.26, 0.01, 0.45])
+    # cb = plt.colorbar(img2, cax=cax)
     # cb.set_ticks(tick_locations)
-    cb.set_label('mV', labelpad=-10)
+    # cb.set_label('mV', labelpad=-10)
     plt.savefig("sweep_test.png")
+
+    # fig2 = plt.figure(2)
+    # axu = fig2.gca(title="Stim threshold")
+    # # axd = ax.twinx()
+    # axu.set_xlabel("depth [$\mu$m]")
+    # axu.set_ylabel("stimulation current [mA]")
+    # # axd.set_ylabel("V_Ext [mV]")
+    # for i in range(n_cells):
+    #     axu.plot(gather_current[i]['current'] / 1000., color=next(color), label=names[i])
+    #     # axd.plot(gather_current[i]['v_ext_at_pulse'], label="v_ext" + names[i])
+    # plt.xticks(np.arange(spatial_resolution), [format(depth, ".0f") for depth in distance])
+    # plt.legend(loc="upper left")
+
     plt.show()
 # ax2 = plt.subplot(111, title="Cell model", aspect=1, projection='3d',
 #                   xlabel="x [$\mu$m]", ylabel="y [$\mu$m]", zlabel="z [$\mu$m]")

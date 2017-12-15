@@ -39,7 +39,7 @@ class ImposedPotentialField:
         """Returns the external field at positions x, y, z"""
         ef = 0
         for s_idx in range(self.num_sources):
-            ef += self.source_amps[s_idx] / (2 * np.pi * self.sigma * np.sqrt(
+            ef += self.source_amps[s_idx] / (4 * np.pi * self.sigma * np.sqrt(
                 (self.source_xs[s_idx] - x) ** 2 +
                 (self.source_ys[s_idx] - y) ** 2 +
                 (self.source_zs[s_idx] - z) ** 2))

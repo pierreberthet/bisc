@@ -17,31 +17,66 @@ def built_for_mpi_comm(cell, glb_vext, glb_vmem, v_idxs, widx, rank):
             'xend': cell.xend, 'yend': cell.yend, 'zend': cell.zend}
 
 
-def built_for_mpi_space(cell, rank):
+def built_for_mpi_space(cell, rank, extra=None):
     '''
     Return a dict of array useful for plotting cells in 3D space, in parallel simulation
     (cell objet can not be communicated directly between thread).
     '''
-    return {'totnsegs': cell.totnsegs, 'rank': rank,
+    return {'totnsegs': cell.totnsegs, 'rank': rank, 'extra': extra,
             'xstart': cell.xstart, 'ystart': cell.ystart, 'zstart': cell.zstart,
             'xmid': cell.xmid, 'ymid': cell.ymid, 'zmid': cell.zmid,
             'xend': cell.xend, 'yend': cell.yend, 'zend': cell.zend}
 
 
 def return_first_spike_time_and_idx(vmem):
-    crossings = []
+    '''
+    Return the index of the segment where Vmem first crossed the threshold (Usually set at -20 mV.
+    If many segments crossed threshold during a unique time step, it returns the index of the segment
+    with the most depolarized membrane value.
+    Also contains the time step when this occurred.
+    '''
     if np.max(vmem) < -20:
         print "No spikes detected"
         return [None, None]
 
-    for comp_idx in range(vmem.shape[0]):
-        for t_idx in range(1, vmem.shape[1]):
-            if vmem[comp_idx, t_idx - 1] < -20 <= vmem[comp_idx, t_idx]:
-                crossings.append([t_idx, comp_idx])
-    crossings = np.array(crossings)
-    first_spike_comp_idx = np.argmin(crossings[:, 0])
+    for t_idx in range(1, vmem.shape[1]):
+        if np.max(vmem.T[t_idx]) > -20:
+            print np.argmax(vmem.T[t_idx])
+            return [t_idx, np.argmax(vmem.T[t_idx])]
+    # crossings = []
+    # for comp_idx in range(vmem.shape[0]):
+    #     for t_idx in range(1, vmem.shape[1]):
+    #         if vmem[comp_idx, t_idx - 1] < -20 <= vmem[comp_idx, t_idx]:
+    #             crossings.append([t_idx, comp_idx])
+    # crossings = np.array(crossings)
+    # first_spike_comp_idx = np.argmin(crossings[:, 0])
+    # return crossings[first_spike_comp_idx]
 
-    return crossings[first_spike_comp_idx]
+
+def reposition_stick_horiz(cell, x=0, y=0, z=0):
+    '''
+    Only for stick models?
+    rotate the cell model by a 1/4 of a turn, from perpendicular to the x axis to parallel,
+    and reposition the cell along the x-axis in order to have it centered around the provided x position, or 0.
+    '''
+    l_cell = np.max(cell.zstart) + np.abs(np.min(cell.zend))
+    # l_cell = cell.length
+    cell.set_pos(x=x + int(l_cell / 2), y=y, z=z)
+    cell.set_rotation(y=np.pi / 2)
+    return
+
+
+def reposition_stick_flip(cell, x=0, y=0, z=0):
+    '''
+    Only for stick models?
+    Flip upside down the cell model, thus keeping it perpendicular to the x axis,
+    and reposition the cell to avoid any displacement on the z-axis.
+    (zmin and zend are unchanged)
+    '''
+    l_cell = np.max(cell.zstart) + np.abs(np.min(cell.zend))
+    cell.set_pos(x=x, y=y, z=z - l_cell)
+    cell.set_rotation(y=np.pi)
+    return
 
 
 def create_bisc_array():
@@ -111,7 +146,7 @@ class ImposedPotentialField:
         """Returns the external field at positions x, y, z"""
         ef = 0
         for s_idx in range(self.num_sources):
-            ef += self.source_amps[s_idx] / (2 * np.pi * self.sigma * np.sqrt(
+            ef += self.source_amps[s_idx] / (4 * np.pi * self.sigma * np.sqrt(
                 (self.source_xs[s_idx] - x) ** 2 +
                 (self.source_ys[s_idx] - y) ** 2 +
                 (self.source_zs[s_idx] - z) ** 2))

@@ -54,8 +54,8 @@ cell_parameters = {          # various cell parameters,
                         # by setting these arguments i cell.simulation()
     "extracellular": True,
     'custom_code': [join(folder, 'Cell parameters.hoc'),
-                    join(folder, 'charge.hoc')]
-                    #,join(folder, 'pruning.hoc')]
+                    join(folder, 'charge.hoc'),
+                    join(folder, 'pruning.hoc')]
 }
 
 cell = LFPy.Cell(**cell_parameters)

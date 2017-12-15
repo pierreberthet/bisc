@@ -165,8 +165,7 @@ source_zs = np.ones(len(source_xs)) * cortical_surface_height #- 141
 #source_amps = np.array([-1, -1, 1, 1, 1, 1, -1, -1]) * amp
 
 
-    cells = []
-if RANK == 0:
+cells = []
 
 if 'my[0]' in cell.allsecnames:
     #zs = [cell.get_idx('apic[0]')[0], cell.get_idx('soma')[0], cell.get_idx('axon[0]')[0], cell.get_idx('node[0]')[0],cell.get_idx('my[0]')[int(len(cell.get_idx('my[0]'))/2)], cell.get_idx('node[1]')[len(cell.get_idx('node[1]'))-1], cell.get_idx(cell.allsecnames[len(cell.allsecnames)-1])[0] ]
@@ -267,9 +266,17 @@ if RANK==0:
 
     ax6 = plt.subplot(133, title="Vmem evolution cell "+str(cells[1]['rank']), xlabel="t [ms]", ylabel="Vmem [mV]")
     for i in range(len(v_idxs)):
-        #ax6.plot_wireframe(t, glb_vext[i][v_idxs[0]], glb_vmem[i][v_idxs[0]], cmap=plt.cm.bwr )
+        #ax6.plot_wireframe(t, glb_vext[i][v_idxs[0]], glb_vmif 'my[0]' in cell.allsecnames:
+        #zs = [cell.get_idx('apic[0]')[0], cell.get_idx('soma')[0], cell.get_idx('axon[0]')[0], cell.get_idx('node[0]')[0],cell.get_idx('my[0]')[int(len(cell.get_idx('my[0]'))/2)], cell.get_idx('node[1]')[len(cell.get_idx('node[1]'))-1], cell.get_idx(cell.allsecnames[len(cell.allsecnames)-1])[0] ]
+        #zs = [cell.get_idx('apic[0]')[0], cell.get_idx('soma')[0], cell.get_idx('axon[0]')[0]]
+        zs = [cell.get_idx('axon[0]')[0]]
+        [zs.append(cell.get_idx('node')[idx]) for idx in range(len(cell.get_idx('node')))]
+        #[zs.append(cell.get_idx('my')[::10][idx]) for idx in range(len(cell.get_idx('my')[::10]))  ]
+    else:
+        zs = [cell.get_idx('apic[0]')[0], cell.get_idx('soma')[0], cell.get_idx('axon[0]')[0], cell.get_idx('axon[1]')[0], cell.get_idx('axon[1]')[len(cell.get_idx('axon[1]'))-1]    ]
+        #zs = [cell.get_idx('apic[0]')[0], cell.get_idx('soma')[0], cell.get_idx('axon[0]')[0], cell.get_idx('axon[0]')[len(cell.get_idx('axon[0]'))-1]] #HAY model, to improve
+# em[i][v_idxs[0]], cmap=plt.cm.bwr )
         [ax6.plot(t, cells[1]['glb_vmem'][idx],  color= c_idxs(cells[1]['v_idxs'].index(idx), cells[1]['v_idxs'] )) for idx in cells[1]['v_idxs']]
-
 
     ##### ? yinfo = np.zeros(total_n_runs)
     
