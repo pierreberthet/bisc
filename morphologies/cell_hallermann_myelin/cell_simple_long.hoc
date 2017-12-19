@@ -6,7 +6,7 @@ proc celldef() {
   geom_nseg()
 }
 
-nnode 		= 	40	//Netter's Atlas of Neuroscience {}
+nnode 		= 	30	//Netter's Atlas of Neuroscience {}
 
 apicNum		=	1
 axonNum		=	1

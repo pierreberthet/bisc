@@ -22,7 +22,7 @@ def built_for_mpi_space(cell, rank, extra=None):
     Return a dict of array useful for plotting cells in 3D space, in parallel simulation
     (cell objet can not be communicated directly between thread).
     '''
-    return {'totnsegs': cell.totnsegs, 'rank': rank, 'extra': extra,
+    return {'totnsegs': cell.totnsegs, 'rank': rank, 'vmem': cell.vmem, 'vext': cell.v_ext, 'extra': extra,
             'xstart': cell.xstart, 'ystart': cell.ystart, 'zstart': cell.zstart,
             'xmid': cell.xmid, 'ymid': cell.ymid, 'zmid': cell.zmid,
             'xend': cell.xend, 'yend': cell.yend, 'zend': cell.zend}
@@ -38,7 +38,6 @@ def return_first_spike_time_and_idx(vmem):
     if np.max(vmem) < -20:
         print "No spikes detected"
         return [None, None]
-
     for t_idx in range(1, vmem.shape[1]):
         if np.max(vmem.T[t_idx]) > -20:
             print np.argmax(vmem.T[t_idx])
@@ -151,3 +150,17 @@ class ImposedPotentialField:
                 (self.source_ys[s_idx] - y) ** 2 +
                 (self.source_zs[s_idx] - z) ** 2))
         return ef
+
+
+def sanity_vext(vext, t):
+    vxmin = 0
+    vxmax = 0
+    for i in range(len(t)):
+        for j in range(len(vext)):
+            lmin = np.min(vext[j][i])
+            lmax = np.max(vext[j][i])
+            if lmin < vxmin:
+                vxmin = lmin
+            if lmax > vxmax:
+                vxmax = lmax
+    return [vxmin, vxmax]
