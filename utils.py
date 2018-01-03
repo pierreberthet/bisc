@@ -164,3 +164,103 @@ def sanity_vext(vext, t):
             if lmax > vxmax:
                 vxmax = lmax
     return [vxmin, vxmax]
+
+
+def create_array_shape(shape=None, pitch=None):
+    '''
+    create current sources of various shapes.
+    {To implement: specifiy number as argument}
+    '''
+    if not pitch:
+        pitch = 15
+
+    if shape:  # create monopole
+        if shape == 'dipole':
+            n_elec = 2
+            polarity = np.array([-1, 1])
+            source_zs = np.zeros(n_elec)
+            source_xs = np.array([-10, 10])
+            source_ys = np.array([0, 0])
+
+        elif shape == 'line':
+            n_elec = 4
+            polarity = np.array([-1, 1, 1, -1])
+            source_zs = np.zeros(n_elec)
+            source_xs = np.array([-2 * pitch, -pitch, pitch, 2 * pitch])
+            source_ys = np.array([0, 0, 0, 0])
+
+        elif shape == 'multipole':
+            n_elec = 8
+            polarity = np.array([-1, -1, 1, 1, 1, 1, -1, -1])
+            source_zs = np.zeros(n_elec)
+            source_xs = np.array([-50, -50, -10, -10, 10, 10, 50, 50])
+            source_ys = np.array([-50, 50, -10, 10, 10, -10, -50, 50])
+
+        elif shape == 'quadrupole':
+            n_elec = 5
+            polarity = np.array([-1 / 4, -1 / 4, 1, -1 / 4, -1 / 4])
+            source_zs = np.zeros(n_elec)
+            source_xs = np.array([-20, 0, 0, 0, 20])
+            source_ys = np.array([0, 20, 0, -20, 0])
+
+        elif shape == 'monopole':
+            n_elec = 1
+            polarity = np.array([1])
+            source_xs = np.array([0])
+            source_ys = np.array([0])
+            source_zs = np.array([0])
+
+        elif shape == 'monosquare':
+            n_elec = 9
+            pos = 1.
+            neg = -pos / (n_elec - 1)
+            polarity = np.array([neg, neg, neg, neg, pos, neg, neg, neg, neg])
+            source_zs = np.zeros(n_elec)
+            source_xs = np.array([-pitch, -pitch, -pitch, 0, 0, 0, pitch, pitch, pitch])
+            source_ys = np.array([pitch, 0, -pitch, pitch, 0, -pitch, pitch, 0, -pitch])
+
+        elif shape == 'across':
+            n_elec = 9
+            pos = 1. / 5
+            neg = -pos / 4
+            polarity = np.array([neg, pos, neg, pos, pos, pos, neg, pos, neg])
+            source_zs = np.zeros(n_elec)
+            source_xs = np.array([-pitch, -pitch, -pitch, 0, 0, 0, pitch, pitch, pitch])
+            source_ys = np.array([pitch, 0, -pitch, pitch, 0, -pitch, pitch, 0, -pitch])
+
+        elif shape == 'circle':
+            n_elec = 50
+            polarity = []  # np.ones(n_elec)
+            source_zs = np.zeros(n_elec * 2)    # double to account for positive and negative
+            size_bisc = 1000
+            xs = np.cos(np.linspace(-np.pi, np.pi, n_elec))
+            ys = np.sin(np.linspace(-np.pi, np.pi, n_elec))
+            x_mesh = range(-size_bisc / 2, (size_bisc + pitch) / 2, pitch)
+            y_mesh = range(-size_bisc / 2, (size_bisc + pitch) / 2, pitch)
+            # source_xs = np.array([-50, -50, -10, -10, 10, 10, 50, 50])
+            # source_ys = np.array([-50, 50, -10, 10, 10, -10, -50, 50])
+
+            r_i = 300  # um, radius of the inner circle
+            r_e = r_i + pitch  # um, radius of the external circle
+            if 2 * np.pi * r_i / n_elec < np.sqrt(pitch ** 2 + pitch ** 2):
+                print "spatial resolution is too big, please change the number of sources or r"
+                return
+            source_xs = []
+            source_ys = []
+            for x in xs * r_i:
+                source_xs.append(x_mesh[np.argmin(abs(x_mesh - x))])
+                polarity.append(1.)
+            for y in ys * r_i:
+                source_ys.append(y_mesh[np.argmin(abs(y_mesh - y))])
+            for x in xs * r_e:
+                source_xs.append(x_mesh[np.argmin(abs(x_mesh - x))])
+                polarity.append(-1.)
+            for y in ys * r_e:
+                source_ys.append(y_mesh[np.argmin(abs(y_mesh - y))])
+
+        else:
+            print("Unknown geometry for the current source arrangement")
+            return
+
+    position = [source_xs, source_ys, source_zs]
+    return polarity, n_elec, position

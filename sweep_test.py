@@ -278,7 +278,8 @@ for depth in distance:
         cell.insert_v_ext(v_cell_ext, t)
 
         # Run simulation, electrode object argument in cell.simulate
-        print("running cell {2} distance from electrode: {0} current intensity: {1}").format(abs(z_cell_pos[2]), amp, cell_id)
+        print("running cell {2} distance from electrode: {0} current intensity: {1}").format(abs(z_cell_pos[2]),
+                                                                                             amp, cell_id)
         cell.simulate(rec_imem=True, rec_vmem=True)
         spike_time_loc = utils.return_first_spike_time_and_idx(cell.vmem)
         # COMM.Barrier()
@@ -367,9 +368,12 @@ if cell_id == 0:
                         '*', c='r') for ap in gather_current[nc]['ap_loc']]
         axview.text(cells[nc]['xmid'][0], cells[nc]['ymid'][0], cells[nc]['zmid'][0], names[cells[nc]['rank']])
 
-        # [axview.plot([cells[nc]['xmid'][idx]], [cells[nc]['ymid'][idx]], [cells[nc]['zmid'][idx]], 'D', c= c_idxs(cells[nc]['v_idxs'].index(idx))) for idx in cells[nc]['v_idxs']]
-        # [axview.plot([cells[nc]['xmid'][idx]], [cells[nc]['ymid'][idx]], [cells[nc]['zmid'][idx]], 'D', c= 'k') for idx in cells[nc]['v_idxs']]
-        # ax1.text(cells[nc]['xmid'][0], cells[nc]['ymid'][0], cells[nc]['zmid'][0], "cell {0}".format(cells[nc]['rank']))
+        # [axview.plot([cells[nc]['xmid'][idx]], [cells[nc]['ymid'][idx]], [cells[nc]['zmid'][idx]], 'D',
+        #              c= c_idxs(cells[nc]['v_idxs'].index(idx))) for idx in cells[nc]['v_idxs']]
+        # [axview.plot([cells[nc]['xmid'][idx]], [cells[nc]['ymid'][idx]],
+        #              [cells[nc]['zmid'][idx]], 'D', c= 'k') for idx in cells[nc]['v_idxs']]
+        # ax1.text(cells[nc]['xmid'][0], cells[nc]['ymid'][0], cells[nc]['zmid'][0],
+        #          "cell {0}".format(cells[nc]['rank']))
         # axview.text(cells[nc]['xmid'][v_idxs[widx]], cells[nc]['ymid'][v_idxs[widx]], cells[nc]['zmid'][v_idxs[widx]],
         #             "cell {0}.".format(cells[nc]['rank']) + cells[nc]['name'])
 

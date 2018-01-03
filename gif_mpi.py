@@ -143,8 +143,8 @@ cell = LFPy.Cell(**cell_parameters)
 # TEST with different distance between cells
 # x_cell_pos = [-20, 0, 20, 10]
 
-x_cell_pos = [0, 0, 0, 0]
-y_cell_pos = np.linspace(-50, 50, 4)
+x_cell_pos = [-1550, -1530, 0, 0]
+y_cell_pos = np.linspace(-25, 25, n_cells)
 # z_cell_pos = np.zeros(len(x_cell_pos))
 z_cell_pos = [0, 0, 0, 0]
 
@@ -209,7 +209,7 @@ source_zs = np.ones(len(source_xs)) * distance
 
 # Stimulation Parameters:
 
-amp = 40 * (10**3)
+amp = 80 * (10**3)
 num = 0
 
 source_zs = np.ones(len(source_xs)) * distance
@@ -281,7 +281,7 @@ if cell_id == 0:
     fig.subplots_adjust(wspace=0.1)
 
     ax1 = plt.subplot(111, projection="3d", title="t = " + str(spike_time_loc[0]), aspect=1, xlabel="x [$\mu$m]",
-                      ylabel="y [$\mu$m]", zlabel="z [$\mu$m]", xlim=[-600, 600], ylim=[-600, 600], zlim=[-400, 200])
+                      ylabel="y [$\mu$m]", zlabel="z [$\mu$m]", xlim=[-3000, 200], ylim=[-600, 600], zlim=[-400, 200])
     cmap = plt.cm.viridis
     norm = mpl.colors.Normalize(vmin=-110, vmax=55)
     for i in range(n_cells):
@@ -301,7 +301,7 @@ if cell_id == 0:
         # for idx in range(cell.totnsegs):
         #     ax1.text(cell.xmid[idx], cell.ymid[idx], cell.zmid[idx], "{0}.".format(cell.get_idx_name(idx)[1]))
 
-    elev = 30     # Default 30
+    elev = 50     # Default 30
     azim = 0    # Default 0
     ax1.view_init(elev, azim)
 
@@ -325,7 +325,8 @@ if cell_id == 0:
         fig.suptitle("Electric field")
         ax1 = plt.subplot(111, projection="3d", title="t = " + ("%.4f" % (t * cell.dt)) + " ms",
                           aspect=1, xlabel="x [$\mu$m]", ylabel="y [$\mu$m]", zlabel="z [$\mu$m]",
-                          xlim=[-600, 600], ylim=[-600, 600], zlim=[-400, 200])
+                          # xlim=[-600, 600], ylim=[-600, 600], zlim=[-400, 200])
+                          xlim=[-3000, 200], ylim=[-600, 600], zlim=[-400, 200])
         for i in range(n_cells):
             col = []
             for j in range(cells[i]['totnsegs']):
@@ -363,7 +364,8 @@ if cell_id == 0:
         fig.suptitle("Membrane potential")
         ax1 = plt.subplot(111, projection="3d", title="t = " + ("%.4f" % (t * cell.dt)) + " ms",
                           aspect=1, xlabel="x [$\mu$m]", ylabel="y [$\mu$m]", zlabel="z [$\mu$m]",
-                          xlim=[-600, 600], ylim=[-600, 600], zlim=[-400, 200])
+                          # xlim=[-600, 600], ylim=[-600, 600], zlim=[-400, 200])
+                          xlim=[-3000, 200], ylim=[-600, 600], zlim=[-400, 200])
         for i in range(n_cells):
 
             col = (cells[i]['vmem'].T[t] + 100) / 150.
