@@ -1,4 +1,4 @@
-import LFPy as lfpy
+# import LFPy as lfpy
 import numpy as np
 import matplotlib.pyplot as plt
 
@@ -9,7 +9,6 @@ def built_for_mpi_comm(cell, glb_vext, glb_vmem, v_idxs, widx, rank):
     (cell objet can not be communicated directly between thread).
     '''
     # c_idxs = [plt.cm.jet( 1.*v_idxs.index(idx) / len(v_idxs) for idx in v_idxs  )]
-    # v_clr_z = lambda z: plt.cm.jet(1.0 * (z - np.min(cell.zend)) / (np.max(np.abs(cell.zmid) - np.min(np.abs(cell.zmid)))))
     return {'totnsegs': cell.totnsegs, 'glb_vext': glb_vext, 'glb_vmem': glb_vmem, 'v_idxs': v_idxs,
             'name': cell.get_idx_name(v_idxs[widx])[1], 'rank': rank,
             'xstart': cell.xstart, 'ystart': cell.ystart, 'zstart': cell.zstart,
@@ -79,11 +78,17 @@ def reposition_stick_flip(cell, x=0, y=0, z=0):
 
 
 def create_bisc_array():
+    '''
+    to be edited from create_array_shape()
+    '''
 
     return bisc_array
 
 
 def compute_dderivative():
+    '''
+    Compute the double derivative of the electric field
+    '''
 
     return dderivative
 
@@ -222,11 +227,20 @@ def create_array_shape(shape=None, pitch=None):
         elif shape == 'across':
             n_elec = 9
             pos = 1. / 5
-            neg = -pos / 4
+            neg = -1 / 4
             polarity = np.array([neg, pos, neg, pos, pos, pos, neg, pos, neg])
             source_zs = np.zeros(n_elec)
             source_xs = np.array([-pitch, -pitch, -pitch, 0, 0, 0, pitch, pitch, pitch])
             source_ys = np.array([pitch, 0, -pitch, pitch, 0, -pitch, pitch, 0, -pitch])
+
+        elif shape == 'minicross':
+            n_elec = 4
+            pos = 1. / 2
+            neg = -pos
+            polarity = np.array([neg, pos, pos, neg])
+            source_zs = np.zeros(n_elec)
+            source_xs = np.array([-pitch * 2, 0, 0, pitch * 2])
+            source_ys = np.array([0, -pitch, pitch, 0])
 
         elif shape == 'circle':
             n_elec = 50
@@ -237,8 +251,6 @@ def create_array_shape(shape=None, pitch=None):
             ys = np.sin(np.linspace(-np.pi, np.pi, n_elec))
             x_mesh = range(-size_bisc / 2, (size_bisc + pitch) / 2, pitch)
             y_mesh = range(-size_bisc / 2, (size_bisc + pitch) / 2, pitch)
-            # source_xs = np.array([-50, -50, -10, -10, 10, 10, 50, 50])
-            # source_ys = np.array([-50, 50, -10, 10, 10, -10, -50, 50])
 
             r_i = 300  # um, radius of the inner circle
             r_e = r_i + pitch  # um, radius of the external circle
@@ -257,6 +269,7 @@ def create_array_shape(shape=None, pitch=None):
                 polarity.append(-1.)
             for y in ys * r_e:
                 source_ys.append(y_mesh[np.argmin(abs(y_mesh - y))])
+            n_elec = n_elec * 2
 
         else:
             print("Unknown geometry for the current source arrangement")

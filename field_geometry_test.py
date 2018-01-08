@@ -31,17 +31,18 @@ sigma = 0.3
 
 # source_geometry = np.array([-1, -1, 1, 1, 1, 1, -1, -1])
 
-polarity, n_elec, positions = utils.create_array_shape('line', 15)
+polarity, n_elec, positions = utils.create_array_shape('across', 15)
 
-amp = (5. * 10**6) / n_elec
+amp = (5. * 10**6) / n_elec  # mA
 
 cortical_surface_height = 20
 
 source_amps = np.multiply(polarity, amp)
-ExtPot = utils.ImposedPotentialField(source_amps, positions[0], positions[1], positions[2], sigma)
+ExtPot = utils.ImposedPotentialField(source_amps, positions[0], positions[1],
+                                     positions[2] + cortical_surface_height, sigma)
 plot_field_length_v = 1000
 plot_field_length_h = 1000
-space_resolution = 200
+space_resolution = 500
 depth_check = -350
 
 v_field_ext_xz = np.zeros((space_resolution, space_resolution))
@@ -75,7 +76,7 @@ logthresh = 0
 # tick_locations = ([-(10 ** x) for x in xrange(minlog, -logthresh - 1, -1)] +
 #                   [0.0] + [(10**x) for x in xrange(-logthresh, maxlog + 1)])
 imshow_dict = dict(origin='lower', interpolation='nearest',
-                   cmap=plt.cm.inferno,  # vmin=vmin, vmax=vmax,
+                   cmap=plt.cm.inferno, vmin=vmin, vmax=vmax,
                    norm=matplotlib.colors.SymLogNorm(10**-logthresh))
 
 # cax = plt.axes([0.4, 0.1, 0.01, 0.33])

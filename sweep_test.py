@@ -189,17 +189,25 @@ cortical_surface_height = 50
 
 # Parameters for the external field
 sigma = 0.3
+
+polarity, n_elec, positions = utils.create_array_shape('line', 15)
+source_xs = positions[0]
+source_ys = positions[1]
+source_zs = positions[2]
+
+dura_height = 50
+
 # source_xs = np.array([-50, -50, -15, -15, 15, 15, 50, 50])
 # source_ys = np.array([-50, 50, -15, 15, 15, -15, -50, 50])
-source_xs = np.array([-50, 0, 50, 0, 0])
-source_ys = np.array([0, 50, 0, -50, 0])
-source_zs = np.ones(len(source_xs))
+# source_xs = np.array([-50, 0, 50, 0, 0])
+# source_ys = np.array([0, 50, 0, -50, 0])
+# source_zs = np.ones(len(source_xs))
 
 # source_geometry = np.array([0, 0, 1, 1, 1, 1, 0, 0])
-stim_amp = 1.
-n_stim_amp = -stim_amp / 4
+# stim_amp = 1.
+# n_stim_amp = -stim_amp / 4
 # source_geometry = np.array([0, 0, 0, 0, stim_amp])  # monopole
-source_geometry = np.array([-stim_amp, 0, stim_amp, 0, 0])  # dipole
+# source_geometry = np.array([-stim_amp, 0, stim_amp, 0, 0])  # dipole
 # source_geometry = np.array([-stim_amp / 4, -stim_amp / 4, -stim_amp / 4, -stim_amp / 4, stim_amp])
 # source_geometry = np.array([stim_amp, stim_amp, stim_amp, stim_amp, -stim_amp])
 
@@ -213,8 +221,7 @@ current = np.zeros((n_cells, spatial_resolution))
 c_vext = np.zeros((n_cells, spatial_resolution))
 ap_loc = np.zeros((n_cells, spatial_resolution), dtype=np.int)
 
-dura_height = 50
-source_zs = np.ones(len(source_xs)) * dura_height
+# source_zs = np.ones(len(source_xs)) * dura_height
 
 # Stimulation Parameters:
 max_current = 50000.   # mA
@@ -227,6 +234,8 @@ if cell_id == 0:
 glb_vmem = []
 glb_vext = []
 num = 0
+
+# amp = (5. * 10**6) / n_elec
 
 # TO IMPROVE
 # zs = [int(.95*np.min(cell.zmid)), int(.5*np.min(cell.zmid)),
@@ -249,9 +258,11 @@ for depth in distance:
     while amp < max_current and not is_spike:
 
         amp = amp_range[click]
+        source_amps = np.multiply(polarity, amp)
+        ExtPot = utils.ImposedPotentialField(source_amps, positions[0], positions[1], positions[2] + dura_height, sigma)
 
-        source_amps = source_geometry * amp
-        ExtPot = utils.ImposedPotentialField(source_amps, source_xs, source_ys, source_zs, sigma)
+        # source_amps = source_geometry * amp
+        # ExtPot = utils.ImposedPotentialField(source_amps, source_xs, source_ys, source_zs, sigma)
 
         # Find external potential field at all cell positions as a function of time
 
@@ -402,14 +413,15 @@ if cell_id == 0:
     plt.legend(loc="upper left")
 
     ax2 = plt.subplot(131, title="V_ext", xlabel="x [$\mu$m]", ylabel='z [$\mu$m]')
-    source_amps = source_geometry * max_current
-    ExtPot = utils.ImposedPotentialField(source_amps, source_xs, source_ys, source_zs, sigma)
+    # source_amps = source_geometry * max_current
+    source_amps = np.multiply(polarity, amp)
+    ExtPot = utils.ImposedPotentialField(source_amps, positions[0], positions[1], positions[2], sigma)
     plot_field_length_v = 1000
     plot_field_length_h = 200
     space_resolution = 200
     v_field_ext_xz = np.zeros((space_resolution, space_resolution))
     xf = np.linspace(-plot_field_length_v, plot_field_length_v, space_resolution)
-    zf = np.linspace(-plot_field_length_v, cortical_surface_height, space_resolution)
+    zf = np.linspace(-plot_field_length_v, 0, space_resolution)
     for xidx, x in enumerate(xf):
         for zidx, z in enumerate(zf):
             v_field_ext_xz[xidx, zidx] = ExtPot.ext_field(x, 0, z)
@@ -418,7 +430,7 @@ if cell_id == 0:
     yf2 = np.linspace(-plot_field_length_h, plot_field_length_h, space_resolution)
     for xidx, x in enumerate(xf2):
         for yidx, y in enumerate(yf2):
-            v_field_ext_xy[xidx, yidx] = ExtPot.ext_field(x, y, cortical_surface_height)
+            v_field_ext_xy[xidx, yidx] = ExtPot.ext_field(x, y, 0)
 
     vmin = -100
     vmax = 100
@@ -435,19 +447,19 @@ if cell_id == 0:
 
     img1 = ax2.imshow(v_field_ext_xz.T,
                       extent=[-plot_field_length_v, plot_field_length_v,
-                              -plot_field_length_v, cortical_surface_height],
+                              -plot_field_length_v, 0],
                       **imshow_dict)
     # cax = plt.axes([0.4, 0.1, 0.01, 0.33])
     # cb = plt.colorbar(img1)
     # cb.set_ticks(tick_locations)
     # cb.set_label('mV', labelpad=-10)
 
-    ax2.scatter(source_xs, np.ones(len(source_xs)) * cortical_surface_height, c=source_amps, s=100, vmin=-1.4,
+    ax2.scatter(source_xs, np.zeros(len(source_xs)), c=source_amps, s=100, vmin=-1.4,
                 vmax=1.4, edgecolor='k', lw=2, cmap=plt.cm.bwr, clip_on=False)
 
-    [ax2.scatter(source_xs[i], np.ones(len(source_xs))[i] * cortical_surface_height,
+    [ax2.scatter(source_xs[i], np.zeros(len(source_xs))[i],
                  marker='+', s=50, lw=2, c='k') for i in np.where(source_amps < 0)]
-    [ax2.scatter(source_xs[i], np.ones(len(source_xs))[i] * cortical_surface_height,
+    [ax2.scatter(source_xs[i], np.zeros(len(source_xs))[i],
                  marker='_', s=50, lw=2, c='k') for i in np.where(source_amps > 0)]
 
     ax3 = plt.subplot(132, title="Current source geometry", xlabel="x [$\mu$m]", ylabel='y [$\mu$m]')
