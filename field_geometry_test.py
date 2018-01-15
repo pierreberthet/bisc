@@ -31,9 +31,10 @@ sigma = 0.3
 
 # source_geometry = np.array([-1, -1, 1, 1, 1, 1, -1, -1])
 
-polarity, n_elec, positions = utils.create_array_shape('across', 15)
+polarity, n_elec, positions = utils.create_array_shape('circle', 15)
 
 amp = (5. * 10**6) / n_elec  # mA
+voltage = 5000
 
 cortical_surface_height = 20
 
@@ -50,15 +51,16 @@ xf = np.linspace(-plot_field_length_v, plot_field_length_v, space_resolution)
 zf = np.linspace(-plot_field_length_v * 2, cortical_surface_height, space_resolution)
 for xidx, x in enumerate(xf):
     for zidx, z in enumerate(zf):
-        v_field_ext_xz[xidx, zidx] = ExtPot.ext_field(x, 0, z)
+        v_field_ext_xz[xidx, zidx] = ExtPot.ext_field_v(x, 0, z)
+        # v_field_ext_xz[xidx, zidx] = ExtPot.ext_field(0, x, z)
 v_field_ext_xy = np.zeros((space_resolution, space_resolution))
 v_field_ext_xy2 = np.zeros((space_resolution, space_resolution))
 xf2 = np.linspace(-plot_field_length_h, plot_field_length_h, space_resolution)
 yf2 = np.linspace(-plot_field_length_h, plot_field_length_h, space_resolution)
 for xidx, x in enumerate(xf2):
     for yidx, y in enumerate(yf2):
-        v_field_ext_xy[xidx, yidx] = ExtPot.ext_field(x, y, cortical_surface_height)
-        v_field_ext_xy2[xidx, yidx] = ExtPot.ext_field(x, y, depth_check)
+        v_field_ext_xy[xidx, yidx] = ExtPot.ext_field_v(x, y, cortical_surface_height)
+        v_field_ext_xy2[xidx, yidx] = ExtPot.ext_field_v(x, y, depth_check)
 
 # FIGURES
 
@@ -76,7 +78,7 @@ logthresh = 0
 # tick_locations = ([-(10 ** x) for x in xrange(minlog, -logthresh - 1, -1)] +
 #                   [0.0] + [(10**x) for x in xrange(-logthresh, maxlog + 1)])
 imshow_dict = dict(origin='lower', interpolation='nearest',
-                   cmap=plt.cm.inferno, vmin=vmin, vmax=vmax,
+                   cmap=plt.cm.RdBu_r, vmin=vmin, vmax=vmax,
                    norm=matplotlib.colors.SymLogNorm(10**-logthresh))
 
 # cax = plt.axes([0.4, 0.1, 0.01, 0.33])

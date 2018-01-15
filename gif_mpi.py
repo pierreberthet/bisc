@@ -47,8 +47,8 @@ if RANK == 0:
                    join(folder, 'pruning_full.hoc')]
 
 if RANK == 1:
-    # folder = "morphologies/cell_hallermann_myelin"
-    folder = "morphologies/cell_hallermann_unmyelin"
+    folder = "morphologies/cell_hallermann_myelin"
+    # folder = "morphologies/cell_hallermann_unmyelin"
     # folder = "morphologies/simple_axon_hallermann"
     # folder = "morphologies/HallermannEtAl2012"
     neuron.load_mechanisms(join(folder))
@@ -134,7 +134,7 @@ cell_parameters = {          # various cell parameters,
 COMM.Barrier()
 
 # names = ["axon myelin", "neuron myelin", "neuron nonmyelin", "axon nonmyelin"]
-names = ["long axon myelin", "long axon unmyelin", "neuron myelin", "axon unmyelin"]
+names = ["long axon myelin clamped", "long axon myelin", "neuron myelin", "axon unmyelin"]
 
 plt.close('all')
 
@@ -143,7 +143,8 @@ cell = LFPy.Cell(**cell_parameters)
 # TEST with different distance between cells
 # x_cell_pos = [-20, 0, 20, 10]
 
-x_cell_pos = [-1550, -1530, 0, 0]
+# x_cell_pos = [-1550, -1530, 0, 0]
+x_cell_pos = [0, 0, 0, 0]
 y_cell_pos = np.linspace(-25, 25, n_cells)
 # z_cell_pos = np.zeros(len(x_cell_pos))
 z_cell_pos = [0, 0, 0, 0]
@@ -184,28 +185,36 @@ pulse[pulse_start:(pulse_start + pulse_duration)] = 1.
 # TO DETERMINE OR NOT, maybe just start from zmin = - max cortical thickness
 cortical_surface_height = 50
 
+clamp = True
+# CLAMPING
+if clamp:
+    if cell_id == 1:
+        utils.clamp_ends(cell, pulse_start, pulse_start + pulse_duration)
 
 # Parameters for the external field
 sigma = 0.3
-source_xs = np.array([-50, -50, -10, -10, 10, 10, 50, 50])
-source_ys = np.array([-50, 50, -10, 10, 10, -10, -50, 50])
+# source_xs = np.array([-50, -50, -10, -10, 10, 10, 50, 50])
+# source_ys = np.array([-50, 50, -10, 10, 10, -10, -50, 50])
 
 # source_xs = np.array([-50, 0, 50, 0, 0])
 # source_ys = np.array([0, 50, 0, -50, 0])
 
 # source_geometry = np.array([0, 0, 1, 1, 1, 1, 0, 0])
-stim_amp = 1.
-n_stim_amp = -stim_amp / 4
+# stim_amp = 1.
+# n_stim_amp = -stim_amp / 4
 # source_geometry = np.array([0, 0, 0, 0, stim_amp])
 # source_geometry = np.array([-stim_amp / 4, -stim_amp / 4, -stim_amp / 4, -stim_amp / 4, stim_amp])
 # source_geometry = np.array([stim_amp, stim_amp, stim_amp, stim_amp, -stim_amp])
 
-source_geometry = np.array([-1, -1, 1, 1, 1, 1, -1, -1])
+# source_geometry = np.array([-1, -1, 1, 1, 1, 1, -1, -1])
 
 distance = 50
 c_vext = 0.
 
-source_zs = np.ones(len(source_xs)) * distance
+polarity, n_elec, positions = utils.create_array_shape('monopole', 15)
+source_xs = positions[0]
+source_ys = positions[1]
+source_zs = positions[2]
 
 # Stimulation Parameters:
 
@@ -213,8 +222,8 @@ amp = 80 * (10**3)
 num = 0
 
 source_zs = np.ones(len(source_xs)) * distance
-source_amps = source_geometry * amp
-ExtPot = utils.ImposedPotentialField(source_amps, source_xs, source_ys, source_zs, sigma)
+source_amps = np.multiply(polarity, amp)
+# ExtPot = utils.ImposedPotentialField(source_amps, source_xs, source_ys, source_zs, sigma)
 
 # Find external potential field at all cell positions as a function of time
 v_cell_ext = np.zeros((cell.totnsegs, n_tsteps))
@@ -229,8 +238,11 @@ v_cell_ext = np.zeros((cell.totnsegs, n_tsteps))
 
 # utils.reposition_stick_horiz(cell)
 # utils.reposition_stick_flip(cell, x_cell_pos[0], y_cell_pos[0], z_cell_pos[0])
-v_cell_ext[:, :] = ExtPot.ext_field(cell.xmid, cell.ymid,
-                                    cell.zmid).reshape(cell.totnsegs, 1) * pulse.reshape(1, n_tsteps)
+# v_cell_ext[:, :] = ExtPot.ext_field(cell.xmid, cell.ymid,
+#                                     cell.zmid).reshape(cell.totnsegs, 1) * pulse.reshape(1, n_tsteps)
+
+v_cell_ext[:, :] = utils.linear_field(cell, pulse_start, pulse_start + pulse_duration, n_tsteps) * amp
+
 
 cell.insert_v_ext(v_cell_ext, t)
 
@@ -281,7 +293,7 @@ if cell_id == 0:
     fig.subplots_adjust(wspace=0.1)
 
     ax1 = plt.subplot(111, projection="3d", title="t = " + str(spike_time_loc[0]), aspect=1, xlabel="x [$\mu$m]",
-                      ylabel="y [$\mu$m]", zlabel="z [$\mu$m]", xlim=[-3000, 200], ylim=[-600, 600], zlim=[-400, 200])
+                      ylabel="y [$\mu$m]", zlabel="z [$\mu$m]", xlim=[-2000, 2000], ylim=[-600, 600], zlim=[-400, 200])
     cmap = plt.cm.viridis
     norm = mpl.colors.Normalize(vmin=-110, vmax=55)
     for i in range(n_cells):
@@ -326,7 +338,7 @@ if cell_id == 0:
         ax1 = plt.subplot(111, projection="3d", title="t = " + ("%.4f" % (t * cell.dt)) + " ms",
                           aspect=1, xlabel="x [$\mu$m]", ylabel="y [$\mu$m]", zlabel="z [$\mu$m]",
                           # xlim=[-600, 600], ylim=[-600, 600], zlim=[-400, 200])
-                          xlim=[-3000, 200], ylim=[-600, 600], zlim=[-400, 200])
+                          xlim=[-200, 2000], ylim=[-600, 600], zlim=[-400, 200])
         for i in range(n_cells):
             col = []
             for j in range(cells[i]['totnsegs']):
@@ -365,7 +377,7 @@ if cell_id == 0:
         ax1 = plt.subplot(111, projection="3d", title="t = " + ("%.4f" % (t * cell.dt)) + " ms",
                           aspect=1, xlabel="x [$\mu$m]", ylabel="y [$\mu$m]", zlabel="z [$\mu$m]",
                           # xlim=[-600, 600], ylim=[-600, 600], zlim=[-400, 200])
-                          xlim=[-3000, 200], ylim=[-600, 600], zlim=[-400, 200])
+                          xlim=[-2000, 2000], ylim=[-600, 600], zlim=[-400, 200])
         for i in range(n_cells):
 
             col = (cells[i]['vmem'].T[t] + 100) / 150.

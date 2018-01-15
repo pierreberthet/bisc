@@ -1,4 +1,4 @@
-# import LFPy as lfpy
+import LFPy as lfpy
 import numpy as np
 import matplotlib.pyplot as plt
 
@@ -51,6 +51,23 @@ def return_first_spike_time_and_idx(vmem):
     # return crossings[first_spike_comp_idx]
 
 
+def spike_soma(cell):
+    '''
+    Return the index of the segment where Vmem first crossed the threshold (Usually set at -20 mV.
+    If many segments crossed threshold during a unique time step, it returns the index of the segment
+    with the most depolarized membrane value.
+    Also contains the time step when this occurred.
+    '''
+    soma_idx = cell.get_idx('soma')
+    if np.max(cell.vmem[soma_idx]) < -20:
+        print "No spikes detected"
+        return [None, None]
+    for t_idx in range(1, cell.vmem[soma_idx].shape[1]):
+        if np.max(cell.vmem[soma_idx].T[t_idx]) > -20:
+            print np.argmax(cell.vmem[soma_idx].T[t_idx])
+            return [t_idx, np.argmax(cell.vmem[soma_idx].T[t_idx])]
+
+
 def reposition_stick_horiz(cell, x=0, y=0, z=0):
     '''
     Only for stick models?
@@ -85,10 +102,36 @@ def create_bisc_array():
     return bisc_array
 
 
-def compute_dderivative():
+def compute_dderivative(efield):
     '''
     Compute the double derivative of the electric field
     '''
+
+    # calculate field in xz-space
+    v_field_ext_xz = np.zeros((100, 200))
+    xf = np.linspace(0, 400, 100)
+    zf = np.linspace(-200, 400, 200)
+    for xidx, x in enumerate(xf):
+        for zidx, z in enumerate(zf):
+            v_field_ext_xz[xidx, zidx] = ext_field_2(x, 0, z) * amp
+
+    # derivative of V in z-direction
+    d_v_field_ext_xz = np.zeros((v_field_ext_xz.shape[0],
+                                 v_field_ext_xz.shape[1] - 1))
+    dz = zf[1] - zf[0]
+
+    for zidx in range(len(zf) - 1):
+        d_v_field_ext_xz[:, zidx] = (v_field_ext_xz[:, zidx + 1] -
+                                     v_field_ext_xz[:, zidx]) / dz
+
+
+    # double derivative of V in z-direction
+    dd_v_field_ext_xz = np.zeros((v_field_ext_xz.shape[0],
+                                 d_v_field_ext_xz.shape[1] - 1))
+
+    for zidx in range(len(zf) - 2):
+        dd_v_field_ext_xz[:, zidx] = (d_v_field_ext_xz[:, zidx + 1] -
+                                      d_v_field_ext_xz[:, zidx]) / dz
 
     return dderivative
 
@@ -156,6 +199,16 @@ class ImposedPotentialField:
                 (self.source_zs[s_idx] - z) ** 2))
         return ef
 
+    def ext_field_v(self, x, y, z):
+        """Returns the external field at positions x, y, z"""
+        ef = 0
+        for s_idx in range(self.num_sources):
+            ef += self.source_amps[s_idx] / (4 * np.pi * np.sqrt(
+                (self.source_xs[s_idx] - x) ** 2 +
+                (self.source_ys[s_idx] - y) ** 2 +
+                (self.source_zs[s_idx] - z) ** 2))
+        return ef
+
 
 def sanity_vext(vext, t):
     vxmin = 0
@@ -169,6 +222,69 @@ def sanity_vext(vext, t):
             if lmax > vxmax:
                 vxmax = lmax
     return [vxmin, vxmax]
+
+
+def test_linear(axis='xz', dim=[-500, 500, -500, 500], a=1e-3, b=.1, res=201):
+    v_field_ext = np.zeros((abs(dim[0] - dim[1]), abs(dim[2] - dim[3])))
+    if axis == 'xz':
+        xf = np.linspace(dim[0], dim[1], abs(dim[0] - dim[1]))
+        zf = np.linspace(dim[2], dim[3], abs(dim[2] - dim[3]))
+        for zidx, z in enumerate(zf):
+            for xidx, x in enumerate(xf):
+                v_field_ext[xidx, zidx] = a * z + b
+    if axis == 'yz':
+        yf = np.linspace(dim[0], dim[1], abs(dim[0] - dim[1]))
+        zf = np.linspace(dim[2], dim[3], abs(dim[2] - dim[3]))
+        for zidx, z in enumerate(zf):
+            for yidx, y in enumerate(yf):
+                v_field_ext[yidx, zidx] = a * z + b
+    if axis == 'xy':
+        xf = np.linspace(dim[0], dim[1], abs(dim[0] - dim[1]))
+        yf = np.linspace(dim[2], dim[3], abs(dim[2] - dim[3]))
+        for yidx, y in enumerate(yf):
+            for xidx, x in enumerate(xf):
+                v_field_ext[xidx, yidx] = a * y + b
+
+    # toplot = np.array((np.linspace(dim[0], dim[1], res), np.linspace(dim[2], dim[3], res), np.zeros(res)))
+    # for x in res:
+    #     for y in res:
+    #         toplot
+    return v_field_ext
+
+
+def linear_field(cell, pulse_start, pulse_end, n_tsteps, axis, a=1e-3, b=.1):
+    '''
+    0 mV @ x, y or z = 0, depending on the axis selected for the field.
+    '''
+    v_cell_ext = np.zeros((cell.totnsegs, n_tsteps))
+    if axis == 'x':
+        v_cell_ext[:, pulse_start:pulse_end] = np.array([(a * x + b) for x in cell.xmid]).reshape(cell.totnsegs, 1)
+    elif axis == 'y':
+        v_cell_ext[:, pulse_start:pulse_end] = np.array([(a * y + b) for y in cell.ymid]).reshape(cell.totnsegs, 1)
+    elif axis == 'z':
+        v_cell_ext[:, pulse_start:pulse_end] = np.array([(a * z + b) for z in cell.zmid]).reshape(cell.totnsegs, 1)
+
+    return v_cell_ext
+
+
+def clamp_ends(cell, pulse_start, pulse_end, voltage=-70., axis='z'):
+    '''
+    Clamp the extremities of a cell
+    Should only be used for ball and stick models, otherwise to update
+    Pay attention to the orientation, here the cell is assumed to be
+    horizontally oriented along the corresponding x/y/z axis.
+    '''
+    pointprocesses = {'pptype': 'SEClamp', 'amp1': voltage, 'dur1': pulse_end}
+    if axis == 'x':
+        lfpy.StimIntElectrode(cell, np.argmax(cell.xend), **pointprocesses)
+        lfpy.StimIntElectrode(cell, np.argmin(cell.xend), **pointprocesses)
+    elif axis == 'y':
+        lfpy.StimIntElectrode(cell, np.argmax(cell.yend), **pointprocesses)
+        lfpy.StimIntElectrode(cell, np.argmin(cell.yend), **pointprocesses)
+    elif axis == 'z':
+        lfpy.StimIntElectrode(cell, np.argmax(cell.zend), **pointprocesses)
+        lfpy.StimIntElectrode(cell, np.argmin(cell.zend), **pointprocesses)
+    return
 
 
 def create_array_shape(shape=None, pitch=None):
@@ -215,6 +331,13 @@ def create_array_shape(shape=None, pitch=None):
             source_ys = np.array([0])
             source_zs = np.array([0])
 
+        elif shape == 'twosquare':
+            n_elec = 8
+            polarity = np.array([-1, -1, 1, 1, 1, 1, -1, -1])
+            source_zs = np.zeros(n_elec)
+            source_xs = np.array([-(pitch * 2), -(pitch * 2), -pitch, -pitch, pitch, pitch, (pitch * 2), (pitch * 2)])
+            source_ys = np.array([-(pitch * 2), (pitch * 2), -pitch, pitch, pitch, -pitch, -(pitch * 2), (pitch * 2)])
+
         elif shape == 'monosquare':
             n_elec = 9
             pos = 1.
@@ -226,8 +349,8 @@ def create_array_shape(shape=None, pitch=None):
 
         elif shape == 'across':
             n_elec = 9
-            pos = 1. / 5
-            neg = -1 / 4
+            pos = 4 / (9. * 5)
+            neg = -5 / (9. * 4)
             polarity = np.array([neg, pos, neg, pos, pos, pos, neg, pos, neg])
             source_zs = np.zeros(n_elec)
             source_xs = np.array([-pitch, -pitch, -pitch, 0, 0, 0, pitch, pitch, pitch])
@@ -243,7 +366,7 @@ def create_array_shape(shape=None, pitch=None):
             source_ys = np.array([0, -pitch, pitch, 0])
 
         elif shape == 'circle':
-            n_elec = 50
+            n_elec = 20
             polarity = []  # np.ones(n_elec)
             source_zs = np.zeros(n_elec * 2)    # double to account for positive and negative
             size_bisc = 1000
@@ -252,8 +375,8 @@ def create_array_shape(shape=None, pitch=None):
             x_mesh = range(-size_bisc / 2, (size_bisc + pitch) / 2, pitch)
             y_mesh = range(-size_bisc / 2, (size_bisc + pitch) / 2, pitch)
 
-            r_i = 300  # um, radius of the inner circle
-            r_e = r_i + pitch  # um, radius of the external circle
+            r_i = 150  # um, radius of the inner circle
+            r_e = r_i + 2 * pitch  # um, radius of the external circle
             if 2 * np.pi * r_i / n_elec < np.sqrt(pitch ** 2 + pitch ** 2):
                 print "spatial resolution is too big, please change the number of sources or r"
                 return
@@ -269,6 +392,19 @@ def create_array_shape(shape=None, pitch=None):
                 polarity.append(-1.)
             for y in ys * r_e:
                 source_ys.append(y_mesh[np.argmin(abs(y_mesh - y))])
+            # source_xs = []
+            # source_ys = []
+            # for x in xs:
+            #     source_xs.append(np.multiply(x, r_i))
+            #     polarity.append(1.)
+            # for y in ys:
+            #     source_ys.append(np.multiply(y, r_i))
+            # for x in xs:
+            #     source_xs.append(np.multiply(x, r_e))
+            #     polarity.append(-1.)
+            # for y in ys:
+            #     source_ys.append(np.multiply(y, r_e))
+
             n_elec = n_elec * 2
 
         else:

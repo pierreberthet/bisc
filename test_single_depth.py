@@ -20,19 +20,19 @@ plt.close('all')
 # Main script, set parameters and create cell, synapse and electrode objects
 ###############################################################################
 
-folder = "morphologies/cell_hallermann_myelin"
+# folder = "morphologies/cell_hallermann_myelin"
 # folder = "morphologies/cell_hallermann_unmyelin"
 # folder = "morphologies/simple_axon_hallermann"
-# folder = "morphologies/HallermannEtAl2012"
+folder = "morphologies/HallermannEtAl2012"
 # folder = "morphologies/almog"
 # folder = "morphologies/hay_model"
 neuron.load_mechanisms(join(folder))
 # morph = 'patdemo/cells/j4a.hoc', # Mainen&Sejnowski, 1996
-# morph = join(folder, '28_04_10_num19.hoc')  # HallermannEtAl2012
+morph = join(folder, '28_04_10_num19.hoc')  # HallermannEtAl2012
 # morph = join(folder, 'A140612.hoc')  # Almog model
 # morph = join(folder, 'cell1.hoc')  # Hay model
 # morph = join('morphologies', 'axon.hoc')  # Mainen&Sejnowski, 1996
-morph = join(folder, 'cell_simple_long.hoc')  # stick model based on Hallermann's
+# morph = join(folder, 'cell_simple_long.hoc')  # stick model based on Hallermann's
 # custom_code = [join(folder, 'Cell parameters.hoc'),
 custom_code = [join(folder, 'Cell parameters.hoc'),
                join(folder, 'charge.hoc')]
