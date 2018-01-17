@@ -31,7 +31,7 @@ COMM.Barrier()
 ###############################################################################
 # Main script, set parameters and create cell, synapse and electrode objects
 ###############################################################################
-if RANK == 0:
+if RANK == 1:
     # folder = "morphologies/cell_hallermann_myelin"
     # folder = "morphologies/cell_hallermann_unmyelin"
     # folder = "morphologies/simple_axon_hallermann"
@@ -47,22 +47,74 @@ if RANK == 0:
                    # join(folder, 'pruning_full.hoc')]
 
 
-if RANK == 1:
+if RANK == 0:
     # folder = "morphologies/cell_hallermann_myelin"
-    # folder = "morphologies/L23_PC_cADpyr229_1"
-    folder = "morphologies/Traub2003"
+    folder = "morphologies/L23_PC_cADpyr229_1"
+    # folder = "morphologies/L23_PC_cADpyr229_5"
+    # get the template name
+    f = file(join(folder, "template.hoc"), 'r')
+    templatename = utils.get_templatename(f)
+    f.close()
+    # get biophys template name
+    f = file(join(folder, "biophysics.hoc"), 'r')
+    biophysics = utils.get_templatename(f)
+    f.close()
+    # get morphology template name
+    f = file(join(folder, "morphology.hoc"), 'r')
+    morphology = utils.get_templatename(f)
+    f.close()
+
+    # f = file(join(folder, "morphology/dend-C170897A-P3_axon-C260897C-P4_-_Clone_4.asc"), 'r')
+    # morphasc = utils.get_templatename(f)
+    # f.close()
+
+    # get synapses template name
+    f = file(join(folder, "synapses/synapses.hoc"), 'r')
+    synapses = utils.get_templatename(f)
+    f.close()
+    print('Loading constants')
+    neuron.h.load_file(join(folder, 'constants.hoc'))
+    # neuron.load_mechanisms(join(folder))
+
+
+
+    # if not hasattr(neuron.h, morphology):
+    #     """Create the cell model"""
+    #     # Load morphology
+    #     neuron.h.load_file(1, join(folder, "morphology.hoc"))
+    # if not hasattr(neuron.h, biophysics):
+    #     # Load biophysics
+    #     neuron.h.load_file(1, join(folder, "biophysics.hoc"))
+    # if not hasattr(neuron.h, synapses):
+    #     # load synapses
+    #     neuron.h.load_file(1, join('synapses', 'synapses.hoc'))
+    # if not hasattr(neuron.h, templatename):
+    #     # Load main cell template
+    #     neuron.h.load_file(1, join(folder, "template.hoc"))
+
+    add_synapses = False
+    cell = LFPy.TemplateCell(morphology=join(folder, "morphology/dend-C170897A-P3_axon-C260897C-P4_-_Clone_4.asc"),
+    # cell = LFPy.TemplateCell(morphology=join(folder, "morphology/dend-C260897C-P3_axon-C220797A-P3_-_Clone_0.asc"),
+                             templatefile=join(folder, 'template.hoc'),
+                             templatename=templatename,
+                             templateargs=1 if add_synapses else 0,
+                             tstop=50.,
+                             dt=2. ** -4,
+                             nsegs_method=None)
+
+    # folder = "morphologies/Traub2003"
     # folder = "morphologies/hay_model"
     # folder = "morphologies/cell_hallermann_unmyelin"
     # folder = "morphologies/simple_axon_hallermann"
     # folder = "morphologies/HallermannEtAl2012"
-    neuron.load_mechanisms(join(folder))
+    # neuron.load_mechanisms(join(folder))
     # neuron.load_mechanisms(join(folder+"/mod")) # Hay model
     # morph = 'patdemo/cells/j4a.hoc', # Mainen&Sejnowski, 1996
     # morph = join(folder, '28_04_10_num19.hoc'), # HallermannEtAl2012
     # morph = join('morphologies', 'axon.hoc'), # Mainen&Sejnowski, 1996
     # morph = join(folder, 'cell_simple.hoc')
     # morph = join(folder, 'morphology.hoc')
-    morph = join(folder, 'pyr3.hoc')
+    # morph = join(folder, 'template.hoc')
     # morph = join(folder,'cell1.hoc') # Hay model
     custom_code = []
     # custom_code = [join(folder, 'morphs/2013_03_06_cell08_876_H41_05_Cell2.ASC')]
@@ -86,7 +138,7 @@ cell_parameters = {          # various cell parameters,
     'tstop': 50.,   # stop simulation at 200 ms. These can be overridden
                         # by setting these arguments in cell.simulation()
     "extracellular": True,
-    "pt3d": True,
+    "pt3d": False,
     'custom_code': custom_code}
 
 COMM.Barrier()
@@ -97,7 +149,8 @@ names = ["Horiz axon myelin", "Vert axon myelin", "Vert soma dend", "Layer 2/3 n
 
 clamp = False
 
-cell = LFPy.Cell(**cell_parameters)
+if cell_id == 0:
+    cell = LFPy.Cell(**cell_parameters)
 # Assign cell positions
 # TEST with different distance between cells
 # x_cell_pos = [-10, 0, 0, 10]
@@ -183,7 +236,7 @@ dura_height = 50
 
 # while loop? For loop?
 spatial_resolution = 1
-max_distance = 200
+max_distance = 400
 distance = np.linspace(0, max_distance, spatial_resolution)
 current = np.zeros((n_cells, spatial_resolution))
 c_vext = np.zeros((n_cells, spatial_resolution))
@@ -414,7 +467,7 @@ if cell_id == 0:
     # tick_locations = ([-(10 ** x) for x in xrange(minlog, -logthresh - 1, -1)] +
     #                   [0.0] + [(10**x) for x in xrange(-logthresh, maxlog + 1)])
     imshow_dict = dict(origin='lower', interpolation='nearest',
-                       cmap=plt.cm.inferno, vmin=vmin, vmax=vmax,
+                       cmap=plt.cm.RdBu_r, vmin=vmin, vmax=vmax,
                        norm=matplotlib.colors.SymLogNorm(10**-logthresh))
 
     img1 = ax2.imshow(v_field_ext_xz.T,

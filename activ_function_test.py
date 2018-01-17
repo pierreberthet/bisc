@@ -97,7 +97,7 @@ cortical_surface_height = 50
 # Parameters for the external field
 sigma = 0.3
 
-amp = 100 # * 10**3  # nA
+amp = 10 # * 10**3  # nA
 
 polarity, n_elec, positions = utils.create_array_shape('line', 15)
 source_xs = positions[0]

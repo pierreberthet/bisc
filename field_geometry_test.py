@@ -31,9 +31,9 @@ sigma = 0.3
 
 # source_geometry = np.array([-1, -1, 1, 1, 1, 1, -1, -1])
 
-polarity, n_elec, positions = utils.create_array_shape('circle', 15)
+polarity, n_elec, positions = utils.create_array_shape('circle', 25)
 
-amp = (5. * 10**6) / n_elec  # mA
+amp = (.7 * 10**6) / n_elec  # mA
 voltage = 5000
 
 cortical_surface_height = 20
@@ -42,34 +42,40 @@ source_amps = np.multiply(polarity, amp)
 ExtPot = utils.ImposedPotentialField(source_amps, positions[0], positions[1],
                                      positions[2] + cortical_surface_height, sigma)
 plot_field_length_v = 1000
-plot_field_length_h = 1000
+plot_field_length_h = 200
 space_resolution = 500
 depth_check = -350
 
 v_field_ext_xz = np.zeros((space_resolution, space_resolution))
+v_field_ext_xy2 = np.zeros((space_resolution, space_resolution))
 xf = np.linspace(-plot_field_length_v, plot_field_length_v, space_resolution)
 zf = np.linspace(-plot_field_length_v * 2, cortical_surface_height, space_resolution)
 for xidx, x in enumerate(xf):
     for zidx, z in enumerate(zf):
-        v_field_ext_xz[xidx, zidx] = ExtPot.ext_field_v(x, 0, z)
+        v_field_ext_xz[xidx, zidx] = ExtPot.ext_field(x, 0, z)
         # v_field_ext_xz[xidx, zidx] = ExtPot.ext_field(0, x, z)
 v_field_ext_xy = np.zeros((space_resolution, space_resolution))
-v_field_ext_xy2 = np.zeros((space_resolution, space_resolution))
 xf2 = np.linspace(-plot_field_length_h, plot_field_length_h, space_resolution)
 yf2 = np.linspace(-plot_field_length_h, plot_field_length_h, space_resolution)
 for xidx, x in enumerate(xf2):
     for yidx, y in enumerate(yf2):
-        v_field_ext_xy[xidx, yidx] = ExtPot.ext_field_v(x, y, cortical_surface_height)
-        v_field_ext_xy2[xidx, yidx] = ExtPot.ext_field_v(x, y, depth_check)
+        v_field_ext_xy[xidx, yidx] = ExtPot.ext_field(x, y, cortical_surface_height)
+
+xf3 = np.linspace(-plot_field_length_v, plot_field_length_v, space_resolution)
+yf3 = np.linspace(-plot_field_length_v, plot_field_length_v, space_resolution)
+for xidx, x in enumerate(xf3):
+    for yidx, y in enumerate(yf3):
+        v_field_ext_xy2[xidx, yidx] = ExtPot.ext_field(x, y, depth_check)
+
 
 # FIGURES
 
 fig = plt.figure(figsize=[18, 7])
-fig.suptitle("Electric field")
+fig.suptitle("External Potential")
 
 ax1 = plt.subplot(131, title="V_ext", xlabel="x [$\mu$m]", ylabel='z [$\mu$m]')
-vmin = -100
-vmax = 100
+vmin = -2500
+vmax = 2500
 # vmin = np.min([np.min(v_field_ext_xz), np.min(v_field_ext_xy)])
 # vmax = np.max([np.max(v_field_ext_xz), np.max(v_field_ext_xy)])
 logthresh = 0
@@ -99,9 +105,9 @@ ax1.scatter(source_xs, np.ones(len(source_xs)) * cortical_surface_height, c=sour
             vmax=1.4, edgecolor='k', lw=2, cmap=plt.cm.bwr, clip_on=False)
 
 [ax1.scatter(source_xs[i], cortical_surface_height,
-             marker='+', s=50, lw=2, c='k') for i in np.where(source_amps < 0)[0]]
+             marker='+', s=50, lw=2, c='k') for i in np.where(source_amps > 0)[0]]
 [ax1.scatter(source_xs[i], cortical_surface_height,
-             marker='_', s=50, lw=2, c='k') for i in np.where(source_amps > 0)[0]]
+             marker='_', s=50, lw=2, c='k') for i in np.where(source_amps < 0)[0]]
 
 ax2 = plt.subplot(132, title="V_ext at z = " + str(depth_check) + " $\mu$m", xlabel="x [$\mu$m]", ylabel='y [$\mu$m]')
 img2 = ax2.imshow(v_field_ext_xy2.T,
