@@ -196,7 +196,26 @@ for i, NRN in enumerate(neurons):
                                              sigma=0.3, r=5, n=50,
                                              N=np.array([[1, 0, 0], [1, 0, 0], [1, 0, 0], [1, 0, 0]]),
                                              method='soma_as_point')
-            
+'''
+SIMULATION SETUP
+pulse duration  should be set to .2 ms, 200 us (typical of empirical in vivo microstimulation experiments)
+
+'''
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
             #run simulation
             cell.simulate(electrode=electrode)
     

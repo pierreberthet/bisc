@@ -31,7 +31,7 @@ sigma = 0.3
 
 # source_geometry = np.array([-1, -1, 1, 1, 1, 1, -1, -1])
 
-polarity, n_elec, positions = utils.create_array_shape('circle', 25)
+polarity, n_elec, positions = utils.create_array_shape('line', 25)
 
 amp = (.7 * 10**6) / n_elec  # mA
 voltage = 5000
@@ -41,31 +41,48 @@ cortical_surface_height = 20
 source_amps = np.multiply(polarity, amp)
 ExtPot = utils.ImposedPotentialField(source_amps, positions[0], positions[1],
                                      positions[2] + cortical_surface_height, sigma)
-plot_field_length_v = 1000
-plot_field_length_h = 200
+x_extent = 500
+z_extent = 1000
+y_extent = 500
 space_resolution = 500
 depth_check = -350
 
-v_field_ext_xz = np.zeros((space_resolution, space_resolution))
-v_field_ext_xy2 = np.zeros((space_resolution, space_resolution))
-xf = np.linspace(-plot_field_length_v, plot_field_length_v, space_resolution)
-zf = np.linspace(-plot_field_length_v * 2, cortical_surface_height, space_resolution)
-for xidx, x in enumerate(xf):
-    for zidx, z in enumerate(zf):
-        v_field_ext_xz[xidx, zidx] = ExtPot.ext_field(x, 0, z)
-        # v_field_ext_xz[xidx, zidx] = ExtPot.ext_field(0, x, z)
-v_field_ext_xy = np.zeros((space_resolution, space_resolution))
-xf2 = np.linspace(-plot_field_length_h, plot_field_length_h, space_resolution)
-yf2 = np.linspace(-plot_field_length_h, plot_field_length_h, space_resolution)
-for xidx, x in enumerate(xf2):
-    for yidx, y in enumerate(yf2):
-        v_field_ext_xy[xidx, yidx] = ExtPot.ext_field(x, y, cortical_surface_height)
+# v_field_ext_xz = np.zeros((space_resolution, space_resolution))
+# v_field_ext_xy2 = np.zeros((space_resolution, space_resolution))
+# xf = np.linspace(-x_extent, x_extent, space_resolution)
+# zf = np.linspace(-x_extent * 2, cortical_surface_height, space_resolution)
+# for xidx, x in enumerate(xf):
+#     for zidx, z in enumerate(zf):
+#         v_field_ext_xz[xidx, zidx] = ExtPot.ext_field(x, 0, z)
+#         # v_field_ext_xz[xidx, zidx] = ExtPot.ext_field(0, x, z)
+# v_field_ext_xy = np.zeros((space_resolution, space_resolution))
+# xf2 = np.linspace(-z_extent, z_extent, space_resolution)
+# yf2 = np.linspace(-z_extent, z_extent, space_resolution)
+# for xidx, x in enumerate(xf2):
+#     for yidx, y in enumerate(yf2):
+#         v_field_ext_xy[xidx, yidx] = ExtPot.ext_field(x, y, cortical_surface_height)
 
-xf3 = np.linspace(-plot_field_length_v, plot_field_length_v, space_resolution)
-yf3 = np.linspace(-plot_field_length_v, plot_field_length_v, space_resolution)
-for xidx, x in enumerate(xf3):
-    for yidx, y in enumerate(yf3):
-        v_field_ext_xy2[xidx, yidx] = ExtPot.ext_field(x, y, depth_check)
+# xf3 = np.linspace(-x_extent, x_extent, space_resolution)
+# yf3 = np.linspace(-x_extent, x_extent, space_resolution)
+# for xidx, x in enumerate(xf3):
+#     for yidx, y in enumerate(yf3):
+#         v_field_ext_xy2[xidx, yidx] = ExtPot.ext_field(x, y, depth_check)
+
+v_field_ext_xz, dd_field_xz = utils.external_field(ExtPot, space_resolution=space_resolution, x_extent=x_extent,
+											   y_extent=None, z_extent=z_extent, z_top=cortical_surface_height,
+											   axis='xz', dderivative=True, plan=None)
+
+v_field_ext_xy, dd_field_xy = utils.external_field(ExtPot, space_resolution=space_resolution, x_extent=x_extent,
+											   y_extent=x_extent, z_extent=None, z_top=cortical_surface_height,
+											   axis='xy', dderivative=True, plan=None)
+
+v_field_ext_yz, dd_field_yz = utils.external_field(ExtPot, space_resolution=space_resolution, x_extent=x_extent, y_extent=y_extent,
+											   z_extent=z_extent, z_top=cortical_surface_height,
+											   axis='yz', dderivative=True, plan=None)
+
+v_field_ext_xy2 = utils.external_field(ExtPot, space_resolution=space_resolution, x_extent=x_extent, y_extent=y_extent, z_extent=None,
+								   z_top=cortical_surface_height, axis='xy', dderivative=False, plan=depth_check)
+
 
 
 # FIGURES
@@ -94,10 +111,9 @@ imshow_dict = dict(origin='lower', interpolation='nearest',
 source_xs = positions[0]
 source_ys = positions[1]
 
-
 img1 = ax1.imshow(v_field_ext_xz.T,
-                  extent=[-plot_field_length_v, plot_field_length_v,
-                          -plot_field_length_v * 2, cortical_surface_height],
+                  extent=[-x_extent, x_extent,
+                          -z_extent, cortical_surface_height],
                   **imshow_dict)
 
 
@@ -111,8 +127,8 @@ ax1.scatter(source_xs, np.ones(len(source_xs)) * cortical_surface_height, c=sour
 
 ax2 = plt.subplot(132, title="V_ext at z = " + str(depth_check) + " $\mu$m", xlabel="x [$\mu$m]", ylabel='y [$\mu$m]')
 img2 = ax2.imshow(v_field_ext_xy2.T,
-                  extent=[-plot_field_length_v, plot_field_length_v,
-                          -plot_field_length_v, plot_field_length_v],
+                  extent=[-x_extent, x_extent,
+                          -y_extent, y_extent],
                   **imshow_dict)
 # ax2.scatter(source_xs, np.ones(len(source_xs)) * -300, c=source_amps, s=100, vmin=-1.4,
 #             vmax=1.4, edgecolor='k', lw=2, cmap=plt.cm.bwr, clip_on=False)
@@ -125,10 +141,60 @@ ax3.scatter(source_xs, source_ys, c=source_amps, s=100, vmin=-1.4, vmax=1.4,
 [ax3.scatter(source_xs[i], source_ys[i], marker='_', s=50, lw=2, c='k') for i in np.where(source_amps < 0)[0]]
 
 img3 = ax3.imshow(v_field_ext_xy.T,
-                  extent=[-plot_field_length_h, plot_field_length_h,
-                          -plot_field_length_h, plot_field_length_h],
+                  extent=[-x_extent, x_extent,
+                          -y_extent, y_extent],
                   **imshow_dict)
 plt.colorbar(img3, label="mV")
 plt.savefig("electrode_geometry_test.png")
 
 plt.show()
+
+
+
+
+
+
+
+
+
+
+
+
+
+# img1 = ax1.imshow(v_field_ext_xz.T,
+# [ax1.scatter(source_xs[i], source_zs[i],
+#              marker='_', s='o' in np.where(source_amps < 0)[0]]
+#                   **imshow_dict)
+
+
+# ax1.scatter(source_xs, np.ones(len(source_xs)) * cortical_surface_height, c=source_amps, s=100, vmin=-1.4,
+#             vmax=1.4, edgecolor='k', lw=2, cmap=plt.cm.bwr, clip_on=False)
+
+# [ax1.scatter(source_xs[i], cortical_surface_height,
+#              marker='+', s=50, lw=2, c='k') for i in np.where(source_amps > 0)[0]]
+# [ax1.scatter(source_xs[i], cortical_surface_height,
+#              marker='_', s=50, lw=2, c='k') for i in np.where(source_amps < 0)[0]]
+
+# ax2 = plt.subplot(132, title="V_ext at z = " + str(depth_check) + " $\mu$m", xlabel="x [$\mu$m]", ylabel='y [$\mu$m]')
+# img2 = ax2.imshow(v_field_ext_xy2.T,
+# [ax3.scatter(source_xs[i], x_extentr=x_extent'k') for i in np.where(source_amps > 0)[0]]
+# [ax3.scatter(source_xs[i], x_extentr=x_extent'k') for i in np.where(source_amps < 0)[0]]
+#                   **imshow_dict)
+# # ax2.scatter(source_xs, np.ones(len(source_xs)) * -300, c=source_amps, s=100, vmin=-1.4,
+# #             vmax=1.4, edgecolor='k', lw=2, cmap=plt.cm.bwr, clip_on=False)
+
+
+# ax3 = plt.subplot(133, title="Current source geometry", xlabel="x [$\mu$m]", ylabel='y [$\mu$m]')
+# ax3.scatter(source_xs, source_ys, c=source_amps, s=100, vmin=-1.4, vmax=1.4,
+#             edgecolor='k', lw=2, cmap=plt.cm.bwr)
+# [ax3.scatter(source_xs[i], source_ys[i], marker='+', s=50, lw=2, c='k') for i in np.where(source_amps > 0)[0]]
+# [ax3.scatter(source_xs[i], source_ys[i], marker='_', s=50, lw=2, c='k') for i in np.where(source_amps < 0)[0]]
+
+# img3 = ax3.imshow(v_field_ext_xy.T,
+#                   extent=[-z_extent, z_extent,
+#                           -z_extent, z_extent],
+#                   **imshow_dict)
+# plt.colorbar(img3, label="mV")
+# plt.savefig("electrode_geometry_test.png")
+
+# plt.show()

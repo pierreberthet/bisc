@@ -12,7 +12,7 @@ from mpl_toolkits.mplot3d import Axes3D
 from os.path import join
 import utils
 import neuron
-
+import plotting_convention as pconv
 
 plt.close('all')
 
@@ -168,6 +168,7 @@ ax1 = plt.subplot(231, title="t = " + str(spike_time_loc[0] * cell.dt) + "ms", a
 # [ax1.plot([cell.xstart[idx], cell.xend[idx]], [cell.ystart[idx], cell.yend[idx]], [cell.zstart[idx], cell.zend[idx]], '-',
 #          c='k', clip_on=False) for idx in range(cell.totnsegs)]
 # [plt.plot([cell.xstart[idx], cell.xend[idx]], [cell.zstart[idx], cell.zend[idx]], '-',
+# cmap = plt.cm.RdBu_r
 cmap = plt.cm.viridis
 norm = mpl.colors.Normalize(vmin=-100, vmax=50)
 col = (cell.vmem.T[spike_time_loc[0]] + 100) / 150.
@@ -179,7 +180,7 @@ col = (cell.vmem.T[spike_time_loc[0]] + 100) / 150.
 # ax1.colorbar()
 lin_field = utils.test_linear(axis='xz', dim=[-100, 100, 50, -3500]) * amp
 # plt.imshow(np.linspace(-100, 100), np.linspace(50, -2000), lin_field.T.reshape(np.size(lin_field)))
-im1 = plt.imshow(lin_field.T, extent=[-200, 200, -3500, 50], cmap=plt.cm.inferno, aspect='auto')
+im1 = plt.imshow(lin_field.T, extent=[-200, 200, -3500, 50], cmap=plt.cm.bone, aspect='auto')
 
 # span = len(lin_field)
 # ax1.plot_surface(np.arange(-100, 100, len(lin_field)), np.zeros((len(lin_field[0]), len(lin_field))), lin_field, alpha=.5)
@@ -190,8 +191,9 @@ if initial is not None:
 	ax1.scatter(cell.xmid[initial], cell.zmid[initial], marker='*', c='r')
 # for idx in range(cell.totnsegs):
 #     ax1.text(cell.xmid[idx], cell.ymid[idx], cell.zmid[idx], "{0}.".format(cell.get_idx_name(idx)[1]))
-colorbar_ax = fig.add_axes([0.7, 0.1, 0.05, 0.8])
-fig.colorbar(im1, cax=colorbar_ax, label='External Potential [mV]')
+# colorbar_ax = fig.add_axes([.9, 0.1, 0.05, 0.8])
+# fig.colorbar(im1, cax=colorbar_ax, label='External Potential [mV]')
+fig.colorbar(im1, label='External Potential [mV]')
 
 if initial is None:
 	ax2 = plt.subplot(232, title="Vm", xlabel='ms', ylabel='mV')
@@ -231,6 +233,12 @@ for i in range(200, pulse_start+pulse_duration + 50, 10):
 	ax6.plot(np.arange(cell.totnsegs), np.asarray(cell.v_ext).T[i][cell.zmid.argsort()][::-1])
 
 plt.tight_layout()
-fig.subplots_adjust(left=.07, right=.97, bottom=.07, top=.97, wspace=None, hspace=None)
+pconv.mark_subplots(ax1, 'A', xpos=-.25 , ypos=.99)
+pconv.mark_subplots(ax2, 'B', xpos=-.25 , ypos=.99)
+# pconv.mark_subplots(ax3, 'C', xpos=-.25 , ypos=.99)
+# pconv.mark_subplots(ax3, 'C')
+pconv.mark_subplots(ax6, 'F', xpos=-.25 , ypos=.99)
+fig.subplots_adjust(left=.08, right=.96, bottom=.07, top=.96, wspace=None, hspace=None)
+
 
 plt.show()

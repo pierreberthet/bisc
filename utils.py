@@ -102,38 +102,88 @@ def create_bisc_array():
     return bisc_array
 
 
-def compute_dderivative(efield):
-    '''
-    Compute the double derivative of the electric field
-    '''
+def external_field(ExtPot, space_resolution=500, x_extent=500, y_extent=500, z_extent=500,
+                   z_top=0, axis='xz', dderivative=False, plan=None):
+    plot_field_length_v = 1000
+    plot_field_length_h = 200
+    space_resolution = 500
+    depth_check = -350
 
-    # calculate field in xz-space
-    v_field_ext_xz = np.zeros((100, 200))
-    xf = np.linspace(0, 400, 100)
-    zf = np.linspace(-200, 400, 200)
-    for xidx, x in enumerate(xf):
-        for zidx, z in enumerate(zf):
-            v_field_ext_xz[xidx, zidx] = ext_field_2(x, 0, z) * amp
+    if plan is None:
+        plan = 0
 
-    # derivative of V in z-direction
-    d_v_field_ext_xz = np.zeros((v_field_ext_xz.shape[0],
-                                 v_field_ext_xz.shape[1] - 1))
-    dz = zf[1] - zf[0]
+    if axis == 'xz':
+        v_field_ext = np.zeros((space_resolution, space_resolution))
+        xf = np.linspace(-x_extent, x_extent, space_resolution)
+        zf = np.linspace(-z_extent, z_top, space_resolution)
+        for xidx, x in enumerate(xf):
+            for zidx, z in enumerate(zf):
+                v_field_ext[xidx, zidx] = ExtPot.ext_field(x, plan, z)
 
-    for zidx in range(len(zf) - 1):
-        d_v_field_ext_xz[:, zidx] = (v_field_ext_xz[:, zidx + 1] -
-                                     v_field_ext_xz[:, zidx]) / dz
+    if axis == 'xy':
+        v_field_ext = np.zeros((space_resolution, space_resolution))
+        xf = np.linspace(-x_extent, x_extent, space_resolution)
+        yf = np.linspace(-y_extent, y_extent, space_resolution)
+        for xidx, x in enumerate(xf):
+            for yidx, y in enumerate(yf):
+                v_field_ext[xidx, yidx] = ExtPot.ext_field(x, y, plan)
 
+    if axis == 'yz':
+        v_field_ext = np.zeros((space_resolution, space_resolution))
+        yf = np.linspace(-y_extent, y_extent, space_resolution)
+        zf = np.linspace(-z_extent, z_top, space_resolution)
+        for yidx, y in enumerate(yf):
+            for zidx, z in enumerate(zf):
+                v_field_ext[yidx, zidx] = ExtPot.ext_field(plan, y, z)
 
-    # double derivative of V in z-direction
-    dd_v_field_ext_xz = np.zeros((v_field_ext_xz.shape[0],
-                                 d_v_field_ext_xz.shape[1] - 1))
+    if dderivative:
+        '''
+        Compute the double derivative of the electric field
+        '''
 
-    for zidx in range(len(zf) - 2):
-        dd_v_field_ext_xz[:, zidx] = (d_v_field_ext_xz[:, zidx + 1] -
-                                      d_v_field_ext_xz[:, zidx]) / dz
+        # derivative of V in z-direction
+        if axis == 'xz':
+            d_v_field_ext = np.zeros((v_field_ext.shape[0], v_field_ext.shape[1] - 1))
+            dz = zf[1] - zf[0]
 
-    return dderivative
+            for zidx in range(len(zf) - 1):
+                d_v_field_ext[:, zidx] = (v_field_ext[:, zidx + 1] - v_field_ext[:, zidx]) / dz
+
+            # double derivative of V in z-direction
+            dd_v_field_ext = np.zeros((v_field_ext.shape[0], d_v_field_ext.shape[1] - 1))
+
+            for zidx in range(len(zf) - 2):
+                dd_v_field_ext[:, zidx] = (d_v_field_ext[:, zidx + 1] - d_v_field_ext[:, zidx]) / dz
+
+        elif axis == 'xy':
+            d_v_field_ext = np.zeros((v_field_ext.shape[0], v_field_ext.shape[1] - 1))
+            dy = yf[1] - yf[0]
+
+            for yidx in range(len(yf) - 1):
+                d_v_field_ext[:, yidx] = (v_field_ext[:, yidx + 1] - v_field_ext[:, yidx]) / dy
+
+            # double derivative of V in z-direction
+            dd_v_field_ext = np.zeros((v_field_ext.shape[0], d_v_field_ext.shape[1] - 1))
+
+            for yidx in range(len(yf) - 2):
+                dd_v_field_ext[:, yidx] = (d_v_field_ext[:, yidx + 1] - d_v_field_ext[:, yidx]) / dy
+
+        elif axis == 'yz':
+            d_v_field_ext = np.zeros((v_field_ext.shape[0], v_field_ext.shape[1] - 1))
+            dz = zf[1] - zf[0]
+
+            for zidx in range(len(zf) - 1):
+                d_v_field_ext[:, zidx] = (v_field_ext[:, zidx + 1] - v_field_ext[:, zidx]) / dz
+
+            # double derivative of V in z-direction
+            dd_v_field_ext = np.zeros((v_field_ext.shape[0], d_v_field_ext.shape[1] - 1))
+
+            for zidx in range(len(zf) - 2):
+                dd_v_field_ext[:, zidx] = (d_v_field_ext[:, zidx + 1] - d_v_field_ext[:, zidx]) / dz
+
+        return v_field_ext, dderivative
+    else:
+        return v_field_ext
 
 
 def plot_segment_vmem(cell, seg_name):
