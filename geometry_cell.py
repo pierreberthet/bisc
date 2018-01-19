@@ -69,10 +69,10 @@ form_name = folder[folder.find('/')+1:]
 cell = LFPy.Cell(**cell_parameters)
 # Assign cell positions
 # TEST with different distance between cells
-x_cell_pos = [-10, 0, 0, 10]
-y_cell_pos = [-1500, -10, 10, 0]
+x_cell_pos = [0, 0, 0, 10]
+y_cell_pos = [0, -10, 10, 0]
 # z_cell_pos = np.zeros(len(x_cell_pos))
-z_cell_pos = [-30., -1000 - (np.sum(cell.length)), 0.]
+z_cell_pos = [0., -1000 - (np.sum(cell.length)), 0.]
 
 # utils.reposition_stick_horiz(cell)
 # utils.reposition_stick_flip(cell, x_cell_pos[0], y_cell_pos[0], z_cell_pos[0])
@@ -80,37 +80,50 @@ z_cell_pos = [-30., -1000 - (np.sum(cell.length)), 0.]
 # xrot = [0., 2., 1.]
 # cell.set_rotation(y=xrot[cell_id] * np.pi / 2)
 cell.set_rotation(x=np.pi / 2)
-cell.set_pos(x=x_cell_pos[1], y=y_cell_pos[0], z=z_cell_pos[0])
+cell.set_pos(x=x_cell_pos[1], y=y_cell_pos[0], z=-np.max(cell.zend))
+
+n_sec, names = utils.get_sections_number(cell)
 
 
 fig = plt.figure(figsize=[10, 8])
 fig.subplots_adjust(wspace=0.1)
 
 ax1 = plt.subplot(111, projection="3d",
-                  title="t = " + str(spike_time_loc[0] * cell.dt) + "ms", aspect=1, xlabel="x [$\mu$m]",
+                  title="", aspect=1, xlabel="x [$\mu$m]",
                   ylabel="y [$\mu$m]", zlabel="z [$\mu$m]", xlim=[-600, 600], ylim=[-600, 600], zlim=[-1800, 200])
-# [ax1.plot([cell.xstart[idx], cell.xend[idx]], [cell.ystart[idx], cell.yend[idx]], [cell.zstart[idx], cell.zend[idx]], '-',
 #          c='k', clip_on=False) for idx in range(cell.totnsegs)]
 # [plt.plot([cell.xstart[idx], cell.xend[idx]], [cell.zstart[idx], cell.zend[idx]], '-',
 cmap = plt.cm.viridis
 norm = mpl.colors.Normalize(vmin=-100, vmax=50)
-col = (cell.vmem.T[spike_time_loc[0]] + 100) / 150.
-[ax1.plot([cell.xstart[idx], cell.xend[idx]], [cell.ystart[idx], cell.yend[idx]], [cell.zstart[idx], cell.zend[idx]],
-          # '-', c='k', clip_on=False) for idx in range(cell.totnsegs)]
-          # '-', c=plt.cm.viridis((cell.vmem[idx][spike_time_loc[0]] - np.min(cell.vmem.T[spike_time_loc[0]])) / np.linalg.norm(cell.vmem.T[spike_time_loc[0]])),
-          '-', c=cmap(col[idx]), clip_on=False) for idx in range(cell.totnsegs)]
+# col = (cell.vmem.T[spike_time_loc[0]] + 100) / 150.
+# col = {'soma': 'k', 'axon': 'b', 'dendrite': 'r', }
+colr = plt.cm.Set2(np.arange(n_sec))
+for i, sec in enumerate(names):
+    [ax1.plot([cell.xstart[idx], cell.xend[idx]],
+              [cell.ystart[idx], cell.yend[idx]],
+              [cell.zstart[idx], cell.zend[idx]],
+              '-', c=colr[i], clip_on=False) for idx in cell.get_idx(sec)]
+    if sec != 'soma':
+        ax1.plot([cell.xstart[cell.get_idx(sec)[0]], cell.xend[cell.get_idx(sec)[0]]],
+                 [cell.ystart[cell.get_idx(sec)[0]], cell.yend[cell.get_idx(sec)[0]]],
+                 [cell.zstart[cell.get_idx(sec)[0]], cell.zend[cell.get_idx(sec)[0]]],
+                 '-', c=colr[i], clip_on=False, label=sec)
+ax1.scatter(cell.xmid[cell.get_idx('soma')[0]], cell.ymid[cell.get_idx('soma')[0]],
+            cell.zmid[cell.get_idx('soma')[0]], s=33, marker='o', c='k', alpha=.7, label='soma')
+
+plt.legend()
 # [ax1.plot([cell.xmid[idx]], [cell.ymid[idx]], [cell.zmid[idx]], 'D', c=v_clr(cell.zmid[idx])) for idx in v_idxs]
-ax1.scatter(source_xs, source_ys, source_zs, c=source_amps)
-ax1.scatter(cell.xmid[initial], cell.ymid[initial], cell.zmid[initial], '*', c='r')
+# ax1.scatter(source_xs, source_ys, source_zs, c=source_amps)
+# ax1.scatter(cell.xmid[initial], cell.ymid[initial], cell.zmid[initial], '*', c='r')
 # for idx in range(cell.totnsegs):
 #     ax1.text(cell.xmid[idx], cell.ymid[idx], cell.zmid[idx], "{0}.".format(cell.get_idx_name(idx)[1]))
 
 elev = 15     # Default 30
-azim = 0    # Default 0
+azim = 45    # Default 0
 ax1.view_init(elev, azim)
 
 
 # ax.axes.set_yticks(yinfo)
 # ax.axes.set_yticklabels(yinfo)
-plt.savefig("geo_morph_" + form_name + ".png", dpi=300)
+plt.savefig("geo_morph_" + form_name + ".png", dpi=200)
 plt.show()

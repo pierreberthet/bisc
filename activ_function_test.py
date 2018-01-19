@@ -32,11 +32,11 @@ neuron.load_mechanisms(join(folder))
 # morph = join(folder, 'A140612.hoc')  # Almog model
 # morph = join(folder, 'cell1.hoc')  # Hay model
 # morph = join('morphologies', 'axon.hoc')  # Mainen&Sejnowski, 1996
-morph = join(folder, 'cell_simple_long.hoc')  # stick model based on Hallermann's
+morph = join(folder, 'cell_simple.hoc')  # stick model based on Hallermann's
 # custom_code = [join(folder, 'Cell parameters.hoc'),
 custom_code = [join(folder, 'Cell parameters.hoc'),
                join(folder, 'charge.hoc'),
-               join(folder, 'pruning.hoc')]
+               join(folder, 'pruning_full.hoc')]
                 # join(folder, 'custom_code.hoc')]
 				# join(folder, 'initialize_mechs.hoc')]
 
@@ -58,8 +58,8 @@ cell_parameters = {          # various cell parameters,
 	'tstop': 30.,   # stop simulation at tstop ms. These can be overridden
 	# by setting these arguments in cell.simulation()
 	"extracellular": True,
-	"pt3d": True,
-	'custom_code': custom_code}
+	"pt3d": False,
+    'custom_code': custom_code}
 
 names = ["axon myelin"]
 
@@ -75,7 +75,7 @@ z_cell_pos = [-50]
 
 # cell.set_rotation(x=np.pi)
 cell.set_pos(x=x_cell_pos[0], y=y_cell_pos[0], z=z_cell_pos[0])
-utils.reposition_stick_flip(cell)
+# utils.reposition_stick_flip(cell)
 
 
 
@@ -97,7 +97,7 @@ cortical_surface_height = 50
 # Parameters for the external field
 sigma = 0.3
 
-amp = 10 # * 10**3  # nA
+amp = 50 # * 10**3  # nA
 
 polarity, n_elec, positions = utils.create_array_shape('line', 15)
 source_xs = positions[0]
@@ -125,8 +125,7 @@ if spike_time_loc[0] is not None:
 	c_vext = v_cell_ext[spike_time_loc[1]][spike_time_loc[0]]
 
 # FIGURES
-fig = plt.figure(figsize=[10, 8])
-fig.subplots_adjust(wspace=0.1)
+fig = plt.figure(figsize=[12, 8])
 initial = spike_time_loc[1]
 
 # ax1 = plt.subplot(111, projection="3d",
@@ -158,13 +157,14 @@ initial = spike_time_loc[1]
 
 
 
+if spike_time_loc[0] is None:
+	spike_time_loc = [pulse_start+50]
 
 
 
-
-
-ax1 = plt.subplot(121, title="t = " + str(spike_time_loc[0] * cell.dt) + "ms", aspect=1, xlabel="x [$\mu$m]",
+ax1 = plt.subplot(231, title="t = " + str(spike_time_loc[0] * cell.dt) + "ms", aspect=3, xlabel="x [$\mu$m]",
                   ylabel="y [$\mu$m]", xlim=[-200, 200], ylim=[-3500, 100])
+
 # [ax1.plot([cell.xstart[idx], cell.xend[idx]], [cell.ystart[idx], cell.yend[idx]], [cell.zstart[idx], cell.zend[idx]], '-',
 #          c='k', clip_on=False) for idx in range(cell.totnsegs)]
 # [plt.plot([cell.xstart[idx], cell.xend[idx]], [cell.zstart[idx], cell.zend[idx]], '-',
@@ -179,30 +179,58 @@ col = (cell.vmem.T[spike_time_loc[0]] + 100) / 150.
 # ax1.colorbar()
 lin_field = utils.test_linear(axis='xz', dim=[-100, 100, 50, -3500]) * amp
 # plt.imshow(np.linspace(-100, 100), np.linspace(50, -2000), lin_field.T.reshape(np.size(lin_field)))
-plt.imshow(lin_field.T, extent=[-200, 200, -3500, 50], cmap=plt.cm.inferno)
-plt.colorbar(label='External Potential [mV]')
+im1 = plt.imshow(lin_field.T, extent=[-200, 200, -3500, 50], cmap=plt.cm.inferno, aspect='auto')
+
 # span = len(lin_field)
 # ax1.plot_surface(np.arange(-100, 100, len(lin_field)), np.zeros((len(lin_field[0]), len(lin_field))), lin_field, alpha=.5)
 # ax1.plot_surface(np.arange(span), np.zeros(span), np.arange(span), color='k', cmap=plt.cm.inferno, alpha=.5)
 # ax1.plot_surface(np.mgrid[0:span, 0:span], np.zeros((span, span)), np.mgrid[0:span, 0:span], rstride=1, cstride=1, color='k', cmap=plt.cm.inferno, alpha=.5)
 ax1.scatter(source_xs, source_zs, c=source_amps)
-ax1.scatter(cell.xmid[initial], cell.zmid[initial], marker='*', c='r')
+if initial is not None:
+	ax1.scatter(cell.xmid[initial], cell.zmid[initial], marker='*', c='r')
 # for idx in range(cell.totnsegs):
 #     ax1.text(cell.xmid[idx], cell.ymid[idx], cell.zmid[idx], "{0}.".format(cell.get_idx_name(idx)[1]))
+colorbar_ax = fig.add_axes([0.7, 0.1, 0.05, 0.8])
+fig.colorbar(im1, cax=colorbar_ax, label='External Potential [mV]')
 
-ax2 = plt.subplot(122, title="Vm of segment {0} ({1})".format(initial, cell.get_idx_name(initial)[1]), xlabel='ms', ylabel='mV')
-ax2.plot(cell.vmem[initial], label=cell.get_idx_name(initial)[1])
+if initial is None:
+	ax2 = plt.subplot(232, title="Vm", xlabel='ms', ylabel='mV')
+else: 
+	ax2 = plt.subplot(232, title="Vm of segment {0} ({1})".format(initial, cell.get_idx_name(initial)[1]), xlabel='ms', ylabel='mV')
+	ax2.plot(cell.vmem[initial], label=cell.get_idx_name(initial)[1])
 top = np.argmax(cell.zend)
 bottom = np.argmin(cell.zend)
-ax2.plot(cell.vmem[top], label="top "+cell.get_idx_name(top)[1])
-ax2.plot(cell.vmem[bottom],label="bottom "+cell.get_idx_name(bottom)[1])
+ax2.plot(cell.vmem[top], label="top " + cell.get_idx_name(top)[1])
+ax2.plot(cell.vmem[bottom], label="bottom " + cell.get_idx_name(bottom)[1])
 
 prev_labels = [item.get_text() for item in ax2.get_xticklabels()]
-labels = np.linspace(0., np.max(t), len(prev_labels))
+# labels = np.linspace(0., np.max(t), len(prev_labels))
 
-ax2.set_xticklabels(labels)
-
-
+# ax2.set_xticklabels(labels)
 ax2.legend()
+
+# ax3 = plt.figure(3)
+ax3 = plt.subplot(233, projection='3d', title='V_m along the cell', xlabel='z [$\mu$m]', ylabel='t [ms]', zlabel='mV', aspect='auto')
+# 1 before the pulse, 1 or 2 during (one at spike time if any), 1 after
+zidx = 1
+# ax3.plot(np.arange(cell.totnsegs), np.ones(cell.totnsegs) * (zidx), cell.vmem.T[pulse_start - 10][cell.zmid.argsort()])
+# ax3.plot(np.arange(cell.totnsegs), np.ones(cell.totnsegs) * (zidx + 1), cell.vmem.T[pulse_start + 50][cell.zmid.argsort()])
+# ax3.plot(np.arange(cell.totnsegs), np.ones(cell.totnsegs) * (zidx + 2), cell.vmem.T[pulse_start + 55][cell.zmid.argsort()])
+# if spike_time_loc is not None:
+# 	ax3.plot(np.arange(cell.totnsegs), np.ones(cell.totnsegs) * (zidx + 3), cell.vmem.T[spike_time_loc[0]][cell.zmid.argsort()])
+# 	zidx += 1
+# ax3.plot(np.arange(cell.totnsegs), np.ones(cell.totnsegs) * (zidx + 3),
+# 	   	 cell.vmem.T[pulse_start + pulse_duration + 10][cell.zmid.argsort()])
+
+for i in range(200, pulse_start+pulse_duration + 50, 10):
+	ax3.plot(np.arange(cell.totnsegs), np.ones(cell.totnsegs) * i, cell.vmem.T[i][cell.zmid.argsort()][::-1])
+
+
+ax6 = plt.subplot(236, title='V_ext along the cell', xlabel='z [$\mu$]m', ylabel='mV')
+for i in range(200, pulse_start+pulse_duration + 50, 10):
+	ax6.plot(np.arange(cell.totnsegs), np.asarray(cell.v_ext).T[i][cell.zmid.argsort()][::-1])
+
+plt.tight_layout()
+fig.subplots_adjust(left=.07, right=.97, bottom=.07, top=.97, wspace=None, hspace=None)
 
 plt.show()

@@ -224,7 +224,10 @@ def sanity_vext(vext, t):
     return [vxmin, vxmax]
 
 
-def test_linear(axis='xz', dim=[-500, 500, -500, 500], a=1e-3, b=.1, res=201):
+def test_linear(axis='xz', dim=[-200, 200, 0, -1000], a=1e-3, b=.1, res=201):
+    '''
+    Returns an array with a linear field with the specified dimensions, starting at 0.
+    '''
     v_field_ext = np.zeros((abs(dim[0] - dim[1]), abs(dim[2] - dim[3])))
     if axis == 'xz':
         xf = np.linspace(dim[0], dim[1], abs(dim[0] - dim[1]))
@@ -432,3 +435,18 @@ def get_templatename(f):
             continue
 
     return templatename
+
+
+def get_sections_number(cell):
+    '''
+    Returns the number of different sections and their names.
+    '''
+    nlist = []
+    for i, name in enumerate(cell.allsecnames):
+        if name != 'soma':
+            name = name[:name.find('[')]
+
+        if name not in nlist:
+            nlist.append(name)
+    n = len(nlist)
+    return n, nlist
