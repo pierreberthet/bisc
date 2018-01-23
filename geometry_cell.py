@@ -12,7 +12,7 @@ from mpl_toolkits.mplot3d import Axes3D
 from os.path import join
 import utils
 import neuron
-
+import plotting_convention
 
 plt.close('all')
 

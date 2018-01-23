@@ -13,6 +13,7 @@ from os.path import join
 import utils
 import neuron
 from mpi4py import MPI
+import plotting_convention
 
 # initialize the MPI interface
 COMM = MPI.COMM_WORLD
@@ -263,7 +264,7 @@ cortical_surface_height = 20
 # Parameters for the external field
 sigma = 0.3
 
-polarity, n_elec, positions = utils.create_array_shape('circle', 25)
+polarity, n_elec, positions = utils.create_array_shape('monopole', 25)
 source_xs = positions[0]
 source_ys = positions[1]
 source_zs = positions[2]
@@ -287,8 +288,8 @@ dura_height = 20
 # source_geometry = np.array([-1, -1, 1, 1, 1, 1, -1, -1])
 
 # while loop? For loop?
-spatial_resolution = 20
-max_distance = 300
+spatial_resolution = 100
+max_distance = 1500
 distance = np.linspace(0, max_distance, spatial_resolution)
 current = np.zeros((n_cells, spatial_resolution))
 c_vext = np.zeros((n_cells, spatial_resolution))
@@ -297,10 +298,10 @@ ap_loc = np.zeros((n_cells, spatial_resolution), dtype=np.int)
 # source_zs = np.ones(len(source_xs)) * dura_height
 
 # Stimulation Parameters:
-max_current = 100000.   # mA
+max_current = -1000000.   # mA
 current_resolution = 100
 # amp_range = np.exp(np.linspace(1, np.log(max_current), current_resolution))
-amp_range = np.linspace(10, max_current, current_resolution)
+amp_range = np.linspace(-10, max_current, current_resolution)
 amp = amp_range[0]
 if cell_id == 0:
     cells = []
@@ -328,7 +329,7 @@ is_spike = False
 
 for depth in distance:
 
-    while amp < max_current and not is_spike:
+    while amp > max_current and not is_spike:
 
         amp = amp_range[click]
         source_amps = np.multiply(polarity, amp)
@@ -451,8 +452,8 @@ if cell_id == 0:
 color = iter(plt.cm.rainbow(np.linspace(0, 1, n_cells)))
 
 if cell_id == 0:
-    figview = plt.figure(1)
-    axview = plt.subplot(111, title="3D view", aspect=1, projection='3d', xlabel="x [$\mu$m]", ylabel="y [$\mu$m]",
+    figview = plt.figure(figsize=[10, 6])
+    axview = plt.subplot(111, title="3D view", aspect='auto', projection='3d', xlabel="x [$\mu$m]", ylabel="y [$\mu$m]",
                          zlabel="z [$\mu$m]", xlim=[-1000, 1000], ylim=[-1000, 1000], zlim=[-1000, 100])
     for nc in range(0, n_cells):
         [axview.plot([cells[nc]['xstart'][idx], cells[nc]['xend'][idx]], [cells[nc]['ystart'][idx],
@@ -472,6 +473,7 @@ if cell_id == 0:
         #             "cell {0}.".format(cells[nc]['rank']) + cells[nc]['name'])
 
     axview.scatter(source_xs, source_ys, source_zs, c=source_amps)
+    plt.tight_layout()
 
     fig = plt.figure(figsize=[18, 7])
     if max_current < 0:

@@ -16,13 +16,13 @@ def built_for_mpi_comm(cell, glb_vext, glb_vmem, v_idxs, widx, rank):
             'xend': cell.xend, 'yend': cell.yend, 'zend': cell.zend}
 
 
-def built_for_mpi_space(cell, rank, extra=None):
+def built_for_mpi_space(cell, rank, extra1=None, extra2=None):
     '''
     Return a dict of array useful for plotting cells in 3D space, in parallel simulation
     (cell objet can not be communicated directly between thread).
     '''
-    return {'totnsegs': cell.totnsegs, 'rank': rank, 'vmem': cell.vmem, 'vext': cell.v_ext, 'extra': extra,
-            'xstart': cell.xstart, 'ystart': cell.ystart, 'zstart': cell.zstart,
+    return {'totnsegs': cell.totnsegs, 'rank': rank, 'vmem': cell.vmem, 'vext': cell.v_ext, 'extra1': extra1,
+            'xstart': cell.xstart, 'ystart': cell.ystart, 'zstart': cell.zstart, 'extra2': extra2,
             'xmid': cell.xmid, 'ymid': cell.ymid, 'zmid': cell.zmid,
             'xend': cell.xend, 'yend': cell.yend, 'zend': cell.zend}
 
@@ -419,7 +419,7 @@ def create_array_shape(shape=None, pitch=None):
             source_ys = np.array([0, -pitch, pitch, 0])
 
         elif shape == 'circle':
-            n_elec = 33
+            n_elec = 12
             polarity = []  # np.ones(n_elec)
             source_zs = np.zeros(n_elec * 2)    # double to account for positive and negative
             size_bisc = 1000
@@ -428,35 +428,36 @@ def create_array_shape(shape=None, pitch=None):
             x_mesh = range(-size_bisc / 2, (size_bisc + pitch) / 2, pitch)
             y_mesh = range(-size_bisc / 2, (size_bisc + pitch) / 2, pitch)
 
-            r_i = 25.  # um, radius of the inner circle
+            r_i = 75.  # um, radius of the inner circle
             r_e = r_i + 2 * pitch  # um, radius of the external circle
-            # if 2 * np.pi * r_i / n_elec < np.sqrt(pitch ** 2 + pitch ** 2):
-            #     print "spatial resolution is too big, please change the number of sources or r"
-            #     return
-            # source_xs = []
-            # for x in xs * r_i:
-            # source_ys = []
-            #     source_xs.append(x_mesh[np.argmin(abs(x_mesh - x))])
-            #     polarity.append(1.)
-            # for y in ys * r_i:
-            #     source_ys.append(y_mesh[np.argmin(abs(y_mesh - y))])
-            # for x in xs * r_e:
-            #     source_xs.append(x_mesh[np.argmin(abs(x_mesh - x))])
-            #     polarity.append(-1.)
-            # for y in ys * r_e:
-            #     source_ys.append(y_mesh[np.argmin(abs(y_mesh - y))])
+            if 2 * np.pi * r_i / n_elec < np.sqrt(pitch ** 2 + pitch ** 2):
+                print "spatial resolution is too big, please change the number of sources or r"
+                return
             source_xs = []
             source_ys = []
-            for x in xs:
-                source_xs.append(np.multiply(x, r_i))
+
+            for x in xs * r_i:
+                source_xs.append(x_mesh[np.argmin(abs(x_mesh - x))])
                 polarity.append(1.)
-            for y in ys:
-                source_ys.append(np.multiply(y, r_i))
-            for x in xs:
-                source_xs.append(np.multiply(x, r_e))
+            for y in ys * r_i:
+                source_ys.append(y_mesh[np.argmin(abs(y_mesh - y))])
+            for x in xs * r_e:
+                source_xs.append(x_mesh[np.argmin(abs(x_mesh - x))])
                 polarity.append(-1.)
-            for y in ys:
-                source_ys.append(np.multiply(y, r_e))
+            for y in ys * r_e:
+                source_ys.append(y_mesh[np.argmin(abs(y_mesh - y))])
+            # source_xs = []
+            # source_ys = []
+            # for x in xs:
+            #     source_xs.append(np.multiply(x, r_i))
+            #     polarity.append(1.)
+            # for y in ys:
+            #     source_ys.append(np.multiply(y, r_i))
+            # for x in xs:
+            #     source_xs.append(np.multiply(x, r_e))
+            #     polarity.append(-1.)
+            # for y in ys:
+            #     source_ys.append(np.multiply(y, r_e))
 
             n_elec = n_elec * 2
 

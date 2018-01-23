@@ -13,6 +13,7 @@ from os.path import join
 import utils
 import neuron
 from mpi4py import MPI
+import plotting_convention
 
 # initialize the MPI interface
 COMM = MPI.COMM_WORLD
@@ -22,6 +23,8 @@ RANK = COMM.Get_rank()
 # number of units
 n_cells = SIZE
 cell_id = RANK
+
+lambdaf = 500.
 
 print("cell {0} of {1}").format(cell_id + 1, n_cells)
 # plt.interactive(1)
@@ -67,7 +70,7 @@ if RANK == 0:
                              dt=2. ** -4,
                              extracellular=True,
                              tstart=-50,
-                             lambda_f=400.,
+                             lambda_f=lambdaf,
                              nsegs_method='lambda_f',)
 
     custom_code = []
@@ -87,7 +90,7 @@ if cell_id == 1:
         # 'e_pas': -65.,     # reversal potential passive mechs
         'passive': False,   # switch on passive mechs
         'nsegs_method': 'lambda_f',
-        'lambda_f': 400.,
+        'lambda_f': lambdaf,
         'dt': 2.**-4,   # [ms] dt's should be in powers of 2 for both,
         'tstart': -50.,    # start time of simulation, recorders start at t=0
         'tstop': 50.,   # stop simulation at 200 ms. These can be overridden
@@ -195,8 +198,8 @@ dura_height = 50
 # source_geometry = np.array([-1, -1, 1, 1, 1, 1, -1, -1])
 
 # while loop? For loop?
-spatial_resolution = 1
-max_distance = 3
+spatial_resolution = 2
+max_distance = 50
 distance = np.linspace(0, max_distance, spatial_resolution)
 current = np.zeros((n_cells, spatial_resolution))
 c_vext = np.zeros((n_cells, spatial_resolution))
@@ -205,10 +208,10 @@ ap_loc = np.zeros((n_cells, spatial_resolution), dtype=np.int)
 # source_zs = np.ones(len(source_xs)) * dura_height
 
 # Stimulation Parameters:
-max_current = 100000.   # mA
+max_current = 1000000.   # mA
 current_resolution = 2
 # amp_range = np.exp(np.linspace(1, np.log(max_current), current_resolution))
-amp_range = np.linspace(-1000, max_current, current_resolution)
+amp_range = np.linspace(10, max_current, current_resolution)
 amp = amp_range[0]
 if cell_id == 0:
     cells = []
@@ -264,7 +267,7 @@ for depth in distance:
                                      dt=2. ** -4,
                                      extracellular=True,
                                      tstart=-50,
-                                     lambda_f=400.,
+                                     lambda_f=lambdaf,
                                      nsegs_method='lambda_f',)
 
             cell.set_rotation(x=-np.pi/2.)
@@ -371,7 +374,7 @@ color = iter(plt.cm.rainbow(np.linspace(0, 1, n_cells)))
 if cell_id == 0:
     col = ['b', 'r']
     figview = plt.figure(1)
-    axview = plt.subplot(111, title="3D view", aspect=1, projection='3d', xlabel="x [$\mu$m]", ylabel="y [$\mu$m]",
+    axview = plt.subplot(111, title="3D view", aspect='auto', projection='3d', xlabel="x [$\mu$m]", ylabel="y [$\mu$m]",
                          zlabel="z [$\mu$m]", xlim=[-750, 750], ylim=[-200, 200], zlim=[-2000, 100])
     for nc in range(0, n_cells):
         [axview.plot([cells[nc]['xstart'][idx], cells[nc]['xend'][idx]], [cells[nc]['ystart'][idx],
@@ -391,7 +394,7 @@ if cell_id == 0:
         #             "cell {0}.".format(cells[nc]['rank']) + cells[nc]['name'])
 
     axview.scatter(source_xs, source_ys, source_zs, c=source_amps)
-
+    plt.tight_layout()
     fig = plt.figure(figsize=[18, 7])
     if max_current < 0:
         fig.suptitle("Stimulation threshold as a function of distance and orientation, negative current")

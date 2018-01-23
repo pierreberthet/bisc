@@ -12,7 +12,7 @@ from mpl_toolkits.mplot3d import Axes3D
 from os.path import join
 import utils
 import neuron
-
+import plotting_convention
 # Parameters for the external field
 sigma = 0.3
 # source_xs = np.array([-50, -50, -15, -15, 15, 15, 50, 50])
@@ -31,7 +31,7 @@ sigma = 0.3
 
 # source_geometry = np.array([-1, -1, 1, 1, 1, 1, -1, -1])
 
-polarity, n_elec, positions = utils.create_array_shape('line', 25)
+polarity, n_elec, positions = utils.create_array_shape('circle', 25)
 
 amp = (.7 * 10**6) / n_elec  # mA
 voltage = 5000

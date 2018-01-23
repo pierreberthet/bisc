@@ -13,6 +13,7 @@ from os.path import join
 import utils
 import neuron
 from mpi4py import MPI
+import plotting_convention
 
 # initialize the MPI interface
 COMM = MPI.COMM_WORLD
@@ -132,7 +133,7 @@ cell_parameters = {          # various cell parameters,
     # 'e_pas': -65.,     # reversal potential passive mechs
     'passive': False,   # switch on passive mechs
     'nsegs_method': 'lambda_f',
-    'lambda_f': 100.,
+    'lambda_f': 500.,
     'dt': 2.**-4,   # [ms] dt's should be in powers of 2 for both,
     'tstart': -50.,    # start time of simulation, recorders start at t=0
     'tstop': 50.,   # stop simulation at 200 ms. These can be overridden

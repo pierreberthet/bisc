@@ -13,6 +13,7 @@ from os.path import join
 import utils
 import neuron
 from mpi4py import MPI
+import plotting_convention
 
 # initialize the MPI interface
 COMM = MPI.COMM_WORLD
@@ -32,33 +33,58 @@ COMM.Barrier()
 # Main script, set parameters and create cell, synapse and electrode objects
 ###############################################################################
 if RANK == 0:
-    folder = "morphologies/cell_hallermann_myelin"
+    # folder = "morphologies/cell_hallermann_myelin"
     # folder = "morphologies/cell_hallermann_unmyelin"
     # folder = "morphologies/simple_axon_hallermann"
-    # folder = "morphologies/HallermannEtAl2012"
+    folder = "morphologies/HallermannEtAl2012"
     neuron.load_mechanisms(join(folder))
     # morph = 'patdemo/cells/j4a.hoc', # Mainen&Sejnowski, 1996
-    # morph = join(folder, '28_04_10_num19.hoc') # HallermannEtAl2012
+    morph = join(folder, '28_04_10_num19.hoc') # HallermannEtAl2012
     # morph = join('morphologies', 'axon.hoc') # Mainen&Sejnowski, 1996
     # morph = join(folder, 'cell_simple.hoc')
-    morph = join(folder, 'cell_simple_long.hoc')
+    # morph = join(folder, 'cell_simple_long.hoc')
     custom_code = [join(folder, 'Cell parameters.hoc'),
-                   join(folder, 'charge.hoc'),
-                   join(folder, 'pruning_full.hoc')]
+                   join(folder, 'charge.hoc')]
+                   # join(folder, 'pruning_full.hoc')]
 
 if RANK == 1:
-    folder = "morphologies/cell_hallermann_myelin"
-    # folder = "morphologies/cell_hallermann_unmyelin"
-    # folder = "morphologies/simple_axon_hallermann"
-    # folder = "morphologies/HallermannEtAl2012"
-    neuron.load_mechanisms(join(folder))
-    # morph = 'patdemo/cells/j4a.hoc', # Mainen&Sejnowski, 1996
-    # morph = join(folder, '28_04_10_num19.hoc') # HallermannEtAl2012
-    # morph = join('morphologies', 'axon.hoc') # Mainen&Sejnowski, 1996
-    morph = join(folder, 'cell_simple_long.hoc')
-    custom_code = [join(folder, 'Cell parameters.hoc'),
-                   join(folder, 'charge.hoc'),
-                   join(folder, 'pruning_full.hoc')]
+    # folder = "morphologies/cell_hallermann_myelin"
+    # # folder = "morphologies/cell_hallermann_unmyelin"
+    # # folder = "morphologies/simple_axon_hallermann"
+    # # folder = "morphologies/HallermannEtAl2012"
+    # neuron.load_mechanisms(join(folder))
+    # # morph = 'patdemo/cells/j4a.hoc', # Mainen&Sejnowski, 1996
+    # # morph = join(folder, '28_04_10_num19.hoc') # HallermannEtAl2012
+    # # morph = join('morphologies', 'axon.hoc') # Mainen&Sejnowski, 1996
+    # morph = join(folder, 'cell_simple_long.hoc')
+    # custom_code = [join(folder, 'Cell parameters.hoc'),
+    #                join(folder, 'charge.hoc'),
+    #                join(folder, 'pruning_full.hoc')]
+
+    folder = "morphologies/EyalEtAl2016"
+    # folder = "morphologies/L23_PC_cADpyr229_5"
+    # get the template name
+    f = file(join(folder, "ActiveModels/model_0603_cell08_cm045.hoc"), 'r')
+    templatename = utils.get_templatename(f)
+    f.close()
+    neuron.load_mechanisms(join(folder, "mechanisms"))
+
+    add_synapses = False
+    cell = LFPy.TemplateCell(morphology=join(folder, "morphs/2013_03_06_cell08_876_H41_05_Cell2.ASC"),
+    # cell = LFPy.TemplateCell(morphology=join(folder, "morphology/dend-C260897C-P3_axon-C220797A-P3_-_Clone_0.asc"),
+                             templatefile=join(folder, 'ActiveModels/model_0603_cell08_cm045.hoc'),
+                             templatename=templatename,
+                             templateargs=1 if add_synapses else 0,
+                             tstop=50.,
+                             dt=2. ** -4,
+                             extracellular=True,
+                             tstart=-50,
+                             lambda_f=100.,
+                             nsegs_method='lambda_f',)
+
+
+
+
 if RANK == 2:
     folder = "morphologies/cell_hallermann_myelin"
     # folder = "morphologies/hay_model"
@@ -87,7 +113,7 @@ if RANK == 3:
     # morph = 'patdemo/cells/j4a.hoc', # Mainen&Sejnowski, 1996
     # morph = join(folder, '28_04_10_num19.hoc'), # HallermannEtAl2012
     # morph = join('morphologies', 'axon.hoc'), # Mainen&Sejnowski, 1996
-    morph = join(folder, 'cell_simple.hoc')
+    morph = join(folder, 'cell_simple_long.hoc')
     # morph = join(folder,'cell1.hoc') # Hay model
     custom_code = [join(folder, 'Cell parameters.hoc'),
                    join(folder, 'charge.hoc'),
@@ -104,52 +130,81 @@ if RANK == 4:
     # morph = 'patdemo/cells/j4a.hoc', # Mainen&Sejnowski, 1996
     # morph = join(folder, '28_04_10_num19.hoc'), # HallermannEtAl2012
     # morph = join('morphologies', 'axon.hoc'), # Mainen&Sejnowski, 1996
-    morph = join(folder, 'cell_simple.hoc')
+    morph = join(folder, 'cell_simple_long.hoc')
     # morph = join(folder,'cell1.hoc') # Hay model
     custom_code = [join(folder, 'Cell parameters.hoc'),
-                   join(folder, 'charge.hoc')]
-    #             , join(folder, 'pruning.hoc')]
+                   join(folder, 'charge.hoc'),
+                   join(folder, 'pruning.hoc')]
 
 
-# Define cell parameters
-cell_parameters = {          # various cell parameters,
-    'morphology': morph,  # simplified neuron model from HallermannEtAl2012
-    # rm': 30000.,      # membrane resistance
-    'cm': 1.0,         # membrane capacitance
-    'Ra': 150,        # axial resistance
-    # 'passive_parameters':dict(g_pas=1/30., e_pas=-65),
-    'v_init': -85.,    # initial crossmembrane potential
-    # 'e_pas': -65.,     # reversal potential passive mechs
-    'passive': False,   # switch on passive mechs
-    'nsegs_method': 'lambda_f',
-    'lambda_f': 500.,
-    'dt': 2.**-4,   # [ms] dt's should be in powers of 2 for both,
-    'tstart': -50.,    # start time of simulation, recorders start at t=0
-    'tstop': 50.,   # stop simulation at 200 ms. These can be overridden
-                        # by setting these arguments in cell.simulation()
-    "extracellular": True,
-    "pt3d": True,
-    'custom_code': custom_code}
+# NAMES
+# names = ["axon myelin", "neuron myelin", "neuron nonmyelin", "axon nonmyelin"]
+# names = ["long axon myelin clamped", "long axon myelin", "neuron myelin", "long axon unmyelin"]
+names = ['Layer 5', 'Layer 2/3']
+
+if names[cell_id] != 'Layer 2/3':
+    # Define cell parameters
+    cell_parameters = {          # various cell parameters,
+        'morphology': morph,  # simplified neuron model from HallermannEtAl2012
+        # rm': 30000.,      # membrane resistance
+        'cm': 1.0,         # membrane capacitance
+        'Ra': 150,        # axial resistance
+        # 'passive_parameters':dict(g_pas=1/30., e_pas=-65),
+        'v_init': -85.,    # initial crossmembrane potential
+        # 'e_pas': -65.,     # reversal potential passive mechs
+        'passive': False,   # switch on passive mechs
+        'nsegs_method': 'lambda_f',
+        'lambda_f': 100.,
+        'dt': 2.**-4,   # [ms] dt's should be in powers of 2 for both,
+        'tstart': -50.,    # start time of simulation, recorders start at t=0
+        'tstop': 50.,   # stop simulation at 200 ms. These can be overridden
+                            # by setting these arguments in cell.simulation()
+        "extracellular": True,
+        "pt3d": True,
+        'custom_code': custom_code}
+    cell = LFPy.Cell(**cell_parameters)
+
 
 COMM.Barrier()
 
-# names = ["axon myelin", "neuron myelin", "neuron nonmyelin", "axon nonmyelin"]
-names = ["long axon myelin clamped", "long axon myelin", "neuron myelin", "axon unmyelin"]
+
 
 plt.close('all')
 
-cell = LFPy.Cell(**cell_parameters)
 # Assign cell positions
 # TEST with different distance between cells
 # x_cell_pos = [-20, 0, 20, 10]
 
 # x_cell_pos = [-1550, -1530, 0, 0]
-x_cell_pos = [0, 0, 0, 0]
+x_cell_pos = np.zeros(n_cells)
 y_cell_pos = np.linspace(-25, 25, n_cells)
 # z_cell_pos = np.zeros(len(x_cell_pos))
 z_cell_pos = [0, 0, 0, 0]
 
-utils.reposition_stick_horiz(cell, x_cell_pos[cell_id], y_cell_pos[cell_id], z_cell_pos[cell_id])
+if names[cell_id] == 'Layer 5':
+    cell = LFPy.Cell(**cell_parameters)
+# Assign cell positions
+# TEST with different distance between cells
+# x_cell_pos = [-10, 0, 0, 10]
+# y_cell_pos = [0, -10, 10, 0]
+x_cell_pos = [0, 0]
+y_cell_pos = [0, 0]
+# z_cell_pos = np.zeros(len(x_cell_pos))
+z_ratio = np.ones(n_cells) * -1.
+if names[cell_id] == 'Layer 5':
+    cell.set_rotation(x=np.pi / 2)
+elif names[cell_id] == 'Layer 2/3':
+    cell.set_rotation(x=-np.pi / 2.)
+    cell.set_rotation(y=np.pi / 8.)
+
+z_cell_pos_init = np.ones(n_cells)
+COMM.Barrier()
+z_cell_pos_init[cell_id] = -np.max(cell.zend)
+z_cell_pos = z_cell_pos_init
+cell.set_pos(x=x_cell_pos[cell_id], y=y_cell_pos[cell_id], z=z_cell_pos[cell_id])
+
+
+# utils.reposition_stick_horiz(cell, x_cell_pos[cell_id], y_cell_pos[cell_id], z_cell_pos[cell_id])
 # utils.reposition_stick_flip(cell, x_cell_pos[0], y_cell_pos[0], z_cell_pos[0])
 
 # xrot = [0., 2., 1.]
@@ -189,7 +244,7 @@ clamp = True
 # CLAMPING
 if clamp:
     if cell_id == 1:
-        utils.clamp_ends(cell, pulse_start, pulse_start + pulse_duration)
+        utils.clamp_ends(cell, 0, pulse_start + pulse_duration, -76.)
 
 # Parameters for the external field
 sigma = 0.3
@@ -211,22 +266,25 @@ sigma = 0.3
 distance = 50
 c_vext = 0.
 
-polarity, n_elec, positions = utils.create_array_shape('monopole', 15)
+polarity, n_elec, positions = utils.create_array_shape('quadrupole', 25)
 source_xs = positions[0]
 source_ys = positions[1]
 source_zs = positions[2]
 
 # Stimulation Parameters:
 
-amp = 80 * (10**3)
+amp = 400 * (10**3)
 num = 0
 
 source_zs = np.ones(len(source_xs)) * distance
 source_amps = np.multiply(polarity, amp)
-# ExtPot = utils.ImposedPotentialField(source_amps, source_xs, source_ys, source_zs, sigma)
+ExtPot = utils.ImposedPotentialField(source_amps, source_xs, source_ys, source_zs, sigma)
 
 # Find external potential field at all cell positions as a function of time
 v_cell_ext = np.zeros((cell.totnsegs, n_tsteps))
+
+v_cell_ext[:, :] = ExtPot.ext_field(cell.xmid, cell.ymid,
+                                    cell.zmid).reshape(cell.totnsegs, 1) * pulse.reshape(1, n_tsteps)
 
 # v_field_ext_stick = np.zeros((len(zs), n_tsteps))
 # v_field_ext_stick = ext_field(zs).reshape(len(zs), 1) * pulse.reshape(1, n_tsteps)
@@ -238,10 +296,8 @@ v_cell_ext = np.zeros((cell.totnsegs, n_tsteps))
 
 # utils.reposition_stick_horiz(cell)
 # utils.reposition_stick_flip(cell, x_cell_pos[0], y_cell_pos[0], z_cell_pos[0])
-# v_cell_ext[:, :] = ExtPot.ext_field(cell.xmid, cell.ymid,
-#                                     cell.zmid).reshape(cell.totnsegs, 1) * pulse.reshape(1, n_tsteps)
 
-v_cell_ext[:, :] = utils.linear_field(cell, pulse_start, pulse_start + pulse_duration, n_tsteps) * amp
+# v_cell_ext[:, :] = utils.linear_field(cell, pulse_start, pulse_start + pulse_duration, n_tsteps, 'z') * amp
 
 
 cell.insert_v_ext(v_cell_ext, t)
@@ -253,6 +309,10 @@ spike_time_loc = utils.return_first_spike_time_and_idx(cell.vmem)
 # COMM.Barrier()
 if spike_time_loc[0] is not None:
     print("!!!spike  @  cell {0}").format(cell_id)
+    c_vext = v_cell_ext[spike_time_loc[1]][spike_time_loc[0]]
+spike_time_loc = utils.spike_soma(cell)
+if spike_time_loc[0] is not None:
+    print("!!!SOMA spike  @  cell {0}").format(cell_id)
     c_vext = v_cell_ext[spike_time_loc[1]][spike_time_loc[0]]
 # print("cell {0} vmem {1}").format(cell_id, cell.vmem.T[spike_time_loc[0]])
 vxmin, vxmax = utils.sanity_vext(cell.v_ext, t)
@@ -277,13 +337,15 @@ COMM.Barrier()
 
 if cell_id == 0:
     cells = []
-    cells.append(utils.built_for_mpi_space(cell, cell_id, spike_time_loc))
+    cells.append(utils.built_for_mpi_space(cell, cell_id, spike_time_loc, cell.allsecnames))
     for i_proc in range(1, SIZE):
         cells.append(COMM.recv(source=i_proc))
 else:
-    COMM.send(utils.built_for_mpi_space(cell, cell_id, spike_time_loc), dest=0)
+    COMM.send(utils.built_for_mpi_space(cell, cell_id, spike_time_loc, cell.allsecnames), dest=0)
 COMM.Barrier()
-print("AP in {0} at t= {1}").format(cell.get_idx_name(spike_time_loc[1])[1], spike_time_loc[0])
+
+if spike_time_loc[0] is not None:
+    print("AP in {0} at t= {1}").format(cell.get_idx_name(spike_time_loc[1])[1], spike_time_loc[0])
 
 if cell_id == 0:
     # print("Source current = {0} uA").format(amp / 1000.)
@@ -292,20 +354,32 @@ if cell_id == 0:
     fig = plt.figure(figsize=[10, 8])
     fig.subplots_adjust(wspace=0.1)
 
-    ax1 = plt.subplot(111, projection="3d", title="t = " + str(spike_time_loc[0]), aspect=1, xlabel="x [$\mu$m]",
-                      ylabel="y [$\mu$m]", zlabel="z [$\mu$m]", xlim=[-2000, 2000], ylim=[-600, 600], zlim=[-400, 200])
+
+    xlim_min = -750
+    xlim_max = 750
+    ylim_min = -200
+    ylim_max = 200
+    zlim_min = -2000
+    zlim_max = 50
+
+    ax1 = plt.subplot(111, projection="3d", title="t = " + str(spike_time_loc[0]), aspect='auto', xlabel="x [$\mu$m]",
+                      ylabel="y [$\mu$m]", zlabel="z [$\mu$m]", xlim=[xlim_min, xlim_max], ylim=[ylim_min, ylim_max], zlim=[zlim_min, zlim_max])
+
     cmap = plt.cm.viridis
+    cmap = [plt.cm.autumn, plt.cm.spring]
     norm = mpl.colors.Normalize(vmin=-110, vmax=55)
     for i in range(n_cells):
         # initial = cells[i]['extra'][1]
         initial = pulse_start
+        # n_sec, names = utils.get_sections_number(cells[i])
+
 
         col = (cells[i]['vmem'].T[initial] + 100) / 150.
         [ax1.plot([cells[i]['xstart'][idx], cells[i]['xend'][idx]], [cells[i]['ystart'][idx], cells[i]['yend'][idx]],
                   [cells[i]['zstart'][idx], cells[i]['zend'][idx]],
-                  '-', c=cmap(col[idx]), clip_on=False) for idx in range(cells[i]['totnsegs'])]
+                  '-', c=cmap[i](col[idx]), clip_on=False) for idx in range(cells[i]['totnsegs'])]
         ax1.scatter(source_xs, source_ys, source_zs, c=source_amps)
-        ap_i = cells[i]['extra'][1]
+        ap_i = cells[i]['extra1'][1]
         if ap_i is not None:
             ax1.scatter(cells[i]['xmid'][ap_i], cells[i]['ymid'][ap_i], cells[i]['zmid'][ap_i], '*', c='r')
         ax1.text(cells[i]['xmid'][0], cells[i]['ymid'][0], cells[i]['zmid'][0] - 20 * i, names[cells[i]['rank']])
@@ -313,8 +387,8 @@ if cell_id == 0:
         # for idx in range(cell.totnsegs):
         #     ax1.text(cell.xmid[idx], cell.ymid[idx], cell.zmid[idx], "{0}.".format(cell.get_idx_name(idx)[1]))
 
-    elev = 50     # Default 30
-    azim = 0    # Default 0
+    elev = 10     # Default 30
+    azim = -90    # Default 0
     ax1.view_init(elev, azim)
 
     # ax.axes.set_yticks(yinfo)
@@ -323,32 +397,49 @@ if cell_id == 0:
     # plt.close()
 
     cmap = plt.cm.viridis
+    cmap = [plt.cm.autumn, plt.cm.spring]
+
     norm = mpl.colors.Normalize(vmin=-110, vmax=55)
 
-    window = 60
-    azim = 0
-    sm = plt.cm.ScalarMappable(cmap=cmap, norm=plt.Normalize(vmin=tmin, vmax=tmax))
-    # fake up the array of the scalar mappable. Urgh...
-    sm._A = []
+    tmax = 0
+    tmin = len(cell.vmem[0])
+    for i in range(n_cells):
+        if np.max(cells[i]['extra1'][0]) > tmax:
+            tmax = np.max(cells[i]['extra1'][0])
+        if np.min(cells[i]['extra1'][0]) < tmin:
+            tmin = np.min(cells[i]['extra1'][0])
 
-    for t in range(initial - 10, initial + window):
+
+    # window = 80
+    window = tmax - tmin + 80
+    pre_spike = 30
+    azim = 0
+    # sm = plt.cm.ScalarMappable(cmap=cmap, norm=plt.Normalize(vmin=tmin, vmax=tmax))
+    # # fake up the array of the scalar mappable. Urgh...
+    # sm._A = []
+
+    for t in range(initial - pre_spike, initial + window):
         fig = plt.figure(figsize=[6, 6])
         fig.subplots_adjust(wspace=0.6)
         fig.suptitle("Electric field")
-        ax1 = plt.subplot(111, projection="3d", title="t = " + ("%.4f" % (t * cell.dt)) + " ms",
-                          aspect=1, xlabel="x [$\mu$m]", ylabel="y [$\mu$m]", zlabel="z [$\mu$m]",
+        ax1 = plt.subplot(111, projection="3d", title="t = " + ("%.3f" % (t * cell.dt)) + " ms",
+                          aspect='auto', xlabel="x [$\mu$m]", ylabel="y [$\mu$m]", zlabel="z [$\mu$m]",
                           # xlim=[-600, 600], ylim=[-600, 600], zlim=[-400, 200])
-                          xlim=[-200, 2000], ylim=[-600, 600], zlim=[-400, 200])
+                          xlim=[xlim_min, xlim_max], ylim=[ylim_min, ylim_max], zlim=[zlim_min, zlim_max])
+
         for i in range(n_cells):
             col = []
+            sm = plt.cm.ScalarMappable(cmap=cmap[i], norm=plt.Normalize(vmin=tmin, vmax=tmax))
+            # fake up the array of the scalar mappable. Urgh...
+            sm._A = []
             for j in range(cells[i]['totnsegs']):
                 col.append((cells[i]['vext'][j][t] + abs(tmin)) / (tmax + abs(tmin)))
-            ap_i = cells[i]['extra'][1]
+            ap_i = cells[i]['extra1'][1]
 
             [ax1.plot([cells[i]['xstart'][idx], cells[i]['xend'][idx]],
                       [cells[i]['ystart'][idx], cells[i]['yend'][idx]],
                       [cells[i]['zstart'][idx], cells[i]['zend'][idx]],
-                      '-', c=cmap(col[idx]), clip_on=False) for idx in range(cells[i]['totnsegs'])]
+                      '-', c=cmap[i](col[idx]), clip_on=False) for idx in range(cells[i]['totnsegs'])]
             # [ax1.plot([cell.xmid[idx]], [cell.ymid[idx]], [cell.zmid[idx]], 'D', c=v_clr(cell.zmid[idx])) for idx in v_idxs]
             ax1.scatter(source_xs, source_ys, source_zs, c=source_amps)
             if ap_i is not None:
@@ -367,26 +458,29 @@ if cell_id == 0:
 
     azim = 0
 
-    sm = plt.cm.ScalarMappable(cmap=cmap, norm=plt.Normalize(vmin=-110, vmax=55))
-    # fake up the array of the scalar mappable. Urgh...
-    sm._A = []
-    for t in range(initial - 10, initial + window):
+    # sm = plt.cm.ScalarMappable(cmap=cmap, norm=plt.Normalize(vmin=-110, vmax=55))
+    # # fake up the array of the scalar mappable. Urgh...
+    # sm._A = []
+    for t in range(initial - pre_spike, initial + window):
         fig = plt.figure(figsize=[6, 6])
         fig.subplots_adjust(wspace=0.6)
         fig.suptitle("Membrane potential")
-        ax1 = plt.subplot(111, projection="3d", title="t = " + ("%.4f" % (t * cell.dt)) + " ms",
-                          aspect=1, xlabel="x [$\mu$m]", ylabel="y [$\mu$m]", zlabel="z [$\mu$m]",
+        ax1 = plt.subplot(111, projection="3d", title="t = " + ("%.3f" % (t * cell.dt)) + " ms",
+                          aspect='auto', xlabel="x [$\mu$m]", ylabel="y [$\mu$m]", zlabel="z [$\mu$m]",
                           # xlim=[-600, 600], ylim=[-600, 600], zlim=[-400, 200])
-                          xlim=[-2000, 2000], ylim=[-600, 600], zlim=[-400, 200])
+                          xlim=[xlim_min, xlim_max], ylim=[ylim_min, ylim_max], zlim=[zlim_min, zlim_max])
         for i in range(n_cells):
 
             col = (cells[i]['vmem'].T[t] + 100) / 150.
-            ap_i = cells[i]['extra'][1]
+            ap_i = cells[i]['extra1'][1]
+            sm = plt.cm.ScalarMappable(cmap=cmap[i], norm=plt.Normalize(vmin=tmin, vmax=tmax))
+            # fake up the array of the scalar mappable. Urgh...
+            sm._A = []
 
             [ax1.plot([cells[i]['xstart'][idx], cells[i]['xend'][idx]],
                       [cells[i]['ystart'][idx], cells[i]['yend'][idx]],
                       [cells[i]['zstart'][idx], cells[i]['zend'][idx]],
-                      '-', c=cmap(col[idx]), clip_on=False) for idx in range(cells[i]['totnsegs'])]
+                      '-', c=cmap[i](col[idx]), clip_on=False) for idx in range(cells[i]['totnsegs'])]
             # [ax1.plot([cell.xmid[idx]], [cell.ymid[idx]], [cell.zmid[idx]], 'D', c=v_clr(cell.zmid[idx])) for idx in v_idxs]
             ax1.scatter(source_xs, source_ys, source_zs, c=source_amps)
             if ap_i is not None:
