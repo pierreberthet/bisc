@@ -264,7 +264,7 @@ cortical_surface_height = 20
 # Parameters for the external field
 sigma = 0.3
 
-polarity, n_elec, positions = utils.create_array_shape('monopole', 25)
+polarity, n_elec, positions = utils.create_array_shape('minicross', 25)
 source_xs = positions[0]
 source_ys = positions[1]
 source_zs = positions[2]

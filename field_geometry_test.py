@@ -31,7 +31,7 @@ sigma = 0.3
 
 # source_geometry = np.array([-1, -1, 1, 1, 1, 1, -1, -1])
 
-polarity, n_elec, positions = utils.create_array_shape('circle', 25)
+polarity, n_elec, positions = utils.create_array_shape('bcross', 25)
 
 amp = (.7 * 10**6) / n_elec  # mA
 voltage = 5000

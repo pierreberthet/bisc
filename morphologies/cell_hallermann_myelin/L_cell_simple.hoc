@@ -1,0 +1,187 @@
+//From Hallermann et al. 2012, myelinated axon version
+proc celldef() {
+  topol()
+  subsets()
+  geom()
+  biophys()
+  geom_nseg()
+}
+
+nnode 		= 	7	
+
+apicNum		=	1
+axonNum		=	1
+myNum		=	nnode
+nodeNum		=	nnode
+
+create soma,  axon[axonNum], apic[apicNum], my[myNum], node[nodeNum]
+
+// axon[0] is AIS
+
+for i=0, nnode-1 {
+		node[i] {
+			nseg = 1
+			L = 1.
+			diam = 1.3
+			}
+
+		my[i] 	{
+			L = 100.
+			diam = 2
+			}
+	   	}
+
+axon { 
+	L = 20
+	diam = 2
+     }
+
+soma {
+	L = 20
+	diam = 20
+     }
+
+apic {
+	L = 20
+	//nseg = 5
+	diam = 1.2
+     }
+
+proc topol() { local i
+
+connect axon(0), soma(0.5)
+connect apic(0), soma(0.5)
+connect my(0), axon(1)
+connect node(0), my(1)
+	
+for i=1, nnode-1 {
+	connect my[i](0), node[i-1](1)
+	connect node[i](0), my[i](1)
+		}
+basic_shape()
+
+}
+
+proc basic_shape() { local i
+
+
+apic[0] {pt3dclear()
+	//object reference does not work, back to manual entry. Any idea why?
+  //pt3dadd(0, 0, 0, apic[0].diam) pt3dadd(0, 0, apic[0].L, apic[0].diam)}
+  pt3dadd(0, 0, 0, 1.2) pt3dadd(0, 0, 20, 1.2)}
+
+soma {pt3dclear()
+  //pt3dadd(0, 0, soma.L/2, soma.diam) pt3dadd(0, 0, -soma.L/2, soma.diam)}
+  pt3dadd(0, 0, 10, 20) pt3dadd(0, 0, -10, 20)}
+
+axon[0] {pt3dclear()
+  //pt3dadd(0, 0, 0, axon[0].diam) pt3dadd(0, 0, -axon[0].L, axon[0].diam)}
+  pt3dadd(0, 0, 0, 2) pt3dadd(0, 0, -20, 2)}
+
+node {pt3dclear()}
+my {pt3dclear()}
+
+
+// myelin segment length: biology{layer 5 pyramidal cells: 30-200 um, Salzer 1997: 1500 um} model{1000-3000 um}
+// node length: biology {0.4 - 3.7 um} model{1-10 um}
+node[0] {
+	pt3dadd(0, 0, -20, 1.3) 	
+	pt3dadd(0, 0, -21, 1.3)
+	}
+my[0] {
+	pt3dadd(0, 0, -21, 2)
+	pt3dadd(0, 0, -121, 2)
+	}
+
+
+node[1] {
+	pt3dadd(0, 0, -121, 1.3) 	
+	pt3dadd(0, 0, -122, 1.3)
+	}
+my[1] {
+	pt3dadd(0, 0, -122, 2)
+	pt3dadd(0, 0, -222, 2)
+	}
+
+
+node[2] {
+	pt3dadd(0, 0, -222, 1.3) 	
+	pt3dadd(0, 0, -223, 1.3)
+	}
+my[2] {
+	pt3dadd(0, 0, -223, 2)
+	pt3dadd(0, 0, -323, 2)
+	}
+
+
+node[3] {
+	pt3dadd(0, 0, -323, 1.3) 	
+	pt3dadd(1, 0, -323, 1.3)
+	}
+my[3] {
+	pt3dadd(1, 0, -323, 2)
+	pt3dadd(101, 0, -323, 2)
+	}
+
+
+node[4] {
+	pt3dadd(101, 0, -323, 1.3) 	
+	pt3dadd(102, 0, -323, 1.3)
+	}
+my[4] {
+	pt3dadd(102, 0, -323, 2)
+	pt3dadd(202, 0, -323, 2)
+	}
+
+
+node[5] {
+	pt3dadd(202, 0, -323, 1.3) 	
+	pt3dadd(203, 0, -323, 1.3)
+	}
+my[5] {
+	pt3dadd(203, 0, -323, 2)
+	pt3dadd(303, 0, -323, 2)
+	}
+
+
+node[6] {
+	pt3dadd(303, 0, -323, 1.3) 	
+	pt3dadd(304, 0, -323, 1.3)
+	}
+my[6] {
+	pt3dadd(304, 0, -323, 2)
+	pt3dadd(404, 0, -323, 2)
+	}
+
+
+
+}
+
+objref all, somatic, axonal, apical
+proc subsets() { local i
+  objref all, somatic, axonal, apical
+  all = new SectionList()
+    axon all.append()
+    soma all.append()
+    apic all.append()
+
+
+  somatic = new SectionList()
+    soma somatic.append()
+
+  axonal = new SectionList()
+    axon axonal.append()
+
+  apical = new SectionList()
+    apic apical.append()
+
+}
+proc geom() {
+}
+proc geom_nseg() {
+}
+proc biophys() {
+}
+access soma
+
+celldef()

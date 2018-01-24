@@ -174,7 +174,7 @@ cortical_surface_height = 50
 # Parameters for the external field
 sigma = 0.3
 
-polarity, n_elec, positions = utils.create_array_shape('circle', 25)
+polarity, n_elec, positions = utils.create_array_shape('minicross', 25)
 source_xs = positions[0]
 source_ys = positions[1]
 source_zs = positions[2]
@@ -198,8 +198,8 @@ dura_height = 50
 # source_geometry = np.array([-1, -1, 1, 1, 1, 1, -1, -1])
 
 # while loop? For loop?
-spatial_resolution = 2
-max_distance = 50
+spatial_resolution = 50
+max_distance = 300
 distance = np.linspace(0, max_distance, spatial_resolution)
 current = np.zeros((n_cells, spatial_resolution))
 c_vext = np.zeros((n_cells, spatial_resolution))
@@ -209,7 +209,7 @@ ap_loc = np.zeros((n_cells, spatial_resolution), dtype=np.int)
 
 # Stimulation Parameters:
 max_current = 1000000.   # mA
-current_resolution = 2
+current_resolution = 50
 # amp_range = np.exp(np.linspace(1, np.log(max_current), current_resolution))
 amp_range = np.linspace(10, max_current, current_resolution)
 amp = amp_range[0]

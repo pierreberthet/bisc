@@ -266,14 +266,14 @@ sigma = 0.3
 distance = 50
 c_vext = 0.
 
-polarity, n_elec, positions = utils.create_array_shape('monopole', 25)
+polarity, n_elec, positions = utils.create_array_shape('quadrupole', 25)
 source_xs = positions[0]
 source_ys = positions[1]
 source_zs = positions[2]
 
 # Stimulation Parameters:
 
-amp = -800 * (10**3)
+amp = 400 * (10**3)
 num = 0
 
 source_zs = np.ones(len(source_xs)) * distance
@@ -305,15 +305,19 @@ cell.insert_v_ext(v_cell_ext, t)
 # Run simulation, electrode object argument in cell.simulate
 # print("running cell {2} distance from electrode: {0} current intensity: {1}").format(depth, amp, cell_id)
 cell.simulate(rec_imem=True, rec_vmem=True)
-spike_time_loc = utils.return_first_spike_time_and_idx(cell.vmem)
+# spike_time_loc = utils.return_first_spike_time_and_idx(cell.vmem)
+spike_tim_loc = utils.spike_compartments(cell)
 # COMM.Barrier()
-if spike_time_loc[0] is not None:
-    print("!!!spike  @  cell {0}").format(cell_id)
-    c_vext = v_cell_ext[spike_time_loc[1]][spike_time_loc[0]]
-spike_time_loc = utils.spike_soma(cell)
-if spike_time_loc[0] is not None:
-    print("!!!SOMA spike  @  cell {0}").format(cell_id)
-    c_vext = v_cell_ext[spike_time_loc[1]][spike_time_loc[0]]
+
+
+
+# if spike_time_loc[0] is not None:
+#     print("!!!spike  @  cell {0}").format(cell_id)
+#     c_vext = v_cell_ext[spike_time_loc[1]][spike_time_loc[0]]
+# spike_time_loc = utils.spike_soma(cell)
+# if spike_time_loc[0] is not None:
+#     print("!!!SOMA spike  @  cell {0}").format(cell_id)
+#     c_vext = v_cell_ext[spike_time_loc[1]][spike_time_loc[0]]
 # print("cell {0} vmem {1}").format(cell_id, cell.vmem.T[spike_time_loc[0]])
 vxmin, vxmax = utils.sanity_vext(cell.v_ext, t)
 
@@ -362,7 +366,7 @@ if cell_id == 0:
     zlim_min = -2000
     zlim_max = 50
 
-    ax1 = plt.subplot(111, projection="3d", title="t = " + str(spike_time_loc[0]), aspect='auto', xlabel="x [$\mu$m]",
+    ax1 = plt.subplot(111, projection="3d", title="t = " + str(spike_time_loc['soma'][0] * cell.dt), aspect='auto', xlabel="x [$\mu$m]",
                       ylabel="y [$\mu$m]", zlabel="z [$\mu$m]", xlim=[xlim_min, xlim_max], ylim=[ylim_min, ylim_max], zlim=[zlim_min, zlim_max])
 
     cmap = plt.cm.viridis
@@ -372,9 +376,21 @@ if cell_id == 0:
         # initial = cells[i]['extra'][1]
         initial = pulse_start
         # n_sec, names = utils.get_sections_number(cells[i])
+        time_max = np.max(spike_tim_loc)
+        time_min = np.min(spike_tim_loc)
+        # for i in spike_time_loc.keys():
+        #     if time_max > spike_time_loc[i][0]:
+        #         time_max = spike_time_loc[i][0]
+        #     if time_min < spike_time_loc[i][0]:
+        #         time_min = spike_time_loc[i][0]
+        col = []
+        for i in range:
+            col.append((spike_time_loc[i] - time_min) / (time_max - time_min))
 
+        # col = (cells[i]['vmem'].T[initial] + 100) / 150.
+        for seg in cell.allsecnames():
+            ax1.plot(cells[i]['xstart'][cell])
 
-        col = (cells[i]['vmem'].T[initial] + 100) / 150.
         [ax1.plot([cells[i]['xstart'][idx], cells[i]['xend'][idx]], [cells[i]['ystart'][idx], cells[i]['yend'][idx]],
                   [cells[i]['zstart'][idx], cells[i]['zend'][idx]],
                   '-', c=cmap[i](col[idx]), clip_on=False) for idx in range(cells[i]['totnsegs'])]
@@ -401,102 +417,102 @@ if cell_id == 0:
 
     norm = mpl.colors.Normalize(vmin=-110, vmax=55)
 
-    ts_max = 0
-    ts_min = len(cell.vmem[0])
-    for i in range(n_cells):
-        if np.max(cells[i]['extra1'][0]) > ts_max:
-            ts_max = np.max(cells[i]['extra1'][0])
-        if np.min(cells[i]['extra1'][0]) < ts_min:
-            ts_min = np.min(cells[i]['extra1'][0])
+    # ts_max = 0
+    # ts_min = len(cell.vmem[0])
+    # for i in range(n_cells):
+    #     if np.max(cells[i]['extra1'][0]) > ts_max:
+    #         ts_max = np.max(cells[i]['extra1'][0])
+    #     if np.min(cells[i]['extra1'][0]) < ts_min:
+    #         ts_min = np.min(cells[i]['extra1'][0])
 
 
     # window = 80
-    initial = pulse_start
-    window = pulse_duration + 250
-    pre_spike = 10
-    azim = 0
-    # sm = plt.cm.ScalarMappable(cmap=cmap, norm=plt.Normalize(vmin=tmin, vmax=tmax))
-    # # fake up the array of the scalar mappable. Urgh...
-    # sm._A = []
+    # initial = ts_max
+    # window = 80
+    # pre_spike = 30
+    # azim = 0
+    # # sm = plt.cm.ScalarMappable(cmap=cmap, norm=plt.Normalize(vmin=tmin, vmax=tmax))
+    # # # fake up the array of the scalar mappable. Urgh...
+    # # sm._A = []
 
-    for t in range(initial - pre_spike, initial + window):
-        fig = plt.figure(figsize=[6, 6])
-        fig.subplots_adjust(wspace=0.6)
-        fig.suptitle("Electric field")
-        ax1 = plt.subplot(111, projection="3d", title="t = " + ("%.3f" % (t * cell.dt)) + " ms",
-                          aspect='auto', xlabel="x [$\mu$m]", ylabel="y [$\mu$m]", zlabel="z [$\mu$m]",
-                          # xlim=[-600, 600], ylim=[-600, 600], zlim=[-400, 200])
-                          xlim=[xlim_min, xlim_max], ylim=[ylim_min, ylim_max], zlim=[zlim_min, zlim_max])
+    # for t in range(initial - pre_spike, initial + window):
+    #     fig = plt.figure(figsize=[6, 6])
+    #     fig.subplots_adjust(wspace=0.6)
+    #     fig.suptitle("Electric field")
+    #     ax1 = plt.subplot(111, projection="3d", title="t = " + ("%.3f" % (t * cell.dt)) + " ms",
+    #                       aspect='auto', xlabel="x [$\mu$m]", ylabel="y [$\mu$m]", zlabel="z [$\mu$m]",
+    #                       # xlim=[-600, 600], ylim=[-600, 600], zlim=[-400, 200])
+    #                       xlim=[xlim_min, xlim_max], ylim=[ylim_min, ylim_max], zlim=[zlim_min, zlim_max])
 
-        for i in range(n_cells):
-            col = []
-            sm = plt.cm.ScalarMappable(cmap=cmap[i], norm=plt.Normalize(vmin=tmin, vmax=tmax))
-            # fake up the array of the scalar mappable. Urgh...
-            sm._A = []
-            for j in range(cells[i]['totnsegs']):
-                col.append((cells[i]['vext'][j][t] + abs(tmin)) / (tmax + abs(tmin)))
-            ap_i = cells[i]['extra1'][1]
+    #     for i in range(n_cells):
+    #         col = []
+    #         sm = plt.cm.ScalarMappable(cmap=cmap[i], norm=plt.Normalize(vmin=tmin, vmax=tmax))
+    #         # fake up the array of the scalar mappable. Urgh...
+    #         sm._A = []
+    #         for j in range(cells[i]['totnsegs']):
+    #             col.append((cells[i]['vext'][j][t] + abs(tmin)) / (tmax + abs(tmin)))
+    #         ap_i = cells[i]['extra1'][1]
 
-            [ax1.plot([cells[i]['xstart'][idx], cells[i]['xend'][idx]],
-                      [cells[i]['ystart'][idx], cells[i]['yend'][idx]],
-                      [cells[i]['zstart'][idx], cells[i]['zend'][idx]],
-                      '-', c=cmap[i](col[idx]), clip_on=False) for idx in range(cells[i]['totnsegs'])]
-            # [ax1.plot([cell.xmid[idx]], [cell.ymid[idx]], [cell.zmid[idx]], 'D', c=v_clr(cell.zmid[idx])) for idx in v_idxs]
-            ax1.scatter(source_xs, source_ys, source_zs, c=source_amps)
-            if ap_i is not None:
-                ax1.scatter(cells[i]['xmid'][ap_i], cells[i]['ymid'][ap_i], cells[i]['zmid'][ap_i], '*', c='r')
-            ax1.text(cells[i]['xmid'][0], cells[i]['ymid'][0], cells[i]['zmid'][0] - 20 * i, names[cells[i]['rank']])
+    #         [ax1.plot([cells[i]['xstart'][idx], cells[i]['xend'][idx]],
+    #                   [cells[i]['ystart'][idx], cells[i]['yend'][idx]],
+    #                   [cells[i]['zstart'][idx], cells[i]['zend'][idx]],
+    #                   '-', c=cmap[i](col[idx]), clip_on=False) for idx in range(cells[i]['totnsegs'])]
+    #         # [ax1.plot([cell.xmid[idx]], [cell.ymid[idx]], [cell.zmid[idx]], 'D', c=v_clr(cell.zmid[idx])) for idx in v_idxs]
+    #         ax1.scatter(source_xs, source_ys, source_zs, c=source_amps)
+    #         if ap_i is not None:
+    #             ax1.scatter(cells[i]['xmid'][ap_i], cells[i]['ymid'][ap_i], cells[i]['zmid'][ap_i], '*', c='r')
+    #         ax1.text(cells[i]['xmid'][0], cells[i]['ymid'][0], cells[i]['zmid'][0] - 20 * i, names[cells[i]['rank']])
 
-            ax1.view_init(elev, azim)
-            # plt.colorbar(ax1, min=tmin, max=tmax, label="mV")
-            # plt.colorbar(ax1, label="mV")
-        plt.colorbar(sm, label="mV", shrink=0.4)
+    #         ax1.view_init(elev, azim)
+    #         # plt.colorbar(ax1, min=tmin, max=tmax, label="mV")
+    #         # plt.colorbar(ax1, label="mV")
+    #     plt.colorbar(sm, label="mV", shrink=0.4)
 
-        plt.savefig("outputs/temp/mpi_gif_vext" + str(t) + ".png", dpi=75)
-        plt.close()
-        print("fig {} out of {}").format(t - initial, window)
-        azim += 1
+    #     plt.savefig("outputs/temp/mpi_gif_vext" + str(t) + ".png", dpi=150)
+    #     plt.close()
+    #     print("fig {} out of {}").format(t - initial, window)
+    #     azim += 1
 
-    azim = 0
+    # azim = 0
 
-    # sm = plt.cm.ScalarMappable(cmap=cmap, norm=plt.Normalize(vmin=-110, vmax=55))
-    # # fake up the array of the scalar mappable. Urgh...
-    # sm._A = []
-    for t in range(initial - pre_spike, initial + window):
-        fig = plt.figure(figsize=[6, 6])
-        fig.subplots_adjust(wspace=0.6)
-        fig.suptitle("Membrane potential")
-        ax1 = plt.subplot(111, projection="3d", title="t = " + ("%.3f" % (t * cell.dt)) + " ms",
-                          aspect='auto', xlabel="x [$\mu$m]", ylabel="y [$\mu$m]", zlabel="z [$\mu$m]",
-                          # xlim=[-600, 600], ylim=[-600, 600], zlim=[-400, 200])
-                          xlim=[xlim_min, xlim_max], ylim=[ylim_min, ylim_max], zlim=[zlim_min, zlim_max])
-        for i in range(n_cells):
+    # # sm = plt.cm.ScalarMappable(cmap=cmap, norm=plt.Normalize(vmin=-110, vmax=55))
+    # # # fake up the array of the scalar mappable. Urgh...
+    # # sm._A = []
+    # for t in range(initial - pre_spike, initial + window):
+    #     fig = plt.figure(figsize=[6, 6])
+    #     fig.subplots_adjust(wspace=0.6)
+    #     fig.suptitle("Membrane potential")
+    #     ax1 = plt.subplot(111, projection="3d", title="t = " + ("%.3f" % (t * cell.dt)) + " ms",
+    #                       aspect='auto', xlabel="x [$\mu$m]", ylabel="y [$\mu$m]", zlabel="z [$\mu$m]",
+    #                       # xlim=[-600, 600], ylim=[-600, 600], zlim=[-400, 200])
+    #                       xlim=[xlim_min, xlim_max], ylim=[ylim_min, ylim_max], zlim=[zlim_min, zlim_max])
+    #     for i in range(n_cells):
 
-            col = (cells[i]['vmem'].T[t] + 100) / 150.
-            ap_i = cells[i]['extra1'][1]
-            sm = plt.cm.ScalarMappable(cmap=cmap[i], norm=plt.Normalize(vmin=-100., vmax=50.))
-            # fake up the array of the scalar mappable. Urgh...
-            sm._A = []
+    #         col = (cells[i]['vmem'].T[t] + 100) / 150.
+    #         ap_i = cells[i]['extra1'][1]
+    #         sm = plt.cm.ScalarMappable(cmap=cmap[i], norm=plt.Normalize(vmin=-110, vmax=55))
+    #         # fake up the array of the scalar mappable. Urgh...
+    #         sm._A = []
 
-            [ax1.plot([cells[i]['xstart'][idx], cells[i]['xend'][idx]],
-                      [cells[i]['ystart'][idx], cells[i]['yend'][idx]],
-                      [cells[i]['zstart'][idx], cells[i]['zend'][idx]],
-                      '-', c=cmap[i](col[idx]), clip_on=False) for idx in range(cells[i]['totnsegs'])]
-            # [ax1.plot([cell.xmid[idx]], [cell.ymid[idx]], [cell.zmid[idx]], 'D', c=v_clr(cell.zmid[idx])) for idx in v_idxs]
-            ax1.scatter(source_xs, source_ys, source_zs, c=source_amps)
-            if ap_i is not None:
-                ax1.scatter(cells[i]['xmid'][ap_i], cells[i]['ymid'][ap_i], cells[i]['zmid'][ap_i], '*', c='r')
-            ax1.text(cells[i]['xmid'][0], cells[i]['ymid'][0], cells[i]['zmid'][0] - 20 * i, names[cells[i]['rank']])
+    #         [ax1.plot([cells[i]['xstart'][idx], cells[i]['xend'][idx]],
+    #                   [cells[i]['ystart'][idx], cells[i]['yend'][idx]],
+    #                   [cells[i]['zstart'][idx], cells[i]['zend'][idx]],
+    #                   '-', c=cmap[i](col[idx]), clip_on=False) for idx in range(cells[i]['totnsegs'])]
+    #         # [ax1.plot([cell.xmid[idx]], [cell.ymid[idx]], [cell.zmid[idx]], 'D', c=v_clr(cell.zmid[idx])) for idx in v_idxs]
+    #         ax1.scatter(source_xs, source_ys, source_zs, c=source_amps)
+    #         if ap_i is not None:
+    #             ax1.scatter(cells[i]['xmid'][ap_i], cells[i]['ymid'][ap_i], cells[i]['zmid'][ap_i], '*', c='r')
+    #         ax1.text(cells[i]['xmid'][0], cells[i]['ymid'][0], cells[i]['zmid'][0] - 20 * i, names[cells[i]['rank']])
 
-            ax1.view_init(elev, azim)
-        plt.colorbar(sm, label="mV", shrink=.4)
+    #         ax1.view_init(elev, azim)
+    #     plt.colorbar(sm, label="mV", shrink=.4)
 
-        plt.savefig("outputs/temp/mpi_gif_vmem" + str(t) + ".png", dpi=75)
-        plt.close()
-        print("fig {} out of {}").format(t - initial, window)
-        azim += 1
+    #     plt.savefig("outputs/temp/mpi_gif_vmem" + str(t) + ".png", dpi=150)
+    #     plt.close()
+    #     print("fig {} out of {}").format(t - initial, window)
+    #     azim += 1
 
-
+#################################3
 
 
 

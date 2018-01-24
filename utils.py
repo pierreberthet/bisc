@@ -53,8 +53,8 @@ def return_first_spike_time_and_idx(vmem):
 
 def spike_soma(cell):
     '''
-    Return the index of the segment where Vmem first crossed the threshold (Usually set at -20 mV.
-    If many segments crossed threshold during a unique time step, it returns the index of the segment
+    Return the index of the compartment where Vmem first crossed the threshold (Usually set at -20 mV.
+    If many compartments crossed threshold during a unique time step, it returns the index of the compartment
     with the most depolarized membrane value.
     Also contains the time step when this occurred.
     '''
@@ -64,8 +64,40 @@ def spike_soma(cell):
         return [None, None]
     for t_idx in range(1, cell.vmem[soma_idx].shape[1]):
         if np.max(cell.vmem[soma_idx].T[t_idx]) > -20:
-            print np.argmax(cell.vmem[soma_idx].T[t_idx])
             return [t_idx, np.argmax(cell.vmem[soma_idx].T[t_idx])]
+
+
+def spike_segments(cell):
+    '''
+    Return the index for all segments where Vmem crossed the threshold (Usually set at -20 mV.
+    If many compartments within a segment crossed threshold during a unique time step,
+    it returns the index of the compartment with the most depolarized membrane value.
+    Also contains the time step when this occurred.
+    '''
+    spike_time_loc = {}
+    for seg in cell.allsecnames:
+        idx = cell.get_idx(seg)
+        if np.max(cell.vmem[idx]) < -20:
+            print "No spikes detected"
+            spike_time_loc[seg] = [None, None]
+        for t_idx in range(1, cell.vmem[idx].shape[1]):
+            if np.max(cell.vmem[idx].T[t_idx]) > -20:
+                # print np.argmax(cell.vmem[soma_idx].T[t_idx])
+                spike_time_loc[seg] = [t_idx, np.argmax(cell.vmem[idx].T[t_idx])]
+
+    return spike_time_loc
+
+
+def spike_compartments(cell):
+    spike_time_comp = np.zeros(cell.totnsegs)
+    for idx in range(cell.totnsegs):
+        if np.max(cell.vmem[idx]) < -20:
+            # print "No spikes detected"
+            spike_time_comp[idx] = None
+        else:
+            spike_time_comp[idx] = np.argmax(cell.vmem[idx])
+
+    return spike_time_comp
 
 
 def reposition_stick_horiz(cell, x=0, y=0, z=0):
@@ -98,17 +130,15 @@ def create_bisc_array():
     '''
     to be edited from create_array_shape()
     '''
-
+    bisc_array = []
     return bisc_array
 
 
 def external_field(ExtPot, space_resolution=500, x_extent=500, y_extent=500, z_extent=500,
                    z_top=0, axis='xz', dderivative=False, plan=None):
-    plot_field_length_v = 1000
-    plot_field_length_h = 200
-    space_resolution = 500
-    depth_check = -350
-
+    '''
+    Create an external field and optionally compute its double derivative, along a specified plane (2D).
+    '''
     if plan is None:
         plan = 0
 
@@ -372,14 +402,22 @@ def create_array_shape(shape=None, pitch=None):
 
         elif shape == 'quadrupole':
             n_elec = 5
-            polarity = np.array([-1 / 4, -1 / 4, 1, -1 / 4, -1 / 4])
+            polarity = np.array([-1 / 4., -1 / 4., 1, -1 / 4., -1 / 4.])
             source_zs = np.zeros(n_elec)
-            source_xs = np.array([-20, 0, 0, 0, 20])
-            source_ys = np.array([0, 20, 0, -20, 0])
+            source_xs = np.array([-pitch, 0, 0, 0, pitch])
+            source_ys = np.array([0, pitch, 0, -pitch, 0])
 
         elif shape == 'monopole':
             n_elec = 1
             polarity = np.array([1])
+            source_xs = np.array([0])
+            source_ys = np.array([0])
+            source_zs = np.array([0])
+
+        elif shape == 'plausible_monopole':  # #################### To complete
+            n_elec = 9
+            polarity = np.ones(n_elec) * 1. / (n_elec - 1)
+            polarity[0] = 1.
             source_xs = np.array([0])
             source_ys = np.array([0])
             source_zs = np.array([0])
@@ -402,21 +440,40 @@ def create_array_shape(shape=None, pitch=None):
 
         elif shape == 'across':
             n_elec = 9
-            pos = 4 / (9. * 5)
-            neg = -5 / (9. * 4)
+            pos = 1.
+            neg = -5. / 4
             polarity = np.array([neg, pos, neg, pos, pos, pos, neg, pos, neg])
             source_zs = np.zeros(n_elec)
             source_xs = np.array([-pitch, -pitch, -pitch, 0, 0, 0, pitch, pitch, pitch])
             source_ys = np.array([pitch, 0, -pitch, pitch, 0, -pitch, pitch, 0, -pitch])
 
+        elif shape == 'bcross':
+            n_elec = 5
+            pos = 1.
+            neg = -3. / 2
+            polarity = np.array([neg, pos, pos, pos, neg])
+            source_zs = np.zeros(n_elec)
+            source_xs = np.array([-pitch, 0, 0, 0, pitch])
+            source_ys = np.array([0, -pitch, 0, pitch, 0])
+
         elif shape == 'minicross':
             n_elec = 4
-            pos = 1. / 2
+            pos = 1.
             neg = -pos
             polarity = np.array([neg, pos, pos, neg])
             source_zs = np.zeros(n_elec)
-            source_xs = np.array([-pitch * 2, 0, 0, pitch * 2])
+            # source_xs = np.array([-2 * pitch, 0, 0, pitch * 2])
+            source_xs = np.array([-2 * pitch, 0, 0, pitch * 2])
             source_ys = np.array([0, -pitch, pitch, 0])
+
+        elif shape == 'stick':
+            n_elec = 8
+            pos = 1.
+            neg = -pos
+            polarity = np.array([neg, neg, pos, pos, pos, pos, neg, neg])
+            source_zs = np.zeros(n_elec)
+            source_xs = np.array([-pitch, 0, 0, 0, 0, 0, 0, pitch])
+            source_ys = np.array([0, -3 * pitch, -2 * pitch, -pitch, pitch, 2 * pitch, 3 * pitch, 0])
 
         elif shape == 'circle':
             n_elec = 12

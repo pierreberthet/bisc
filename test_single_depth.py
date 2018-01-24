@@ -12,6 +12,7 @@ from mpl_toolkits.mplot3d import Axes3D
 from os.path import join
 import utils
 import neuron
+import plotting_convention
 
 
 plt.close('all')
@@ -20,19 +21,19 @@ plt.close('all')
 # Main script, set parameters and create cell, synapse and electrode objects
 ###############################################################################
 
-# folder = "morphologies/cell_hallermann_myelin"
+folder = "morphologies/cell_hallermann_myelin"
 # folder = "morphologies/cell_hallermann_unmyelin"
 # folder = "morphologies/simple_axon_hallermann"
-folder = "morphologies/HallermannEtAl2012"
+# folder = "morphologies/HallermannEtAl2012"
 # folder = "morphologies/almog"
 # folder = "morphologies/hay_model"
 neuron.load_mechanisms(join(folder))
 # morph = 'patdemo/cells/j4a.hoc', # Mainen&Sejnowski, 1996
-morph = join(folder, '28_04_10_num19.hoc')  # HallermannEtAl2012
+# morph = join(folder, '28_04_10_num19.hoc')  # HallermannEtAl2012
 # morph = join(folder, 'A140612.hoc')  # Almog model
 # morph = join(folder, 'cell1.hoc')  # Hay model
 # morph = join('morphologies', 'axon.hoc')  # Mainen&Sejnowski, 1996
-# morph = join(folder, 'cell_simple_long.hoc')  # stick model based on Hallermann's
+morph = join(folder, 'L_cell_simple.hoc')  # stick model based on Hallermann's
 # custom_code = [join(folder, 'Cell parameters.hoc'),
 custom_code = [join(folder, 'Cell parameters.hoc'),
                join(folder, 'charge.hoc')]
@@ -67,16 +68,16 @@ cell = LFPy.Cell(**cell_parameters)
 # Assign cell positions
 # TEST with different distance between cells
 x_cell_pos = [-10, 0, 0, 10]
-y_cell_pos = [-1500, -10, 10, 0]
+y_cell_pos = [0, -10, 10, 0]
 # z_cell_pos = np.zeros(len(x_cell_pos))
-z_cell_pos = [-30., -1000 - (np.sum(cell.length)), 0.]
+z_cell_pos = [-400., -1000 - (np.sum(cell.length)), 0.]
 
 # utils.reposition_stick_horiz(cell)
 # utils.reposition_stick_flip(cell, x_cell_pos[0], y_cell_pos[0], z_cell_pos[0])
 
 # xrot = [0., 2., 1.]
 # cell.set_rotation(y=xrot[cell_id] * np.pi / 2)
-cell.set_rotation(x=np.pi / 2)
+cell.set_rotation(x=np.pi)
 cell.set_pos(x=x_cell_pos[1], y=y_cell_pos[0], z=z_cell_pos[0])
 # if RANK == 0:
 #    cell.set_rotation(x=np.pi/2)
@@ -135,7 +136,7 @@ c_vext = np.zeros(spatial_resolution)
 source_zs = np.ones(len(source_xs)) * distance[0]
 
 # Stimulation Parameters:
-max_current = 10000000.   # nA
+max_current = 1000000.   # nA
 current_resolution = 2
 # amp_range = np.exp(np.linspace(1, np.log(max_current), current_resolution))
 amp_range = np.linspace(500 * (10 ** 3), max_current, current_resolution)
@@ -165,7 +166,7 @@ while amp < max_current and not is_spike:
 
     # Insert external potential at cell
     cell = LFPy.Cell(**cell_parameters)
-    cell.set_rotation(x=np.pi / 2)
+    cell.set_rotation(x=np.pi)
     cell.set_pos(x=x_cell_pos[0], y=y_cell_pos[0], z=z_cell_pos[0])
 
     # utils.reposition_stick_horiz(cell)
@@ -201,7 +202,7 @@ fig = plt.figure(figsize=[10, 8])
 fig.subplots_adjust(wspace=0.1)
 
 ax1 = plt.subplot(111, projection="3d",
-                  title="t = " + str(spike_time_loc[0] * cell.dt) + "ms", aspect=1, xlabel="x [$\mu$m]",
+                  title="t = " + str(spike_time_loc[0] * cell.dt) + "ms", aspect='auto', xlabel="x [$\mu$m]",
                   ylabel="y [$\mu$m]", zlabel="z [$\mu$m]", xlim=[-600, 600], ylim=[-600, 600], zlim=[-1800, 200])
 # [ax1.plot([cell.xstart[idx], cell.xend[idx]], [cell.ystart[idx], cell.yend[idx]], [cell.zstart[idx], cell.zend[idx]], '-',
 #          c='k', clip_on=False) for idx in range(cell.totnsegs)]
@@ -232,7 +233,7 @@ plt.show()
 cmap = plt.cm.viridis
 norm = mpl.colors.Normalize(vmin=-110, vmax=55)
 
-window = 200
+window = 100
 azim = 90
 for t in range(spike_time_loc[0] - 10, spike_time_loc[0] + window):
     col = (cell.vmem.T[t] + 100) / 150.
@@ -240,7 +241,7 @@ for t in range(spike_time_loc[0] - 10, spike_time_loc[0] + window):
     fig = plt.figure(figsize=[6, 8])
     fig.subplots_adjust(wspace=0.6)
 
-    ax1 = plt.subplot(111, projection="3d", title="t = " + str(t), aspect=1, xlabel="x [$\mu$m]",
+    ax1 = plt.subplot(111, projection="3d", title="t = " + str(t), aspect='auto', xlabel="x [$\mu$m]",
                       ylabel="y [$\mu$m]", zlabel="z [$\mu$m]",
                       xlim=[-600, 600], ylim=[-600, 600], zlim=[-1800, 200])
 
