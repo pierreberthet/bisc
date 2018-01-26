@@ -211,7 +211,7 @@ def external_field(ExtPot, space_resolution=500, x_extent=500, y_extent=500, z_e
             for zidx in range(len(zf) - 2):
                 dd_v_field_ext[:, zidx] = (d_v_field_ext[:, zidx + 1] - d_v_field_ext[:, zidx]) / dz
 
-        return v_field_ext, dderivative
+        return v_field_ext, d_v_field_ext, dd_v_field_ext
     else:
         return v_field_ext
 
@@ -228,16 +228,21 @@ def plot_segment_vmem(cell, seg_name):
     return
 
 
-def get_limit(multid_array):
+def get_minmax(multid_array):
     ma = multid_array[0][0]
     mi = ma
+    if ma is None:
+        print("! None values in the array !")
 
-    for i in range():
-        if np.min() < mi:
-            mi = np.min()
+    ma = np.max(multid_array)
+    mi = np.min(multid_array)
 
-        if np.max() > ma:
-            ma = np.max()
+    # for i in range():
+    #     if np.min() < mi:
+    #         mi = np.min()
+
+    #     if np.max() > ma:
+    #         ma = np.max()
 
     return mi, ma
 
