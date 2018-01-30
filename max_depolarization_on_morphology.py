@@ -14,6 +14,8 @@ import utils
 import neuron
 from mpi4py import MPI
 import plotting_convention
+import imageio
+import glob
 
 # initialize the MPI interface
 COMM = MPI.COMM_WORLD
@@ -355,6 +357,13 @@ else:
     COMM.send(utils.built_for_mpi_space(cell, cell_id, spike_time_loc, cell.allsecnames), dest=0)
 COMM.Barrier()
 
+xlim_min = -750
+xlim_max = 750
+ylim_min = -200
+ylim_max = 200
+zlim_min = -2000
+zlim_max = 50
+
 if cell_id == 0:
 
     # for i in range(n_cells):
@@ -374,13 +383,6 @@ if cell_id == 0:
     fig = plt.figure(figsize=[10, 8])
     fig.subplots_adjust(wspace=0.1)
 
-    xlim_min = -750
-    xlim_max = 750
-    ylim_min = -200
-    ylim_max = 200
-    zlim_min = -2000
-    zlim_max = 50
-
     time_min = cell.tstop / cell.dt
     time_max = 0
     for i in range(n_cells):
@@ -393,7 +395,7 @@ if cell_id == 0:
     print('tmin {}, tmax {}').format(time_min, time_max)
     norm = mpl.colors.Normalize(vmin=time_min, vmax=time_max)
 
-    ax1 = plt.subplot(111, projection="3d", title="Spatiotemporal activations", aspect='auto', xlabel="x [$\mu$m]",
+    ax1 = plt.subplot(131, projection="3d", title="Vmem > -20", aspect='auto', xlabel="x [$\mu$m]",
                       ylabel="y [$\mu$m]", zlabel="z [$\mu$m]", xlim=[xlim_min, xlim_max],
                       ylim=[ylim_min, ylim_max], zlim=[zlim_min, zlim_max])
 
@@ -401,9 +403,9 @@ if cell_id == 0:
     cmap = [plt.cm.summer_r, plt.cm.winter_r,
             plt.cm.Greens_r, plt.cm.Blues_r, plt.cm.bone, plt.cm.pink, plt.cm.autumn, plt.cm.spring]
 
-    sm = plt.cm.ScalarMappable(cmap=cmap[i], norm=plt.Normalize(vmin=time_min, vmax=time_max))
+    sm1 = plt.cm.ScalarMappable(cmap=cmap[i], norm=plt.Normalize(vmin=time_min * cell.dt, vmax=time_max * cell.dt))
     # fake up the array of the scalar mappable. Urgh...
-    sm._A = []
+    sm1._A = []
     for i in range(n_cells):
         # initial = cells[i]['extra'][1]
         # n_sec, names = utils.get_sections_number(cells[i])
@@ -417,12 +419,13 @@ if cell_id == 0:
         #         time_max = spike_time_loc[i][0]
         #     if time_min < spike_time_loc[i][0]:
         #         time_min = spike_time_loc[i][0]
-        col = []
+        col = np.zeros(cells[i]['totnsegs'])
         for idx in range(cells[i]['totnsegs']):
-            col.append(1. - (spike_time_loc[idx] - time_min) / (time_max - time_min))
+            # col.append(1. - (spike_time_loc[idx] - time_min) / (time_max - time_min))
+            col[idx] = (spike_time_loc[idx] - time_min) / (time_max - time_min)
 
         # col = (cells[i]['vmem'].T[initial] + 100) / 150.
-        for idx in range(cells[i]['totnsegs']):
+        # for idx in range(cells[i]['totnsegs']):
 
             if not np.isnan(cells[i]['extra1'][idx]):
                 ax1.plot([cells[i]['xstart'][idx], cells[i]['xend'][idx]], [cells[i]['ystart'][idx],
@@ -437,28 +440,171 @@ if cell_id == 0:
         if not np.all(np.isnan(cells[i]['extra1'])):
             first = np.nanargmin(spike_time_loc)
             ax1.scatter(cells[i]['xmid'][first], cells[i]['ymid'][first], cells[i]['zmid'][first], c='r', marker='*')
-    # fig.colorbar(ax1, label="t [ms]")
-    plt.colorbar(sm, label="t [ms]", shrink=0.4)
-
+    # if 'axon[8]' in cell.allsecnames:
+    #     for node in cell.get_idx('axon[8]')[::5]:
+    #         ax1.text(cell.xmid[node], cell.ymid[node], cell.zmid[node], cell.get_idx_name(node))
+    plt.colorbar(sm1, label="t [ms]", shrink=0.4)
 
     ax1.scatter(source_xs, source_ys, source_zs, c=source_amps, cmap=plt.cm.bwr)
-    # ap_i = cells[i]['extra1'][1]
-    # if ap_i is not None:
-    #     ax1.scatter(cells[i]['xmid'][ap_i], cells[i]['ymid'][ap_i], cells[i]['zmid'][ap_i], '*', c='r')
-    # ax1.text(cells[i]['xmid'][0], cells[i]['ymid'][0], cells[i]['zmid'][0] - 20 * i, names[cells[i]['rank']])
 
-    # for idx in range(cell.totnsegs):
-    #     ax1.text(cell.xmid[idx], cell.ymid[idx], cell.zmid[idx], "{0}.".format(cell.get_idx_name(idx)[1]))
+    # sm2 = plt.cm.ScalarMappable(cmap=cmap[i], norm=plt.Normalize(vmin=np.min(cells[i]['vmem']), vmax=np.max(cells[i]['vmem'])))
+    sm2 = plt.cm.ScalarMappable(cmap=cmap[i], norm=plt.Normalize(vmin=np.min(np.amax(cells[i]['vmem'], 1)), vmax=np.max(cells[i]['vmem'])))
+    # fake up the array of the scalar mappable. Urgh...
+    sm2._A = []
+
+    ax2 = plt.subplot(132, projection="3d", title="max Vmem",
+                      aspect='auto', xlabel="x [$\mu$m]",
+                      ylabel="y [$\mu$m]", zlabel="z [$\mu$m]", xlim=[xlim_min, xlim_max],
+                      ylim=[ylim_min, ylim_max], zlim=[zlim_min, zlim_max])
+
+    for i in range(n_cells):
+        col = []
+        for idx in range(cells[i]['totnsegs']):
+            col.append((np.max(cells[i]['vmem'][idx]) - np.min(np.amax(cells[i]['vmem'], 1))) / (np.max(cells[i]['vmem']) - np.min(np.amax(cells[i]['vmem'], 1))))
+
+        # col = (cells[i]['vmem'].T[initial] + 100) / 150.
+        for idx in range(cells[i]['totnsegs']):
+            ax2.plot([cells[i]['xstart'][idx], cells[i]['xend'][idx]], [cells[i]['ystart'][idx],
+                     cells[i]['yend'][idx]], [cells[i]['zstart'][idx], cells[i]['zend'][idx]],
+                     # '-', c=cmap[0](cells[i]['extra1'][idx]), clip_on=False)
+                     '-', c=cmap[0](col[idx]), clip_on=False)
+                     # '-', c='k', clip_on=False)
+        if not np.all(np.isnan(cells[i]['extra1'])):
+            first = np.nanargmin(spike_time_loc)
+            ax2.scatter(cells[i]['xmid'][first], cells[i]['ymid'][first], cells[i]['zmid'][first], c='r', marker='*')
+    # fig.colorbar(ax1, label="t [ms]")
+    plt.colorbar(sm2, label="[mV]", shrink=0.4)
+    ax2.scatter(source_xs, source_ys, source_zs, c=source_amps, cmap=plt.cm.bwr)
+
 
     elev = 10     # Default 30
     azim = -90    # Default 0
     ax1.view_init(elev, azim)
+    ax2.view_init(elev, azim)
 
     # ax.axes.set_yticks(yinfo)
     # ax.axes.set_yticklabels(yinfo)
     plt.savefig('order_spike.png', dpi=200)
 
     plt.show()
+
+COMM.Barrier()
+initial = pulse_start
+window = pulse_duration + 100
+pre_spike = 10
+
+elev = 10     # Default 30
+azim = 0
+
+if cell_id == 0:
+    vmem_max = 0
+    vmem_min = 0
+    for i in range(n_cells):
+        temp_max = np.nanmax(cells[i]['vmem'])
+        temp_min = np.nanmin(cells[i]['vmem'])
+        if temp_max > vmem_max:
+            vmem_max = temp_max
+        if temp_min < vmem_min:
+            vmem_min = temp_min
+    print('MPI tmin {}, tmax {}').format(time_min, time_max)
+    temp = [vmem_min, vmem_max]
+else:
+    temp = []
+COMM.Barrier()
+
+temp = COMM.bcast(temp, root=0)
+COMM.Barrier()
+
+if cell_id != 0:
+    cells = []
+COMM.Barrier()
+
+cells = COMM.bcast(cells, root=0)
+COMM.Barrier()
+
+vmin = temp[0]
+vmax = temp[1]
+diff = vmax - vmin
+cmap = [plt.cm.gist_heat]
+for t in range(initial - pre_spike, initial + window):
+    if t % n_cells == cell_id:
+        azim = 1 * (t + pre_spike - initial)
+        fig = plt.figure(figsize=[12, 12])
+        fig.subplots_adjust(wspace=0.6)
+        fig.suptitle("Membrane potential")
+        ax1 = plt.subplot(111, projection="3d", title="t = " + ("%.3f" % (t * cell.dt)) + " ms",
+                          aspect='auto', xlabel="x [$\mu$m]", ylabel="y [$\mu$m]", zlabel="z [$\mu$m]",
+                          # xlim=[-600, 600], ylim=[-600, 600], zlim=[-400, 200])
+                          xlim=[xlim_min, xlim_max], ylim=[ylim_min, ylim_max], zlim=[zlim_min, zlim_max])
+        for i in range(n_cells):
+
+            col = (cells[i]['vmem'].T[t] + np.abs(vmin)) / diff
+            sm = plt.cm.ScalarMappable(cmap=cmap[0], norm=plt.Normalize(vmin=vmin, vmax=vmax))
+            # fake up the array of the scalar mappable. Urgh...
+            sm._A = []
+
+            [ax1.plot([cells[i]['xstart'][idx], cells[i]['xend'][idx]],
+                      [cells[i]['ystart'][idx], cells[i]['yend'][idx]],
+                      [cells[i]['zstart'][idx], cells[i]['zend'][idx]],
+                      '-', c=cmap[0](col[idx]), clip_on=False) for idx in range(cells[i]['totnsegs'])]
+            # [ax1.plot([cell.xmid[idx]], [cell.ymid[idx]], [cell.zmid[idx]], 'D', c=v_clr(cell.zmid[idx])) for idx in v_idxs]
+            ax1.scatter(source_xs, source_ys, source_zs, c=source_amps)
+            # if ap_i is not None:
+            #     ax1.scatter(cells[i]['xmid'][ap_i], cells[i]['ymid'][ap_i], cells[i]['zmid'][ap_i], '*', c='r')
+            # ax1.text(cells[i]['xmid'][0], cells[i]['ymid'][0], cells[i]['zmid'][0] - 20 * i, names[cells[i]['rank']])
+
+            ax1.view_init(elev, azim)
+        plt.colorbar(sm, label="mV", shrink=.4)
+
+        plt.savefig("outputs/temp/gif_vmem" + str(azim) + ".png", dpi=100)
+        plt.close()
+        print("fig {} out of {}").format(t - initial, window)
+
+COMM.Barrier()
+if cell_id == 0:
+    with imageio.get_writer('outputs/gif_vmem.gif', duration=.12, mode='I') as writer:
+        for filename in np.sort(glob.glob('outputs/temp/gif_vmem*.png')):
+            image = imageio.imread(filename)
+            writer.append_data(image)
+    writer.close()
+
+
+
+
+    # for t in range(initial - pre_spike, initial + window):
+    #     fig = plt.figure(figsize=[12, 12])
+    #     fig.subplots_adjust(wspace=0.6)
+    #     fig.suptitle("Membrane potential")
+    #     ax1 = plt.subplot(111, projection="3d", title="t = " + ("%.3f" % (t * cell.dt)) + " ms",
+    #                       aspect='auto', xlabel="x [$\mu$m]", ylabel="y [$\mu$m]", zlabel="z [$\mu$m]",
+    #                       # xlim=[-600, 600], ylim=[-600, 600], zlim=[-400, 200])
+    #                       xlim=[xlim_min, xlim_max], ylim=[ylim_min, ylim_max], zlim=[zlim_min, zlim_max])
+    #     for i in range(n_cells):
+
+    #         col = (cells[i]['vmem'].T[t] + np.abs(vmin)) / diff
+    #         sm = plt.cm.ScalarMappable(cmap=cmap[i], norm=plt.Normalize(vmin=vmin, vmax=vmax))
+    #         # fake up the array of the scalar mappable. Urgh...
+    #         sm._A = []
+
+    #         [ax1.plot([cells[i]['xstart'][idx], cells[i]['xend'][idx]],
+    #                   [cells[i]['ystart'][idx], cells[i]['yend'][idx]],
+    #                   [cells[i]['zstart'][idx], cells[i]['zend'][idx]],
+    #                   '-', c=cmap[i](col[idx]), clip_on=False) for idx in range(cells[i]['totnsegs'])]
+    #         # [ax1.plot([cell.xmid[idx]], [cell.ymid[idx]], [cell.zmid[idx]], 'D', c=v_clr(cell.zmid[idx])) for idx in v_idxs]
+    #         ax1.scatter(source_xs, source_ys, source_zs, c=source_amps)
+    #         # if ap_i is not None:
+    #         #     ax1.scatter(cells[i]['xmid'][ap_i], cells[i]['ymid'][ap_i], cells[i]['zmid'][ap_i], '*', c='r')
+    #         # ax1.text(cells[i]['xmid'][0], cells[i]['ymid'][0], cells[i]['zmid'][0] - 20 * i, names[cells[i]['rank']])
+
+    #         ax1.view_init(elev, azim)
+    #     plt.colorbar(sm, label="mV", shrink=.4)
+
+    #     plt.savefig("outputs/temp/gif_vmem" + str(t) + ".png", dpi=100)
+    #     plt.close()
+    #     print("fig {} out of {}").format(t - initial, window)
+    #     azim += 1
+
+
     # plt.close()
 
     # cmap = plt.cm.viridis

@@ -97,7 +97,7 @@ cortical_surface_height = 50
 # Parameters for the external field
 sigma = 0.3
 
-amp = 50 # * 10**3  # nA
+amp = 50  # * 10**3  # nA
 
 polarity, n_elec, positions = utils.create_array_shape('line', 15)
 source_xs = positions[0]
@@ -158,7 +158,7 @@ initial = spike_time_loc[1]
 
 
 if spike_time_loc[0] is None:
-	spike_time_loc = [pulse_start+50]
+	spike_time_loc = [pulse_start + 50]
 
 
 

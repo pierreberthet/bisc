@@ -95,7 +95,7 @@ def spike_compartments(cell):
             # print "No spikes detected"
             spike_time_comp[idx] = None
         else:
-            spike_time_comp[idx] = np.argmax(cell.vmem[idx])
+            spike_time_comp[idx] = np.argmax(cell.vmem[idx] > -20.)
 
     return spike_time_comp
 
