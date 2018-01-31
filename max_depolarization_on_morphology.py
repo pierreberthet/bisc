@@ -443,12 +443,13 @@ if cell_id == 0:
     # if 'axon[8]' in cell.allsecnames:
     #     for node in cell.get_idx('axon[8]')[::5]:
     #         ax1.text(cell.xmid[node], cell.ymid[node], cell.zmid[node], cell.get_idx_name(node))
+    # cbaxes = fig.add_axes([0.8, 0.1, 0.03, 0.8]) 
     plt.colorbar(sm1, label="t [ms]", shrink=0.4)
 
     ax1.scatter(source_xs, source_ys, source_zs, c=source_amps, cmap=plt.cm.bwr)
 
     # sm2 = plt.cm.ScalarMappable(cmap=cmap[i], norm=plt.Normalize(vmin=np.min(cells[i]['vmem']), vmax=np.max(cells[i]['vmem'])))
-    sm2 = plt.cm.ScalarMappable(cmap=cmap[i], norm=plt.Normalize(vmin=np.min(np.amax(cells[i]['vmem'], 1)), vmax=np.max(cells[i]['vmem'])))
+    sm2 = plt.cm.ScalarMappable(cmap=cmap[0], norm=plt.Normalize(vmin=np.min(np.amax(cells[i]['vmem'], 1)), vmax=np.max(cells[i]['vmem'])))
     # fake up the array of the scalar mappable. Urgh...
     sm2._A = []
 

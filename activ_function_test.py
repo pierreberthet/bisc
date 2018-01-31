@@ -32,11 +32,11 @@ neuron.load_mechanisms(join(folder))
 # morph = join(folder, 'A140612.hoc')  # Almog model
 # morph = join(folder, 'cell1.hoc')  # Hay model
 # morph = join('morphologies', 'axon.hoc')  # Mainen&Sejnowski, 1996
-morph = join(folder, 'cell_simple.hoc')  # stick model based on Hallermann's
+morph = join(folder, 'L_cell_simple.hoc')  # stick model based on Hallermann's
 # custom_code = [join(folder, 'Cell parameters.hoc'),
 custom_code = [join(folder, 'Cell parameters.hoc'),
-               join(folder, 'charge.hoc'),
-               join(folder, 'pruning_full.hoc')]
+               join(folder, 'charge.hoc')]
+               # join(folder, 'pruning_full.hoc')]
                 # join(folder, 'custom_code.hoc')]
 				# join(folder, 'initialize_mechs.hoc')]
 
@@ -155,6 +155,27 @@ initial = spike_time_loc[1]
 # #     ax1.text(cell.xmid[idx], cell.ymid[idx], cell.zmid[idx], "{0}.".format(cell.get_idx_name(idx)[1]))
 
 
+# Derivatives
+space_resolution = 500
+x_extent = 200
+z_extent = 3500
+z_top = 0
+# v_field_ext = np.zeros((space_resolution, space_resolution))
+v_field_ext = utils.test_linear(axis='xz', dim=[-x_extent, x_extent, cortical_surface_height, -z_extent]) * amp
+
+# xf = np.linspace(-x_extent, x_extent)
+zf = np.arange(-z_extent, z_top)
+d_v_field_ext = np.zeros((v_field_ext.shape[0], v_field_ext.shape[1] - 1))
+dz = zf[1] - zf[0]
+
+for zidx in zf[::-1]:
+    d_v_field_ext[:, zidx] = (v_field_ext[:, zidx + 1] - v_field_ext[:, zidx]) / dz
+
+# double derivative of V in z-direction
+dd_v_field_ext = np.zeros((v_field_ext.shape[0], d_v_field_ext.shape[1] - 1))
+
+for zidx in zf[::-2]:
+    dd_v_field_ext[:, zidx] = (d_v_field_ext[:, zidx + 1] - d_v_field_ext[:, zidx]) / dz
 
 
 if spike_time_loc[0] is None:
@@ -163,12 +184,7 @@ if spike_time_loc[0] is None:
 
 
 ax1 = plt.subplot(231, title="t = " + str(spike_time_loc[0] * cell.dt) + "ms", aspect=3, xlabel="x [$\mu$m]",
-                  ylabel="y [$\mu$m]", xlim=[-200, 200], ylim=[-3500, 100])
-
-# [ax1.plot([cell.xstart[idx], cell.xend[idx]], [cell.ystart[idx], cell.yend[idx]], [cell.zstart[idx], cell.zend[idx]], '-',
-#          c='k', clip_on=False) for idx in range(cell.totnsegs)]
-# [plt.plot([cell.xstart[idx], cell.xend[idx]], [cell.zstart[idx], cell.zend[idx]], '-',
-# cmap = plt.cm.RdBu_r
+                  ylabel="y [$\mu$m]", xlim=[-x_extent, x_extent], ylim=[-z_extent, cortical_surface_height])
 cmap = plt.cm.viridis
 norm = mpl.colors.Normalize(vmin=-100, vmax=50)
 col = (cell.vmem.T[spike_time_loc[0]] + 100) / 150.
@@ -176,23 +192,11 @@ col = (cell.vmem.T[spike_time_loc[0]] + 100) / 150.
           # '-', c='k', clip_on=False) for idx in range(cell.totnsegs)]
           # '-', c=plt.cm.viridis((cell.vmem[idx][spike_time_loc[0]] - np.min(cell.vmem.T[spike_time_loc[0]])) / np.linalg.norm(cell.vmem.T[spike_time_loc[0]])),
           '-', c=cmap(col[idx]), clip_on=False) for idx in range(cell.totnsegs)]
-# [ax1.plot([cell.xmid[idx]], [cell.ymid[idx]], [cell.zmid[idx]], 'D', c=v_clr(cell.zmid[idx])) for idx in v_idxs]
-# ax1.colorbar()
-lin_field = utils.test_linear(axis='xz', dim=[-100, 100, 50, -3500]) * amp
-# plt.imshow(np.linspace(-100, 100), np.linspace(50, -2000), lin_field.T.reshape(np.size(lin_field)))
-im1 = plt.imshow(lin_field.T, extent=[-200, 200, -3500, 50], cmap=plt.cm.bone, aspect='auto')
+im1 = plt.imshow(v_field_ext.T, extent=[-x_extent, x_extent, -z_extent, cortical_surface_height], cmap=plt.cm.bone, aspect='auto')
 
-# span = len(lin_field)
-# ax1.plot_surface(np.arange(-100, 100, len(lin_field)), np.zeros((len(lin_field[0]), len(lin_field))), lin_field, alpha=.5)
-# ax1.plot_surface(np.arange(span), np.zeros(span), np.arange(span), color='k', cmap=plt.cm.inferno, alpha=.5)
-# ax1.plot_surface(np.mgrid[0:span, 0:span], np.zeros((span, span)), np.mgrid[0:span, 0:span], rstride=1, cstride=1, color='k', cmap=plt.cm.inferno, alpha=.5)
 ax1.scatter(source_xs, source_zs, c=source_amps)
 if initial is not None:
 	ax1.scatter(cell.xmid[initial], cell.zmid[initial], marker='*', c='r')
-# for idx in range(cell.totnsegs):
-#     ax1.text(cell.xmid[idx], cell.ymid[idx], cell.zmid[idx], "{0}.".format(cell.get_idx_name(idx)[1]))
-# colorbar_ax = fig.add_axes([.9, 0.1, 0.05, 0.8])
-# fig.colorbar(im1, cax=colorbar_ax, label='External Potential [mV]')
 fig.colorbar(im1, label='External Potential [mV]')
 
 if initial is None:
@@ -215,18 +219,41 @@ ax2.legend()
 ax3 = plt.subplot(233, projection='3d', title='V_m along the cell', xlabel='z [$\mu$m]', ylabel='t [ms]', zlabel='mV', aspect='auto')
 # 1 before the pulse, 1 or 2 during (one at spike time if any), 1 after
 zidx = 1
-# ax3.plot(np.arange(cell.totnsegs), np.ones(cell.totnsegs) * (zidx), cell.vmem.T[pulse_start - 10][cell.zmid.argsort()])
-# ax3.plot(np.arange(cell.totnsegs), np.ones(cell.totnsegs) * (zidx + 1), cell.vmem.T[pulse_start + 50][cell.zmid.argsort()])
-# ax3.plot(np.arange(cell.totnsegs), np.ones(cell.totnsegs) * (zidx + 2), cell.vmem.T[pulse_start + 55][cell.zmid.argsort()])
-# if spike_time_loc is not None:
-# 	ax3.plot(np.arange(cell.totnsegs), np.ones(cell.totnsegs) * (zidx + 3), cell.vmem.T[spike_time_loc[0]][cell.zmid.argsort()])
-# 	zidx += 1
-# ax3.plot(np.arange(cell.totnsegs), np.ones(cell.totnsegs) * (zidx + 3),
-# 	   	 cell.vmem.T[pulse_start + pulse_duration + 10][cell.zmid.argsort()])
 
 for i in range(200, pulse_start+pulse_duration + 50, 10):
 	ax3.plot(np.arange(cell.totnsegs), np.ones(cell.totnsegs) * i, cell.vmem.T[i][cell.zmid.argsort()][::-1])
 
+ax4 = plt.subplot(234, title="derivative of external potential", aspect=3, xlabel="x [$\mu$m]",
+                  ylabel="y [$\mu$m]", xlim=[-x_extent, x_extent], ylim=[-z_extent, cortical_surface_height])
+cmap = plt.cm.viridis
+# norm = mpl.colors.Normalize(vmin=-100, vmax=50)
+col = (cell.vmem.T[spike_time_loc[0]] + 100) / 150.
+[ax4.plot([cell.xstart[idx], cell.xend[idx]], [cell.zstart[idx], cell.zend[idx]],
+          # '-', c='k', clip_on=False) for idx in range(cell.totnsegs)]
+          # '-', c=plt.cm.viridis((cell.vmem[idx][spike_time_loc[0]] - np.min(cell.vmem.T[spike_time_loc[0]])) / np.linalg.norm(cell.vmem.T[spike_time_loc[0]])),
+          '-', c=cmap(col[idx]), clip_on=False) for idx in range(cell.totnsegs)]
+im4 = plt.imshow(d_v_field_ext.T, extent=[-x_extent, x_extent, -z_extent, cortical_surface_height], cmap=plt.cm.bone, aspect='auto')
+
+ax4.scatter(source_xs, source_zs, c=source_amps)
+if initial is not None:
+	ax4.scatter(cell.xmid[initial], cell.zmid[initial], marker='*', c='r')
+fig.colorbar(im4, label='[mV / $\mu$m]')
+
+ax5 = plt.subplot(235, title="2nd derivative", aspect=3, xlabel="x [$\mu$m]",
+                  ylabel="y [$\mu$m]", xlim=[-x_extent, x_extent], ylim=[-z_extent, cortical_surface_height])
+cmap = plt.cm.viridis
+# norm = mpl.colors.Normalize(vmin=-100, vmax=50)
+col = (cell.vmem.T[spike_time_loc[0]] + 100) / 150.
+[ax5.plot([cell.xstart[idx], cell.xend[idx]], [cell.zstart[idx], cell.zend[idx]],
+          # '-', c='k', clip_on=False) for idx in range(cell.totnsegs)]
+          # '-', c=plt.cm.viridis((cell.vmem[idx][spike_time_loc[0]] - np.min(cell.vmem.T[spike_time_loc[0]])) / np.linalg.norm(cell.vmem.T[spike_time_loc[0]])),
+          '-', c=cmap(col[idx]), clip_on=False) for idx in range(cell.totnsegs)]
+im5 = plt.imshow(dd_v_field_ext.T, extent=[-x_extent, x_extent, -z_extent, cortical_surface_height], cmap=plt.cm.bone, aspect='auto')
+
+ax5.scatter(source_xs, source_zs, c=source_amps)
+if initial is not None:
+	ax5.scatter(cell.xmid[initial], cell.zmid[initial], marker='*', c='r')
+fig.colorbar(im5, label='[mV / $\mu m^2$]')
 
 ax6 = plt.subplot(236, title='V_ext along the cell', xlabel='z [$\mu$]m', ylabel='mV')
 for i in range(200, pulse_start+pulse_duration + 50, 10):
@@ -235,6 +262,8 @@ for i in range(200, pulse_start+pulse_duration + 50, 10):
 plt.tight_layout()
 pconv.mark_subplots(ax1, 'A', xpos=-.25 , ypos=.99)
 pconv.mark_subplots(ax2, 'B', xpos=-.25 , ypos=.99)
+pconv.mark_subplots(ax4, 'D', xpos=-.25 , ypos=.99)
+pconv.mark_subplots(ax5, 'E', xpos=-.25 , ypos=.99)
 # pconv.mark_subplots(ax3, 'C', xpos=-.25 , ypos=.99)
 # pconv.mark_subplots(ax3, 'C')
 pconv.mark_subplots(ax6, 'F', xpos=-.25 , ypos=.99)

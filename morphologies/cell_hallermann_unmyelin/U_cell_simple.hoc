@@ -1,0 +1,79 @@
+//From Hallermann et al. 2012, unmyelinated axon version
+proc celldef() {
+  topol()
+  subsets()
+  geom()
+  biophys()
+  geom_nseg()
+}
+
+apicNum		=	1
+axonNum		=	4
+
+create soma,  axon[axonNum], apic[apicNum]
+
+// axon[0] is AIS
+
+proc topol() { local i
+
+connect axon(0), soma(0.5)
+connect apic(0), soma(0.5)
+connect axon[1](0), axon[0](1)
+
+basic_shape()
+}
+
+
+
+proc basic_shape() {
+
+soma {pt3dclear()
+  pt3dadd(0, 0, 10, 20) pt3dadd(0, 0, -10, 20)
+	}
+
+axon[0] {pt3dclear()
+  pt3dadd(0, 0, 0, 2) pt3dadd(0, 0, -20, 2)}
+
+axon[1] {pt3dclear()
+  pt3dadd(0, 0, -20, 2) pt3dadd(0, 0, -300, 2)}
+
+axon[2] {pt3dclear()
+  pt3dadd(0, 0, -300, 2) pt3dadd(100, 0, -300, 2)}
+
+axon[3] {pt3dclear()
+  pt3dadd(100, 0, -300, 2) pt3dadd(100, 0, 0, 2)}
+
+apic[0] {pt3dclear()
+  pt3dadd(0, 0, 0, 1.5) pt3dadd(0, 0, 20, 1.5)
+    }
+
+}
+
+objref all, somatic, axonal, apical
+proc subsets() { local i
+  objref all, somatic, axonal, apical
+  all = new SectionList()
+    axon all.append()
+    soma all.append()
+    apic all.append()
+
+
+  somatic = new SectionList()
+    soma somatic.append()
+
+  axonal = new SectionList()
+    axon axonal.append()
+
+  apical = new SectionList()
+    apic apical.append()
+
+}
+proc geom() {
+}
+proc geom_nseg() {
+}
+proc biophys() {
+}
+access soma
+
+celldef()
