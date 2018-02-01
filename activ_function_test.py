@@ -20,8 +20,8 @@ plt.close('all')
 # Main script, set parameters and create cell, synapse and electrode objects
 ###############################################################################
 
-folder = "morphologies/cell_hallermann_myelin"
-# folder = "morphologies/cell_hallermann_unmyelin"
+# folder = "morphologies/cell_hallermann_myelin"
+folder = "morphologies/cell_hallermann_unmyelin"
 # folder = "morphologies/simple_axon_hallermann"
 # folder = "morphologies/HallermannEtAl2012"
 # folder = "morphologies/almog"
@@ -32,7 +32,7 @@ neuron.load_mechanisms(join(folder))
 # morph = join(folder, 'A140612.hoc')  # Almog model
 # morph = join(folder, 'cell1.hoc')  # Hay model
 # morph = join('morphologies', 'axon.hoc')  # Mainen&Sejnowski, 1996
-morph = join(folder, 'L_cell_simple.hoc')  # stick model based on Hallermann's
+morph = join(folder, 'cell_simple_long.hoc')  # stick model based on Hallermann's
 # custom_code = [join(folder, 'Cell parameters.hoc'),
 custom_code = [join(folder, 'Cell parameters.hoc'),
                join(folder, 'charge.hoc')]
@@ -63,6 +63,8 @@ cell_parameters = {          # various cell parameters,
 
 names = ["axon myelin"]
 
+half_linear = False  # Set a symmetric "linear field" centered on the half o fthe cell z-length
+
 cell = LFPy.Cell(**cell_parameters)
 # Assign cell positions
 # TEST with different distance between cells
@@ -75,7 +77,7 @@ z_cell_pos = [-50]
 
 # cell.set_rotation(x=np.pi)
 cell.set_pos(x=x_cell_pos[0], y=y_cell_pos[0], z=z_cell_pos[0])
-# utils.reposition_stick_flip(cell)
+# utils.reposition_stick_flip(cell, x=x_cell_pos[0], y=y_cell_pos[0], z=z_cell_pos[0])
 
 
 
@@ -97,7 +99,7 @@ cortical_surface_height = 50
 # Parameters for the external field
 sigma = 0.3
 
-amp = 50  # * 10**3  # nA
+amp = 60  # * 10**3  # nA
 
 polarity, n_elec, positions = utils.create_array_shape('line', 15)
 source_xs = positions[0]
@@ -112,7 +114,10 @@ source_amps = np.multiply(polarity, amp)
 
 v_cell_ext = np.zeros((cell.totnsegs, n_tsteps))
 
-v_cell_ext[:, :] = utils.linear_field(cell, pulse_start, pulse_start + pulse_duration, n_tsteps, axis='z') * amp
+if half_linear:
+	v_cell_ext[:, :] = utils.half_linear_field(cell, pulse_start, pulse_start + pulse_duration, n_tsteps, axis='z') * amp
+else:
+	v_cell_ext[:, :] = utils.linear_field(cell, pulse_start, pulse_start + pulse_duration, n_tsteps, axis='z') * amp
 
 cell.insert_v_ext(v_cell_ext, t)
 
@@ -158,10 +163,16 @@ initial = spike_time_loc[1]
 # Derivatives
 space_resolution = 500
 x_extent = 200
-z_extent = 3500
+if half_linear:
+	z_extent = np.int(np.abs(np.min(cell.zmid)))
+else:
+	z_extent = 3500
 z_top = 0
 # v_field_ext = np.zeros((space_resolution, space_resolution))
-v_field_ext = utils.test_linear(axis='xz', dim=[-x_extent, x_extent, cortical_surface_height, -z_extent]) * amp
+if half_linear:
+	v_field_ext = utils.half_test_linear(axis='xz', dim=[-x_extent, x_extent, cortical_surface_height, -z_extent]) * amp
+else:
+	v_field_ext = utils.test_linear(axis='xz', dim=[-x_extent, x_extent, cortical_surface_height, -z_extent]) * amp
 
 # xf = np.linspace(-x_extent, x_extent)
 zf = np.arange(-z_extent, z_top)
@@ -180,8 +191,6 @@ for zidx in zf[::-2]:
 
 if spike_time_loc[0] is None:
 	spike_time_loc = [pulse_start + 50]
-
-
 
 ax1 = plt.subplot(231, title="t = " + str(spike_time_loc[0] * cell.dt) + "ms", aspect=3, xlabel="x [$\mu$m]",
                   ylabel="y [$\mu$m]", xlim=[-x_extent, x_extent], ylim=[-z_extent, cortical_surface_height])
@@ -204,10 +213,12 @@ if initial is None:
 else: 
 	ax2 = plt.subplot(232, title="Vm of segment {0} ({1})".format(initial, cell.get_idx_name(initial)[1]), xlabel='ms', ylabel='mV')
 	ax2.plot(cell.vmem[initial], label=cell.get_idx_name(initial)[1])
-top = np.argmax(cell.zend)
-bottom = np.argmin(cell.zend)
+top = np.argmax(cell.zmid)
+bottom = np.argmin(cell.zmid)
 ax2.plot(cell.vmem[top], label="top " + cell.get_idx_name(top)[1])
 ax2.plot(cell.vmem[bottom], label="bottom " + cell.get_idx_name(bottom)[1])
+if 'soma'in cell.allsecnames and ((bottom != 0) or (top != 0)):
+	ax2.plot(cell.vmem[0], label='soma')
 
 prev_labels = [item.get_text() for item in ax2.get_xticklabels()]
 # labels = np.linspace(0., np.max(t), len(prev_labels))
@@ -255,7 +266,7 @@ if initial is not None:
 	ax5.scatter(cell.xmid[initial], cell.zmid[initial], marker='*', c='r')
 fig.colorbar(im5, label='[mV / $\mu m^2$]')
 
-ax6 = plt.subplot(236, title='V_ext along the cell', xlabel='z [$\mu$]m', ylabel='mV')
+ax6 = plt.subplot(236, title='V_ext along the cell', xlabel='z [$\mu$m]', ylabel='mV')
 for i in range(200, pulse_start+pulse_duration + 50, 10):
 	ax6.plot(np.arange(cell.totnsegs), np.asarray(cell.v_ext).T[i][cell.zmid.argsort()][::-1])
 

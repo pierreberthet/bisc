@@ -340,6 +340,62 @@ def test_linear(axis='xz', dim=[-200, 200, 0, -1000], a=1e-3, b=.1, res=201):
     return v_field_ext
 
 
+def half_test_linear(axis='xz', dim=[-200, 200, 0, -1000], a=1e-3, b=.1, res=201):
+    '''
+    TEST Returns an array with a linear field with the specified dimensions, starting at 0.
+    '''
+    v_field_ext = np.zeros((abs(dim[0] - dim[1]), abs(dim[2] - dim[3])))
+    if axis == 'xz':
+        xf = np.linspace(dim[0], dim[1], abs(dim[0] - dim[1]))
+        zf = np.linspace(dim[2], dim[3], abs(dim[2] - dim[3]))
+        for zidx, z in enumerate(zf):
+            if z > dim[3] / 2.:
+                for xidx, x in enumerate(xf):
+                    v_field_ext[xidx, zidx] = a * z + b
+            else:
+                for xidx, x in enumerate(xf):
+                    v_field_ext[xidx, zidx] = a * (dim[3] - z) + b                
+    if axis == 'yz':
+        yf = np.linspace(dim[0], dim[1], abs(dim[0] - dim[1]))
+        zf = np.linspace(dim[2], dim[3], abs(dim[2] - dim[3]))
+        for zidx, z in enumerate(zf):
+            for yidx, y in enumerate(yf):
+                v_field_ext[yidx, zidx] = a * z + b
+    if axis == 'xy':
+        xf = np.linspace(dim[0], dim[1], abs(dim[0] - dim[1]))
+        yf = np.linspace(dim[2], dim[3], abs(dim[2] - dim[3]))
+        for yidx, y in enumerate(yf):
+            for xidx, x in enumerate(xf):
+                v_field_ext[xidx, yidx] = a * y + b
+
+    # toplot = np.array((np.linspace(dim[0], dim[1], res), np.linspace(dim[2], dim[3], res), np.zeros(res)))
+    # for x in res:
+    #     for y in res:
+    #         toplot
+    return v_field_ext
+
+
+def half_linear_field(cell, pulse_start, pulse_end, n_tsteps, axis, a=1e-3, b=.1):
+    '''
+    0 mV @ x, y or z = 0, depending on the axis selected for the field.
+    '''
+    v_cell_ext = np.zeros((cell.totnsegs, n_tsteps))
+    if axis == 'x':
+        v_cell_ext[:, pulse_start:pulse_end] = np.array([(a * x + b) for x in cell.xmid]).reshape(cell.totnsegs, 1)
+    elif axis == 'y':
+        v_cell_ext[:, pulse_start:pulse_end] = np.array([(a * y + b) for y in cell.ymid]).reshape(cell.totnsegs, 1)
+    elif axis == 'z':
+        for i, z in enumerate(cell.zmid):
+            if z > np.min(cell.zmid) / 2.:
+                v_cell_ext[i, pulse_start:pulse_end] = a * z + b
+            else:
+                v_cell_ext[i, pulse_start:pulse_end] = a * (np.min(cell.zmid) - z) + b
+        # v_cell_ext[:, pulse_start:pulse_end] = np.array([(a * z + b) for z in cell.zmid]).reshape(cell.totnsegs, 1)
+
+    return v_cell_ext
+
+
+
 def linear_field(cell, pulse_start, pulse_end, n_tsteps, axis, a=1e-3, b=.1):
     '''
     0 mV @ x, y or z = 0, depending on the axis selected for the field.
