@@ -62,9 +62,6 @@ if RANK == 1:
                    join(folder, 'charge.hoc'),
                    join(folder, 'pruning_full.hoc')]
 
-
-
-
 if RANK == 2:
     folder = "morphologies/cell_hallermann_myelin"
     # folder = "morphologies/cell_hallermann_unmyelin"
@@ -212,7 +209,7 @@ COMM.Barrier()
 
 # names = ["axon myelin", "neuron myelin", "neuron nonmyelin", "axon nonmyelin"]
 names = ["REF Vert soma + axon myelin",
-         "Horiz soma + axon myelin long", "Horiz axon myelin", "Vert axon myelin", "Vert soma + axon myelin",
+         "Horiz axon myelin long", "Horiz axon myelin", "Vert axon myelin", "Vert soma + axon myelin",
          "Horiz axon unmyelin long", "Horiz axon unmyelin", "Vert axon unmyelin", "Vert soma + axon unmyelin"]
 # names = ["Layer I parallel myelin", "neuron myelin", "neuron unmyelin", "axon unmyelin"]
 
@@ -220,7 +217,7 @@ clamp = False
 
 cell = LFPy.Cell(**cell_parameters)
 # Assign cell positions
-min_distance = 1  # [um]
+min_distance = 0  # [um]
 max_distance = 200
 num_steps = 200
 distance = np.linspace(min_distance, max_distance, num_steps)
@@ -234,16 +231,18 @@ z_cell_pos = np.ones(n_cells) * -dura_height
 
 y_cell_pos[1::] = distance[0]
 
-if cell_id == 1 or cell_id == 2 or cell_id == 5:
+if cell_id == 1 or cell_id == 2 or cell_id == 5 or cell_id == 6:
     utils.reposition_stick_horiz(cell, x=x_cell_pos[cell_id], y=y_cell_pos[cell_id], z=z_cell_pos[cell_id])
-elif cell_id == 4 or cell_id == 7:
-    utils.reposition_stick_flip(cell, x=x_cell_pos[cell_id], y=y_cell_pos[cell_id], z=z_cell_pos[cell_id])
+# elif cell_id == 4 or cell_id == 8:
+#     utils.reposition_stick_flip(cell, x=x_cell_pos[cell_id], y=y_cell_pos[cell_id], z=z_cell_pos[cell_id])
 else:
     cell.set_pos(x=x_cell_pos[cell_id], y=y_cell_pos[cell_id], z=z_cell_pos[cell_id])
     # utils.reposition_stick_flip(cell, x_cell_pos[cell_id], y_cell_pos[cell_id], z_cell_pos[cell_id])
 # cell.set_rotation(x=np.pi/2)
 # cell.set_rotation(y=np.pi/2)
 # cell.set_rotation(z=np.pi/2)
+
+# print("cell_id {}, xmid[0] {}, ymid[0] {}, zmid[0] {}").format(cell_id, cell.xmid[0], cell.ymid[0], cell.zmid[0])
 
 n_tsteps = int(cell.tstop / cell.dt + 1)
 
@@ -268,12 +267,12 @@ pulse[pulse_start:(pulse_start + pulse_duration)] = 1.
 
 
 # TO DETERMINE OR NOT, maybe just start from zmin = - max cortical thickness
-cortical_surface_height = 20
+cortical_surface_height = dura_height
 
 # Parameters for the external field
 sigma = 0.3
 
-polarity, n_elec, positions = utils.create_array_shape('monopole', 25)
+polarity, n_elec, positions = utils.create_array_shape('bcross', 25)
 source_xs = positions[0]
 source_ys = positions[1]
 source_zs = positions[2] + dura_height
@@ -339,13 +338,20 @@ for d_idx, depth in enumerate(distance):
         v_cell_ext = np.zeros((cell.totnsegs, n_tsteps))
 
         # cell.set_pos(x=x_cell_pos[cell_id], y=y_cell_pos[cell_id], z=z_cell_pos[cell_id])
-        if cell_id != 0:
-            if cell_id == 1 or cell_id == 2 or cell_id == 5:
-                utils.reposition_stick_horiz(cell, x=x_cell_pos[cell_id], y=distance[d_idx], z=z_cell_pos[cell_id])
-            elif cell_id == 4 or cell_id == 7:
-                utils.reposition_stick_flip(cell, x=x_cell_pos[cell_id], y=distance[d_idx], z=z_cell_pos[cell_id])
+        # if cell_id != 0:
+        if cell_id == 1 or cell_id == 2 or cell_id == 5 or cell_id == 6:
+            utils.reposition_stick_horiz(cell, x=x_cell_pos[cell_id], y=distance[d_idx], z=z_cell_pos[cell_id])
+            # print("cell {} repositioned horiz").format(cell_id)
+        # elif cell_id == 4 or cell_id == 7:
+        #     utils.reposition_stick_flip(cell, x=x_cell_pos[cell_id], y=distance[d_idx], z=z_cell_pos[cell_id])
+        else:
+            if cell_id == 0:
+                cell.set_pos(x=x_cell_pos[cell_id], y=y_cell_pos[cell_id], z=z_cell_pos[cell_id])
             else:
                 cell.set_pos(x=x_cell_pos[cell_id], y=distance[d_idx], z=z_cell_pos[cell_id])
+            # print("cell {} vert").format(cell_id)
+            # if cell_id == 0 or cell_id == 4:
+            #     print("cell_id {}, xmid[0] {}, ymid[0] {}, zmid[0] {}").format(cell_id, cell.xmid[0], cell.ymid[0], cell.zmid[0])
 
         v_cell_ext[:, :] = ExtPot.ext_field(cell.xmid, cell.ymid,
                                             cell.zmid).reshape(cell.totnsegs, 1) * pulse.reshape(1, n_tsteps)

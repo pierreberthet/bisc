@@ -93,26 +93,25 @@ if RANK == 1:
     #                join(folder, 'biophysics.hoc'),
     #                join(folder, 'synapses/synapses.hoc')]
 
-# if cell_id == 1:
-#     # Define cell parameters
-#     cell_parameters = {          # various cell parameters,
-#         'morphology': morph,  # simplified neuron model from HallermannEtAl2012
-#         # rm': 30000.,      # membrane resistance
-#         'cm': 1.0,         # membrane capacitance
-#         'Ra': 150,        # axial resistance
-#         # 'passive_parameters':dict(g_pas=1/30., e_pas=-65),
-#         'v_init': -85.,    # initial crossmembrane potential
-#         # 'e_pas': -65.,     # reversal potential passive mechs
-#         'passive': False,   # switch on passive mechs
-#         'nsegs_method': 'lambda_f',
-#         'lambda_f': lambdaf,
-#         'dt': 2.**-4,   # [ms] dt's should be in powers of 2 for both,
-#         'tstart': -50.,    # start time of simulation, recorders start at t=0
-#         'tstop': 50.,   # stop simulation at 200 ms. These can be overridden
-#                             # by setting these arguments in cell.simulation()
-#         "extracellular": True,
-#         "pt3d": False,
-#         'custom_code': custom_code}
+# Define cell parameters
+cell_parameters = {          # various cell parameters,
+    'morphology': morph,  # simplified neuron model from HallermannEtAl2012
+    # rm': 30000.,      # membrane resistance
+    'cm': 1.0,         # membrane capacitance
+    'Ra': 150,        # axial resistance
+    # 'passive_parameters':dict(g_pas=1/30., e_pas=-65),
+    'v_init': -85.,    # initial crossmembrane potential
+    # 'e_pas': -65.,     # reversal potential passive mechs
+    'passive': False,   # switch on passive mechs
+    'nsegs_method': 'lambda_f',
+    'lambda_f': lambdaf,
+    'dt': 2.**-4,   # [ms] dt's should be in powers of 2 for both,
+    'tstart': -50.,    # start time of simulation, recorders start at t=0
+    'tstop': 50.,   # stop simulation at 200 ms. These can be overridden
+                        # by setting these arguments in cell.simulation()
+    "extracellular": True,
+    "pt3d": False,
+    'custom_code': custom_code}
 
 COMM.Barrier()
 

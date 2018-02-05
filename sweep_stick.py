@@ -224,10 +224,10 @@ z_cell_pos = z_cell_pos_init
 # cell.set_rotation(z=np.pi/2)
 # cell.set_rotation(x=0, y=0, z=z_rotation[cell_id])
 # cell.set_pos(x=x_cell_pos[cell_id], y=y_cell_pos[cell_id])
-if cell_id == 0 or cell_id == 1 or cell_id == 4:
+if cell_id == 0 or cell_id == 1 or cell_id == 4 or cell_id == 5:
     utils.reposition_stick_horiz(cell, x=x_cell_pos[cell_id], y=y_cell_pos[cell_id], z=z_cell_pos[cell_id])
-elif cell_id == 3 or cell_id == 6:
-    utils.reposition_stick_flip(cell, x=x_cell_pos[cell_id], y=y_cell_pos[cell_id], z=z_cell_pos[cell_id])
+# elif cell_id == 3 or cell_id == 6:
+#     utils.reposition_stick_flip(cell, x=x_cell_pos[cell_id], y=y_cell_pos[cell_id], z=z_cell_pos[cell_id])
 else:
     cell.set_pos(x=x_cell_pos[cell_id], y=y_cell_pos[cell_id], z=z_cell_pos[cell_id])
     # utils.reposition_stick_flip(cell, x_cell_pos[cell_id], y_cell_pos[cell_id], z_cell_pos[cell_id])
@@ -264,7 +264,7 @@ cortical_surface_height = 20
 # Parameters for the external field
 sigma = 0.3
 
-polarity, n_elec, positions = utils.create_array_shape('minicross', 25)
+polarity, n_elec, positions = utils.create_array_shape('circle', 25)
 source_xs = positions[0]
 source_ys = positions[1]
 source_zs = positions[2]
@@ -298,10 +298,10 @@ ap_loc = np.zeros((n_cells, spatial_resolution), dtype=np.int)
 # source_zs = np.ones(len(source_xs)) * dura_height
 
 # Stimulation Parameters:
-max_current = -1000000.   # mA
-current_resolution = 100
+max_current = 1000000.   # mA
+current_resolution = 1000
 # amp_range = np.exp(np.linspace(1, np.log(max_current), current_resolution))
-amp_range = np.linspace(-10, max_current, current_resolution)
+amp_range = np.linspace(10, max_current, current_resolution)
 amp = amp_range[0]
 if cell_id == 0:
     cells = []
@@ -329,7 +329,7 @@ is_spike = False
 
 for depth in distance:
 
-    while amp > max_current and not is_spike:
+    while amp < max_current and not is_spike:
 
         amp = amp_range[click]
         source_amps = np.multiply(polarity, amp)
@@ -350,10 +350,10 @@ for depth in distance:
 
         # cell.set_pos(x=x_cell_pos[cell_id], y=y_cell_pos[cell_id], z=z_cell_pos[cell_id])
         z_cell_pos = z_cell_pos_init * depth
-        if cell_id == 0 or cell_id == 1 or cell_id == 4:
+        if cell_id == 0 or cell_id == 1 or cell_id == 4 or cell_id == 5:
             utils.reposition_stick_horiz(cell, x=x_cell_pos[cell_id], y=y_cell_pos[cell_id], z=z_cell_pos[cell_id])
-        elif cell_id == 3 or cell_id == 6:
-            utils.reposition_stick_flip(cell, x=x_cell_pos[cell_id], y=y_cell_pos[cell_id], z=z_cell_pos[cell_id])
+        # elif cell_id == 3 or cell_id == 6:
+        #     utils.reposition_stick_flip(cell, x=x_cell_pos[cell_id], y=y_cell_pos[cell_id], z=z_cell_pos[cell_id])
         else:
             cell.set_pos(x=x_cell_pos[cell_id], y=y_cell_pos[cell_id], z=z_cell_pos[cell_id])
         # if cell_id == 0:
