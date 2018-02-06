@@ -130,6 +130,7 @@ COMM_DICT = {}
 
 COUNTER = 0
 for i, NRN in enumerate(neurons):
+    os.chdir(CWD)
     os.chdir(NRN)
 
     #get the template name
@@ -196,34 +197,21 @@ for i, NRN in enumerate(neurons):
                                              sigma=0.3, r=5, n=50,
                                              N=np.array([[1, 0, 0], [1, 0, 0], [1, 0, 0], [1, 0, 0]]),
                                              method='soma_as_point')
-'''
-SIMULATION SETUP
-pulse duration  should be set to .2 ms, 200 us (typical of empirical in vivo microstimulation experiments)
+            '''
+            SIMULATION SETUP
+            pulse duration  should be set to .2 ms, 200 us (typical of empirical in vivo microstimulation experiments)
 
-'''
-
-
-
-
-
-
-
-
-
-
-
-
-
+            '''
 
 
             #run simulation
             cell.simulate(electrode=electrode)
-    
+
             #electrode.calc_lfp()
             LFP = electrode.LFP
             if apply_filter:
                 LFP = ss.filtfilt(b, a, LFP, axis=-1)
-            
+
             #detect action potentials from intracellular trace
             AP_train = np.zeros(cell.somav.size, dtype=int)
             crossings = (cell.somav[:-1] < threshold) & (cell.somav[1:] >= threshold)
@@ -249,12 +237,12 @@ pulse duration  should be set to .2 ms, 200 us (typical of empirical in vivo mic
                     spw = spw,
                 )
             })
-            
+
             #plot
             gs = GridSpec(2, 3)
             fig = plt.figure(figsize=(10, 8))
             fig.suptitle(NRN + '\n' + os.path.split(morphologyfile)[-1].strip('.asc'))
-            
+
             #morphology
             zips = []
             for x, z in cell.get_idx_polygons(projection=('x', 'z')):
@@ -270,7 +258,7 @@ pulse duration  should be set to .2 ms, 200 us (typical of empirical in vivo mic
             ax.set_title('morphology')
             ax.set_xlabel('(um)', labelpad=0)
             ax.set_ylabel('(um)', labelpad=0)
-    
+
             #soma potential and spikes
             ax = fig.add_subplot(gs[0, 1])
             ax.plot(cell.tvec, cell.somav, rasterized=True)
@@ -278,7 +266,7 @@ pulse duration  should be set to .2 ms, 200 us (typical of empirical in vivo mic
             ax.axis(ax.axis('tight'))
             ax.set_title('soma voltage, spikes')
             ax.set_ylabel('(mV)', labelpad=0)
-    
+
             #extracellular potential
             ax = fig.add_subplot(gs[1, 1])
             for l in LFP:           
@@ -287,7 +275,7 @@ pulse duration  should be set to .2 ms, 200 us (typical of empirical in vivo mic
             ax.set_title('extracellular potential')
             ax.set_xlabel('(ms)', labelpad=0)
             ax.set_ylabel('(mV)', labelpad=0)
-            
+
             #spike waveform
             ax = fig.add_subplot(gs[0, 2])
             n = electrode.x.size
@@ -304,7 +292,7 @@ pulse duration  should be set to .2 ms, 200 us (typical of empirical in vivo mic
             ax.axis(ax.axis('tight'))
             ax.set_title('spike waveforms')
             ax.set_ylabel('(mV)', labelpad=0)
-            
+
             #spike width vs. p2p amplitude
             ax = fig.add_subplot(gs[1, 2])
             w = []
@@ -318,10 +306,10 @@ pulse duration  should be set to .2 ms, 200 us (typical of empirical in vivo mic
             ax.set_title('spike peak-2-peak time and amplitude')
             ax.set_xlabel('(ms)', labelpad=0)
             ax.set_ylabel('(mV)', labelpad=0)
-            
+
             fig.savefig(os.path.join(CWD, FIGS, os.path.split(NRN)[-1] + '_' + os.path.split(morphologyfile)[-1].replace('.asc', '.pdf')), dpi=200)
             plt.close(fig)
-        
+
         COUNTER += 1
         os.chdir(CWD)
         

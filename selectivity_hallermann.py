@@ -24,7 +24,7 @@ RANK = COMM.Get_rank()
 n_cells = SIZE
 cell_id = RANK
 
-lambdaf = 500.
+lambdaf = 200.
 
 print("cell {0} of {1}").format(cell_id + 1, n_cells)
 # plt.interactive(1)
@@ -121,36 +121,20 @@ names = ["L5 ref", "L5 m"]
 
 clamp = False
 
-cell = LFPy.Cell(**cell_parameters)
-
-# Assign cell positions
-min_distance = 10
-max_distance = 200
-num_steps = 10
-distance = np.logspace(min_distance, max_distance, num_steps)
-print("distances = {}").format(distance)
-
-cell.set_rotation(x=np.pi/2)
-x_cell_pos = np.zeros(n_cells)
-y_cell_pos = np.zeros(n_cells)
-z_cell_pos = np.zeros(n_cells)
-x_cell_pos[1] = distance[0]
-z_cell_pos[cell_id] = -np.max(cell.zend)
-print("Vert displacement {0}").format(z_cell_pos_init)
-cell.set_pos(x=x_cell_pos[cell_id], y=y_cell_pos[cell_id], z=z_cell_pos[cell_id])
+# cell = LFPy.Cell(**cell_parameters)
 
 COMM.Barrier()
 
-n_tsteps = int(cell.tstop / cell.dt + 1)
+n_tsteps = int(cell_parameters['tstop'] / cell_parameters['dt'] + 1)
 
-t = np.arange(n_tsteps) * cell.dt
+t = np.arange(n_tsteps) * cell_parameters['dt']
 
 pulse_start = 240
 pulse_duration = 100
 
 
 if RANK == 0:
-    print("pulse duration: {0} ms".format(pulse_duration * cell.dt))
+    print("pulse duration: {0} ms".format(pulse_duration * cell_parameters['dt']))
 
 pulse = np.zeros(n_tsteps)
 pulse[pulse_start:(pulse_start + pulse_duration)] = 1.
@@ -186,19 +170,15 @@ dura_height = 50
 
 # source_geometry = np.array([-1, -1, 1, 1, 1, 1, -1, -1])
 
-# while loop? For loop?
-spatial_resolution = 50
-current = np.zeros((n_cells, spatial_resolution))
-c_vext = np.zeros((n_cells, spatial_resolution))
-ap_loc = np.zeros((n_cells, spatial_resolution), dtype=np.int)
 
 # source_zs = np.ones(len(source_xs)) * dura_height
 
 # Stimulation Parameters:
-max_current = 1000000.   # mA
-current_resolution = 50
-# amp_range = np.exp(np.linspace(1, np.log(max_current), current_resolution))
-amp = 75 * 10**3
+max_current = 150000.   # mA
+min_current = 80000
+current_resolution = 10
+amp_range = np.linspace(min_current, max_current, current_resolution)
+amp = amp_range[0]
 if cell_id == 0:
     cells = []
 glb_vmem = []
@@ -211,7 +191,26 @@ click = 0
 # is_spike = np.zeros(n_cells)
 is_spike = False
 
-for depth in distance:
+        
+# Assign cell positions
+min_distance = 0
+max_distance = 200
+num_steps = 10
+distance = np.linspace(min_distance, max_distance, num_steps)
+print("distances = {}").format(distance)
+
+# while loop? For loop?
+current = np.zeros((n_cells, num_steps))
+c_vext = np.zeros((n_cells, num_steps))
+ap_loc = np.zeros((n_cells, num_steps), dtype=np.int)
+
+
+x_cell_pos = np.zeros(n_cells)
+y_cell_pos = np.zeros(n_cells)
+z_cell_pos = np.zeros(n_cells)
+# x_cell_pos[1] = distance[0]
+
+for d_idx, depth in enumerate(distance):
 
     while amp < max_current and not is_spike:
 
@@ -228,37 +227,43 @@ for depth in distance:
         # v_field_ext_stick = ext_field(zs).reshape(len(zs), 1) * pulse.reshape(1, n_tsteps)
         # v_field_ext_stick = v_cell_ext[v_idxs]
 
-        # Insert external potential at cell
-        if cell_id == 1:
-            cell = LFPy.Cell(**cell_parameters)
-            cell.set_rotation(x=np.pi / 2.)
-        else:
-            cell = LFPy.TemplateCell(morphology=join(folder, "morphs/2013_03_06_cell08_876_H41_05_Cell2.ASC"),
-                                     templatefile=join(folder, 'ActiveModels/model_0603_cell08_cm045.hoc'),
-                                     templatename=templatename,
-                                     templateargs=1 if add_synapses else 0,
-                                     tstop=50.,
-                                     dt=2. ** -4,
-                                     extracellular=True,
-                                     tstart=-50,
-                                     lambda_f=lambdaf,
-                                     nsegs_method='lambda_f',)
 
-            cell.set_rotation(x=-np.pi/2.)
-            cell.set_rotation(y=np.pi/8.)
+
+
+        # Insert external potential at cell
+        # if cell_id == 1:
+        cell = LFPy.Cell(**cell_parameters)
+        cell.set_rotation(x=np.pi / 2.)
+
+        z_cell_pos[cell_id] = -np.max(cell.zend)
+        # print("z_cell_pos {}, cell {}").format(z_cell_pos, cell_id)
+        if cell_id == 0:
+            cell.set_pos(x=x_cell_pos[cell_id], y=y_cell_pos[cell_id], z=z_cell_pos[cell_id])
+        else:
+            cell.set_pos(x=x_cell_pos[cell_id], y=distance[d_idx], z=z_cell_pos[cell_id])
+
+            print("Y-axis displacement {0}").format(distance[d_idx])
+        # else:
+        #     cell = LFPy.TemplateCell(morphology=join(folder, "morphs/2013_03_06_cell08_876_H41_05_Cell2.ASC"),
+        #                              templatefile=join(folder, 'ActiveModels/model_0603_cell08_cm045.hoc'),
+        #                              templatename=templatename,
+        #                              templateargs=1 if add_synapses else 0,
+        #                              tstop=50.,
+        #                              dt=2. ** -4,
+        #                              extracellular=True,
+        #                              tstart=-50,
+        #                              lambda_f=lambdaf,
+        #                              nsegs_method='lambda_f',)
+
+            # cell.set_rotation(x=-np.pi/2.)
+            # cell.set_rotation(y=np.pi/8.)
 
         v_cell_ext = np.zeros((cell.totnsegs, n_tsteps))
 
         # cell.set_pos(x=x_cell_pos[cell_id], y=y_cell_pos[cell_id], z=z_cell_pos[cell_id])
-        z_cell_pos = z_cell_pos_init - depth
-
-        
-        cell.set_pos(x=x_cell_pos[cell_id], y=y_cell_pos[cell_id], z=z_cell_pos[cell_id])
+        # z_cell_pos = z_cell_pos_init - depth
+        # cell.set_pos(x=x_cell_pos[cell_id], y=y_cell_pos[cell_id], z=z_cell_pos[cell_id])
             # utils.reposition_stick_flip(cell, x_cell_pos[cell_id], y_cell_pos[cell_id], z_cell_pos[cell_id])
-        # CLAMPING 2/2
-        if clamp:
-            if cell_id == 0 or cell_id == 1:
-                utils.clamp_ends(cell, pulse_start, pulse_start + pulse_duration)
 
         v_cell_ext[:, :] = ExtPot.ext_field(cell.xmid, cell.ymid,
                                             cell.zmid).reshape(cell.totnsegs, 1) * pulse.reshape(1, n_tsteps)
@@ -266,7 +271,7 @@ for depth in distance:
         cell.insert_v_ext(v_cell_ext, t)
 
         # Run simulation, electrode object argument in cell.simulate
-        print("running cell {2} distance from electrode: {0} current intensity: {1}").format(z_cell_pos[1],
+        print("running cell {2} distance from electrode: {0} current intensity: {1}").format(z_cell_pos[cell_id],
                                                                                              amp, names[cell_id])
         cell.simulate(rec_imem=True, rec_vmem=True)
         spike_time_loc = utils.spike_soma(cell)
@@ -377,7 +382,7 @@ if cell_id == 0:
     fig.subplots_adjust(wspace=.6)
     ax = plt.subplot(133, title="Stim threshold")
     # axd = ax.twinx()
-    ax.set_xlabel("depth [$\mu$m]")
+    ax.set_xlabel("distance [$\mu$m]")
     ax.set_ylabel("stimulation current [$\mu$A]")
     # axd.set_ylabel("V_Ext [mV]")
     for i in range(n_cells):
@@ -469,7 +474,7 @@ if cell_id == 0:
     fig.subplots_adjust(wspace=.6)
     ax = plt.subplot(111, title="Stimulation threshold")
     # axd = ax.twinx()
-    ax.set_xlabel("depth [$\mu$m]")
+    ax.set_xlabel("distance [$\mu$m]")
     ax.set_ylabel("stimulation current [$\mu$A]")
     # axd.set_ylabel("V_Ext [mV]")
     for i in range(n_cells):
