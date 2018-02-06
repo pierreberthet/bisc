@@ -298,10 +298,10 @@ ap_loc = np.zeros((n_cells, spatial_resolution), dtype=np.int)
 # source_zs = np.ones(len(source_xs)) * dura_height
 
 # Stimulation Parameters:
-max_current = 1000000.   # mA
+max_current = -2000000.   # mA
 current_resolution = 1000
 # amp_range = np.exp(np.linspace(1, np.log(max_current), current_resolution))
-amp_range = np.linspace(10, max_current, current_resolution)
+amp_range = np.linspace(-10, max_current, current_resolution)
 amp = amp_range[0]
 if cell_id == 0:
     cells = []
@@ -329,7 +329,7 @@ is_spike = False
 
 for depth in distance:
 
-    while amp < max_current and not is_spike:
+    while amp > max_current and not is_spike:
 
         amp = amp_range[click]
         source_amps = np.multiply(polarity, amp)
