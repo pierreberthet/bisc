@@ -173,8 +173,8 @@ cortical_surface_height = 50
 
 # Parameters for the external field
 sigma = 0.3
-
-polarity, n_elec, positions = utils.create_array_shape('minicross', 25)
+name_shape_ecog = 'minicross'
+polarity, n_elec, positions = utils.create_array_shape(name_shape_ecog, 25)
 source_xs = positions[0]
 source_ys = positions[1]
 source_zs = positions[2]
@@ -199,8 +199,9 @@ dura_height = 50
 
 # while loop? For loop?
 spatial_resolution = 50
-max_distance = 300
-distance = np.linspace(0, max_distance, spatial_resolution)
+min_distance = 0
+max_distance = 200
+distance = np.linspace(min_distance, max_distance, spatial_resolution)
 current = np.zeros((n_cells, spatial_resolution))
 c_vext = np.zeros((n_cells, spatial_resolution))
 ap_loc = np.zeros((n_cells, spatial_resolution), dtype=np.int)
@@ -208,10 +209,11 @@ ap_loc = np.zeros((n_cells, spatial_resolution), dtype=np.int)
 # source_zs = np.ones(len(source_xs)) * dura_height
 
 # Stimulation Parameters:
-max_current = 1000000.   # mA
+max_current = -150. * 10**3   # uA
+min_current = -1. * 10**3  # uA
 current_resolution = 50
 # amp_range = np.exp(np.linspace(1, np.log(max_current), current_resolution))
-amp_range = np.linspace(10, max_current, current_resolution)
+amp_range = np.linspace(min_current, max_current, current_resolution)
 amp = amp_range[0]
 if cell_id == 0:
     cells = []
@@ -485,8 +487,10 @@ if cell_id == 0:
     # cb = plt.colorbar(img2, cax=cax)
     # cb.set_ticks(tick_locations)
     # cb.set_label('mV', labelpad=-10)
-    plt.savefig("sweep_test.png", dpi=300)
-
+    if max_current > 0:
+        plt.savefig("geometry_sensitivity_detailed" + name_shape_ecog + "_positive.png", dpi=300)
+    else:
+        plt.savefig("geometry_sensitivity_detailed" + name_shape_ecog + "_negative.png", dpi=300)
 
     color = iter(plt.cm.rainbow(np.linspace(0, 1, n_cells)))
 
@@ -508,7 +512,10 @@ if cell_id == 0:
     if max_current < 0:
         plt.gca().invert_yaxis()
     plt.legend(loc="upper left")
-    plt.savefig("amp_depth_fullmodels.png", dpi=300)
+    if max_current > 0:
+        plt.savefig("sensitivity_detailed" + name_shape_ecog + "_positive_" + str(min_distance) + "." + str(max_distance)+".png", dpi=300)
+    else:
+        plt.savefig("sensitivity_detailed" + name_shape_ecog + "_negative_" + str(min_distance) + "." + str(max_distance)+".png", dpi=300)
 
     # fig2 = plt.figure(2)
     # axu = fig2.gca(title="Stim threshold")

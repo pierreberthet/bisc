@@ -13,6 +13,18 @@ from os.path import join
 import utils
 import neuron
 import plotting_convention as pconv
+
+
+plt.rcParams.update({
+    'axes.labelsize' : 8,
+    'axes.titlesize' : 8,
+    #'figure.titlesize' : 8,
+    'font.size' : 8,
+    'ytick.labelsize' : 8,
+    'xtick.labelsize' : 8,
+})
+
+
 # Parameters for the external field
 sigma = 0.3
 # source_xs = np.array([-50, -50, -15, -15, 15, 15, 50, 50])
@@ -30,10 +42,10 @@ sigma = 0.3
 # source_geometry = np.array([stim_amp, stim_amp, stim_amp, stim_amp, -stim_amp])
 
 # source_geometry = np.array([-1, -1, 1, 1, 1, 1, -1, -1])
+name_shape_ecog = 'twosquare'
+polarity, n_elec, positions = utils.create_array_shape(name_shape_ecog, 25)
 
-polarity, n_elec, positions = utils.create_array_shape('line', 25)
-
-amp = (.7 * 10**6) / n_elec  # mA
+amp = (200. * 10**3) / n_elec  # uA
 voltage = 5000
 
 cortical_surface_height = 20
@@ -295,16 +307,90 @@ pconv.mark_subplots(ax10, 'J', xpos=-.05 , ypos=.99)
 pconv.mark_subplots(ax11, 'K', xpos=-.05 , ypos=1.)
 pconv.mark_subplots(ax12, 'L', xpos=-.05 , ypos=1.)
 # plt.tight_layout()
-plt.savefig("electrode_geometry_test.png")
+plt.savefig("extracellular_potential_2nd_derivative_" + name_shape_ecog + ".png")
+
+# plt.show()
+
+
+
+
+
+
+fig = plt.figure(figsize=[21, 9])
+# fig.suptitle("External Potential")
+
+ax1 = plt.subplot(141, title="V_ext", xlabel="x [$\mu$m]", ylabel='z [$\mu$m]')
+vmin = -2500
+vmax = 2500
+# vmin = np.min([np.min(v_field_ext_xz), np.min(v_field_ext_xy)])
+# vmax = np.max([np.max(v_field_ext_xz), np.max(v_field_ext_xy)])
+logthresh = 0
+# maxlog = int(np.ceil(np.log10(vmax)))
+# minlog = int(np.ceil(np.log10(-vmin)))
+# tick_locations = ([-(10 ** x) for x in xrange(minlog, -logthresh - 1, -1)] +
+#                   [0.0] + [(10**x) for x in xrange(-logthresh, maxlog + 1)])
+imshow_dict = dict(origin='lower', interpolation='nearest',
+                   cmap=plt.cm.RdBu_r, vmin=vmin, vmax=vmax,
+                   norm=matplotlib.colors.SymLogNorm(10**-logthresh))
+
+# cax = plt.axes([0.4, 0.1, 0.01, 0.33])
+# cb = plt.colorbar(img1)
+# cb.set_ticks(tick_locations)
+# cb.set_label('mV', labelpad=-10)
+source_xs = positions[0]
+source_ys = positions[1]
+
+img1 = ax1.imshow(v_field_ext_xz.T,
+                  extent=[-x_extent, x_extent,
+                          -z_extent, cortical_surface_height],
+                  **imshow_dict)
+
+
+ax1.scatter(source_xs, np.ones(len(source_xs)) * cortical_surface_height, c=source_amps, s=100, vmin=-1.4,
+            vmax=1.4, edgecolor='k', lw=2, cmap=plt.cm.bwr, clip_on=False)
+
+[ax1.scatter(source_xs[i], cortical_surface_height,
+             marker='+', s=50, lw=2, c='k') for i in np.where(source_amps > 0)[0]]
+[ax1.scatter(source_xs[i], cortical_surface_height,
+             marker='_', s=50, lw=2, c='k') for i in np.where(source_amps < 0)[0]]
+
+ax2 = plt.subplot(142, title="V_ext", xlabel="y [$\mu$m]", ylabel='z [$\mu$m]')
+img2 = ax2.imshow(v_field_ext_yz.T,
+                  extent=[-y_extent, y_extent,
+                          -z_extent, cortical_surface_height],
+                  **imshow_dict)
+ax2.scatter(source_ys, np.ones(len(source_xs)) * cortical_surface_height, c=source_amps, s=100, vmin=-1.4,
+            vmax=1.4, edgecolor='k', lw=2, cmap=plt.cm.bwr, clip_on=False)
+
+[ax2.scatter(source_ys[i], cortical_surface_height,
+             marker='+', s=50, lw=2, c='k') for i in np.where(source_amps > 0)[0]]
+[ax2.scatter(source_ys[i], cortical_surface_height,
+             marker='_', s=50, lw=2, c='k') for i in np.where(source_amps < 0)[0]]
+
+ax3 = plt.subplot(143, title="Current source geometry", xlabel="x [$\mu$m]", ylabel='y [$\mu$m]')
+ax3.scatter(source_xs, source_ys, c=source_amps, s=100, vmin=-1.4, vmax=1.4,
+            edgecolor='k', lw=2, cmap=plt.cm.bwr)
+[ax3.scatter(source_xs[i], source_ys[i], marker='+', s=50, lw=2, c='k') for i in np.where(source_amps > 0)[0]]
+[ax3.scatter(source_xs[i], source_ys[i], marker='_', s=50, lw=2, c='k') for i in np.where(source_amps < 0)[0]]
+
+img3 = ax3.imshow(v_field_ext_xy.T,
+                  extent=[-x_extent, x_extent,
+                          -y_extent, y_extent],
+                  **imshow_dict)
+
+ax4 = plt.subplot(144, title="V_ext at z = " + str(depth_check) + " $\mu$m", xlabel="x [$\mu$m]", ylabel='y [$\mu$m]')
+img4 = ax4.imshow(v_field_ext_xy2.T,
+                  extent=[-x_extent, x_extent,
+                          -y_extent, y_extent],
+                  **imshow_dict)
+# ax2.scatter(source_xs, np.ones(len(source_xs)) * -300, c=source_amps, s=100, vmin=-1.4,
+#             vmax=1.4, edgecolor='k', lw=2, cmap=plt.cm.bwr, clip_on=False)
+
+plt.colorbar(img4, label="mV")
+plt.savefig("electrode_geometry_" + name_shape_ecog + ".png")
+
 
 plt.show()
-
-
-
-
-
-
-
 
 
 

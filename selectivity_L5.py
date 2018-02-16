@@ -130,7 +130,7 @@ n_tsteps = int(cell_parameters['tstop'] / cell_parameters['dt'] + 1)
 t = np.arange(n_tsteps) * cell_parameters['dt']
 
 pulse_start = 240
-pulse_duration = 100
+pulse_duration = 80
 
 
 if RANK == 0:
@@ -147,36 +147,25 @@ cortical_surface_height = 50
 # Parameters for the external field
 sigma = 0.3
 
-polarity, n_elec, positions = utils.create_array_shape('monopole', 25)
-source_xs = positions[0]
-source_ys = positions[1]
-source_zs = positions[2]
+name_shape_ecog = 'multipole'
+polarity, n_elec, positions = utils.create_array_shape(name_shape_ecog, 25)
+# polarity, n_elec, positions = utils.create_array_shape('line', 25)  # low to high current
+# polarity, n_elec, positions = utils.create_array_shape('stick', 25)  # very selective
+# polarity, n_elec, positions = utils.create_array_shape('twosquare', 25) # low current
+# polarity, n_elec, positions = utils.create_array_shape('bcross', 25) # ?
 
 dura_height = 50
+displacement_source = 50
 
-# source_xs = np.array([-50, -50, -15, -15, 15, 15, 50, 50])
-# source_ys = np.array([-50, 50, -15, 15, 15, -15, -50, 50])
-# source_xs = np.array([-50, 0, 50, 0, 0])
-# source_ys = np.array([0, 50, 0, -50, 0])
-# source_zs = np.ones(len(source_xs))
-
-# source_geometry = np.array([0, 0, 1, 1, 1, 1, 0, 0])
-# stim_amp = 1.
-# n_stim_amp = -stim_amp / 4
-# source_geometry = np.array([0, 0, 0, 0, stim_amp])  # monopole
-# source_geometry = np.array([-stim_amp, 0, stim_amp, 0, 0])  # dipole
-# source_geometry = np.array([-stim_amp / 4, -stim_amp / 4, -stim_amp / 4, -stim_amp / 4, stim_amp])
-# source_geometry = np.array([stim_amp, stim_amp, stim_amp, stim_amp, -stim_amp])
-
-# source_geometry = np.array([-1, -1, 1, 1, 1, 1, -1, -1])
-
-
-# source_zs = np.ones(len(source_xs)) * dura_height
+source_xs = positions[0]
+source_ys = positions[1] + displacement_source
+# source_ys = positions[1]
+source_zs = positions[2] + dura_height
 
 # Stimulation Parameters:
-max_current = 150000.   # mA
-min_current = 80000
-current_resolution = 10
+max_current = 250000   # nA
+min_current = 150000
+current_resolution = 33
 amp_range = np.linspace(min_current, max_current, current_resolution)
 amp = amp_range[0]
 if cell_id == 0:
@@ -191,11 +180,10 @@ click = 0
 # is_spike = np.zeros(n_cells)
 is_spike = False
 
-        
 # Assign cell positions
 min_distance = 0
-max_distance = 200
-num_steps = 10
+max_distance = 100
+num_steps = 100
 distance = np.linspace(min_distance, max_distance, num_steps)
 print("distances = {}").format(distance)
 
@@ -207,6 +195,7 @@ ap_loc = np.zeros((n_cells, num_steps), dtype=np.int)
 
 x_cell_pos = np.zeros(n_cells)
 y_cell_pos = np.zeros(n_cells)
+# y_cell_pos = np.ones(n_cells) * -50
 z_cell_pos = np.zeros(n_cells)
 # x_cell_pos[1] = distance[0]
 
@@ -216,7 +205,8 @@ for d_idx, depth in enumerate(distance):
 
         amp = amp_range[click]
         source_amps = np.multiply(polarity, amp)
-        ExtPot = utils.ImposedPotentialField(source_amps, positions[0], positions[1], positions[2] + dura_height, sigma)
+        ExtPot = utils.ImposedPotentialField(source_amps, positions[0], positions[1] + displacement_source,
+                                             positions[2] + dura_height, sigma)
 
         # source_amps = source_geometry * amp
         # ExtPot = utils.ImposedPotentialField(source_amps, source_xs, source_ys, source_zs, sigma)
@@ -234,6 +224,8 @@ for d_idx, depth in enumerate(distance):
         # if cell_id == 1:
         cell = LFPy.Cell(**cell_parameters)
         cell.set_rotation(x=np.pi / 2.)
+        # if cell_id != 0:
+        #     cell.set_rotation(z=np.pi)
 
         z_cell_pos[cell_id] = -np.max(cell.zend)
         # print("z_cell_pos {}, cell {}").format(z_cell_pos, cell_id)
@@ -271,7 +263,7 @@ for d_idx, depth in enumerate(distance):
         cell.insert_v_ext(v_cell_ext, t)
 
         # Run simulation, electrode object argument in cell.simulate
-        print("running cell {2} distance from electrode: {0} current intensity: {1}").format(z_cell_pos[cell_id],
+        print("running cell {2} soma distance from electrode: {0} current intensity: {1}").format(z_cell_pos[cell_id],
                                                                                              amp, names[cell_id])
         cell.simulate(rec_imem=True, rec_vmem=True)
         spike_time_loc = utils.spike_soma(cell)
@@ -350,6 +342,7 @@ if cell_id == 0:
 
 color = iter(plt.cm.rainbow(np.linspace(0, 1, n_cells)))
 
+
 if cell_id == 0:
     col = ['b', 'r']
     figview = plt.figure(1)
@@ -374,6 +367,9 @@ if cell_id == 0:
 
     axview.scatter(source_xs, source_ys, source_zs, c=source_amps)
     plt.tight_layout()
+
+    source_ys -= displacement_source  # to avoid tedious operations (source position / computed field (centered on 0))
+
     fig = plt.figure(figsize=[18, 7])
     if max_current < 0:
         fig.suptitle("Stimulation threshold as a function of distance and orientation, negative current")
@@ -464,7 +460,10 @@ if cell_id == 0:
     # cb = plt.colorbar(img2, cax=cax)
     # cb.set_ticks(tick_locations)
     # cb.set_label('mV', labelpad=-10)
-    plt.savefig("sweep_test.png", dpi=300)
+    if max_current > 0:
+        plt.savefig("geometry_selectivity_L5_" + name_shape_ecog + "_positive.png", dpi=300)
+    else:
+        plt.savefig("geometry_selectivity_L5_" + name_shape_ecog + "_negative.png", dpi=300)
 
 
     color = iter(plt.cm.rainbow(np.linspace(0, 1, n_cells)))
@@ -487,7 +486,10 @@ if cell_id == 0:
     if max_current < 0:
         plt.gca().invert_yaxis()
     plt.legend(loc="upper left")
-    plt.savefig("amp_depth_fullmodels.png", dpi=300)
+    if max_current > 0:
+        plt.savefig("selectivity_L5_" + name_shape_ecog + "_positive.png", dpi=300)
+    else:
+        plt.savefig("selectivity_L5_" + name_shape_ecog + "_negative.png", dpi=300)
 
     # fig2 = plt.figure(2)
     # axu = fig2.gca(title="Stim threshold")

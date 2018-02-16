@@ -3,6 +3,14 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 
+'''
+Conventions:
+position = [um]
+current = [nA]
+voltage = [mV]
+'''
+
+
 def built_for_mpi_comm(cell, glb_vext, glb_vmem, v_idxs, widx, rank):
     '''
     Return a dict of array useful for plotting in parallel simulation
@@ -39,52 +47,43 @@ def return_first_spike_time_and_idx(vmem):
         return [None, None]
     for t_idx in range(1, vmem.shape[1]):
         if np.max(vmem.T[t_idx]) > -20:
-            print np.argmax(vmem.T[t_idx])
             return [t_idx, np.argmax(vmem.T[t_idx])]
-    # crossings = []
-    # for comp_idx in range(vmem.shape[0]):
-    #     for t_idx in range(1, vmem.shape[1]):
-    #         if vmem[comp_idx, t_idx - 1] < -20 <= vmem[comp_idx, t_idx]:
-    #             crossings.append([t_idx, comp_idx])
-    # crossings = np.array(crossings)
-    # first_spike_comp_idx = np.argmin(crossings[:, 0])
-    # return crossings[first_spike_comp_idx]
 
 
 def spike_soma(cell):
-    '''
-    Return the index of the compartment where Vmem first crossed the threshold (Usually set at -20 mV.
+    ''' Return the index of the compartment of the soma where Vmem first crossed the threshold (Usually set at -20 mV.
     If many compartments crossed threshold during a unique time step, it returns the index of the compartment
-    with the most depolarized membrane value.
-    Also contains the time step when this occurred.
-    '''
-    soma_idx = cell.get_idx('soma')
-    if np.max(cell.vmem[soma_idx]) < -20:
+    with the most depolarized membrane value. Also contains the time step when this occurred.'''
+    idx = cell.get_idx('soma')
+    if np.max(cell.vmem[idx]) < -20:
         print "No spikes detected"
         return [None, None]
-    for t_idx in range(1, cell.vmem[soma_idx].shape[1]):
-        if np.max(cell.vmem[soma_idx].T[t_idx]) > -20:
-            return [t_idx, np.argmax(cell.vmem[soma_idx].T[t_idx])]
+    else:
+        if idx.size == 1:
+            t_ap = np.where(cell.vmem[idx[0]] > -20)[0][0]
+            return [t_ap, idx[0]]
+        else:
+            t_ap = np.min(np.where(cell.vmem[idx] > -20)[1])
+            return [t_ap, idx[np.argmax(cell.vmem[idx].T[t_ap])]]
 
 
 def spike_segments(cell):
-    '''
-    Return the index for all segments where Vmem crossed the threshold (Usually set at -20 mV.
+    ''' Return the index for all segments where Vmem crossed the threshold (Usually set at -20 mV.)
     If many compartments within a segment crossed threshold during a unique time step,
     it returns the index of the compartment with the most depolarized membrane value.
-    Also contains the time step when this occurred.
-    '''
+    Also contains the time step when this occurred.'''
     spike_time_loc = {}
     for seg in cell.allsecnames:
         idx = cell.get_idx(seg)
         if np.max(cell.vmem[idx]) < -20:
-            print "No spikes detected"
             spike_time_loc[seg] = [None, None]
-        for t_idx in range(1, cell.vmem[idx].shape[1]):
-            if np.max(cell.vmem[idx].T[t_idx]) > -20:
-                # print np.argmax(cell.vmem[soma_idx].T[t_idx])
-                spike_time_loc[seg] = [t_idx, np.argmax(cell.vmem[idx].T[t_idx])]
-
+        else:
+            if idx.size == 1:
+                t_ap = np.where(cell.vmem[idx[0]] > -20)[0][0]
+                spike_time_loc[seg] = [t_ap, idx[0]]
+            else:
+                t_ap = np.min(np.where(cell.vmem[idx] > -20)[1])
+                spike_time_loc[seg] = [t_ap, idx[np.argmax(cell.vmem[idx].T[t_ap])]]
     return spike_time_loc
 
 
@@ -95,9 +94,24 @@ def spike_compartments(cell):
             # print "No spikes detected"
             spike_time_comp[idx] = None
         else:
-            spike_time_comp[idx] = np.argmax(cell.vmem[idx] > -20.)
-
+            spike_time_comp[idx] = np.where(cell.vmem[idx] > -20.)[0][0]
     return spike_time_comp
+
+
+def ap_dromic(cell):
+    '''If Vmem crossed a predefined threshold (here -20 mV), returns True if the AP is orthodromic,
+    False if antidromic, and None if the threshold was not crossed'''
+    ais = cell.get_idx('axon[0]')[0]
+    axon = np.where(cell.vmem[ais] > -20)[0]
+    soma = np.where(cell.vmem[0] > -20)[0]
+    if axon.size == 0 or soma.size == 0:
+        return None
+    if np.argmin(soma) < np.argmin(axon):
+        print("ORTHODROMIC AP soma {}, axon {}").format(soma[0], axon[0])
+        return True
+    else:
+        print("ANTIDROMIC AP soma {}, axon {}").format(soma[0], axon[0])
+        return False
 
 
 def reposition_stick_horiz(cell, x=0, y=0, z=0):
@@ -123,6 +137,18 @@ def reposition_stick_flip(cell, x=0, y=0, z=0):
     l_cell = np.max(cell.zstart) + np.abs(np.min(cell.zend))
     cell.set_pos(x=x, y=y, z=z - l_cell)
     cell.set_rotation(y=np.pi)
+    return
+
+
+def reposition_cell_flip(cell, x=0, y=0, z=0):
+    '''
+    Flip upside down the cell model, thus keeping it perpendicular to the x axis,
+    and reposition the cell to avoid any displacement on the z-axis.
+    (zmin and zend should be unchanged)
+    '''
+    # l_cell = np.max(cell.zend) + np.abs(np.min(cell.zend))
+    cell.set_rotation(y=np.pi)
+    cell.set_pos(x=x, y=y, z=cell.zend[0] + np.abs(np.max(cell.zend)))
     return
 
 
@@ -354,7 +380,7 @@ def half_test_linear(axis='xz', dim=[-200, 200, 0, -1000], a=1e-3, b=.1, res=201
                     v_field_ext[xidx, zidx] = a * z + b
             else:
                 for xidx, x in enumerate(xf):
-                    v_field_ext[xidx, zidx] = a * (dim[3] - z) + b                
+                    v_field_ext[xidx, zidx] = a * (dim[3] - z) + b
     if axis == 'yz':
         yf = np.linspace(dim[0], dim[1], abs(dim[0] - dim[1]))
         zf = np.linspace(dim[2], dim[3], abs(dim[2] - dim[3]))
@@ -395,7 +421,6 @@ def half_linear_field(cell, pulse_start, pulse_end, n_tsteps, axis, a=1e-3, b=.1
     return v_cell_ext
 
 
-
 def linear_field(cell, pulse_start, pulse_end, n_tsteps, axis, a=1e-3, b=.1):
     '''
     0 mV @ x, y or z = 0, depending on the axis selected for the field.
@@ -431,7 +456,7 @@ def clamp_ends(cell, pulse_start, pulse_end, voltage=-70., axis='z'):
     return
 
 
-def create_array_shape(shape=None, pitch=None):
+def create_array_shape(shape=None, pitch=None, names=False):
     '''
     create current sources of various shapes.
     {To implement: specifiy number as argument}
@@ -447,6 +472,13 @@ def create_array_shape(shape=None, pitch=None):
             source_xs = np.array([-10, 10])
             source_ys = np.array([0, 0])
 
+        elif shape == '3dots':
+            n_elec = 3
+            polarity = np.array([-1 / 2., 1, -1 / 2.])
+            source_zs = np.zeros(n_elec)
+            source_xs = np.array([-pitch, 0, pitch])
+            source_ys = np.array([0, 0, 0])
+
         elif shape == 'line':
             n_elec = 4
             polarity = np.array([-1, 1, 1, -1])
@@ -460,6 +492,20 @@ def create_array_shape(shape=None, pitch=None):
             source_zs = np.zeros(n_elec)
             source_xs = np.array([-50, -50, -10, -10, 10, 10, 50, 50])
             source_ys = np.array([-50, 50, -10, 10, 10, -10, -50, 50])
+
+        elif shape == 'multipole2':
+            n_elec = 8
+            polarity = np.array([-1, -1, 1, 1, 1, 1, -1, -1])
+            source_zs = np.zeros(n_elec)
+            source_xs = np.array([-100, -100, -10, -10, 10, 10, 100, 100])
+            source_ys = np.array([-100, 100, -10, 10, 10, -10, -100, 100])
+
+        elif shape == 'multipole3':
+            n_elec = 16
+            polarity = np.array([-1, -1, -1, -1, 1, 1, 1, 1, 1, 1, 1, 1, -1, -1, -1, -1])
+            source_zs = np.zeros(n_elec)
+            source_xs = np.array([-200, -200, 0, -200, -50, -50, -10, -10, 10, 10, 50, 50, 0, 200, 200, 200])
+            source_ys = np.array([-200, 0, -200, 200, -50, 50, -10, 10, 10, -10, 50, -50, 200, 0, -200, 200])
 
         elif shape == 'quadrupole':
             n_elec = 5
@@ -477,11 +523,15 @@ def create_array_shape(shape=None, pitch=None):
 
         elif shape == 'plausible_monopole':  # #################### To complete
             n_elec = 9
-            polarity = np.ones(n_elec) * 1. / (n_elec - 1)
-            polarity[0] = 1.
-            source_xs = np.array([0])
-            source_ys = np.array([0])
-            source_zs = np.array([0])
+            n_p = 5  # number of pitch times the return electrodes are away from the source
+            pos = 1.
+            neg = -pos / (n_elec - 1.)
+            polarity = np.array([neg, neg, neg, neg, pos, neg, neg, neg, neg])
+            source_zs = np.zeros(n_elec)
+            source_xs = np.array([-n_p * pitch, -n_p * pitch, -n_p * pitch,
+                                  0, 0, 0, n_p * pitch, n_p * pitch, n_p * pitch])
+            source_ys = np.array([n_p * pitch, 0, -n_p * pitch, n_p * pitch,
+                                  0, -n_p * pitch, n_p * pitch, 0, -n_p * pitch])
 
         elif shape == 'twosquare':
             n_elec = 8
@@ -578,6 +628,10 @@ def create_array_shape(shape=None, pitch=None):
             #     source_ys.append(np.multiply(y, r_e))
 
             n_elec = n_elec * 2
+            # need to convert lists to arrays
+            source_xs = np.asarray(source_xs)
+            source_ys = np.asarray(source_ys)
+            source_zs = np.asarray(source_zs)
 
         else:
             print("Unknown geometry for the current source arrangement")
@@ -613,7 +667,7 @@ def get_sections_number(cell):
     nlist = []
     for i, name in enumerate(cell.allsecnames):
         if name != 'soma':
-            name = name[:name.find('[')]
+            name = name[:name.rfind('[')]
 
         if name not in nlist:
             nlist.append(name)

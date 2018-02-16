@@ -42,10 +42,10 @@ if RANK == 0:
     # morph = join(folder, '28_04_10_num19.hoc') # HallermannEtAl2012
     # morph = join('morphologies', 'axon.hoc') # Mainen&Sejnowski, 1996
     # morph = join(folder, 'cell_simple.hoc')
-    morph = join(folder, 'cell_simple.hoc')
+    morph = join(folder, 'cell_simple_long.hoc')
     custom_code = [join(folder, 'Cell parameters.hoc'),
                    join(folder, 'charge.hoc'),
-                   join(folder, 'pruning.hoc')]
+                   join(folder, 'pruning_full.hoc')]
 
 if RANK == 1:
     folder = "morphologies/cell_hallermann_myelin"
@@ -56,26 +56,11 @@ if RANK == 1:
     # morph = 'patdemo/cells/j4a.hoc', # Mainen&Sejnowski, 1996
     # morph = join(folder, '28_04_10_num19.hoc') # HallermannEtAl2012
     # morph = join('morphologies', 'axon.hoc') # Mainen&Sejnowski, 1996
-    # morph = join(folder, 'cell_simple.hoc')
-    morph = join(folder, 'cell_simple_long.hoc')
-    custom_code = [join(folder, 'Cell parameters.hoc'),
-                   join(folder, 'charge.hoc'),
-                   join(folder, 'pruning_full.hoc')]
-
-if RANK == 2:
-    folder = "morphologies/cell_hallermann_myelin"
-    # folder = "morphologies/cell_hallermann_unmyelin"
-    # folder = "morphologies/simple_axon_hallermann"
-    # folder = "morphologies/HallermannEtAl2012"
-    neuron.load_mechanisms(join(folder))
-    # morph = 'patdemo/cells/j4a.hoc', # Mainen&Sejnowski, 1996
-    # morph = join(folder, '28_04_10_num19.hoc') # HallermannEtAl2012
-    # morph = join('morphologies', 'axon.hoc') # Mainen&Sejnowski, 1996
     morph = join(folder, 'cell_simple.hoc')
     custom_code = [join(folder, 'Cell parameters.hoc'),
                    join(folder, 'charge.hoc'),
                    join(folder, 'pruning_full.hoc')]
-if RANK == 3:
+if RANK == 2:
     folder = "morphologies/cell_hallermann_myelin"
     # folder = "morphologies/hay_model"
     # folder = "morphologies/cell_hallermann_unmyelin"
@@ -92,13 +77,13 @@ if RANK == 3:
                    join(folder, 'charge.hoc'),
                    join(folder, 'pruning_full.hoc')]
 
-if RANK == 4:
+if RANK == 3:
     folder = "morphologies/cell_hallermann_myelin"
     # folder = "morphologies/L23_PC_cADpyr229_1"
     # folder = "morphologies/dendritic_complexity"
     # folder = "morphologies/hay_model"
     # folder = "morphologies/cell_hallermann_unmyelin"
-    # folder = "morphologies/simple_axon_hallermann"
+    folder = "morphologies/simple_axon_hallermann"
     # folder = "morphologies/HallermannEtAl2012"
     neuron.load_mechanisms(join(folder))
     # neuron.load_mechanisms(join(folder+"/mod")) # Hay model
@@ -117,7 +102,7 @@ if RANK == 4:
                    join(folder, 'charge.hoc'),
                    join(folder, 'pruning.hoc')]
 
-if RANK == 5:
+if RANK == 4:
     # folder = "morphologies/cell_hallermann_myelin"
     # folder = "morphologies/hay_model"
     folder = "morphologies/cell_hallermann_unmyelin"
@@ -129,6 +114,23 @@ if RANK == 5:
     # morph = join(folder, '28_04_10_num19.hoc')  # HallermannEtAl2012
     # morph = join('morphologies', 'axon.hoc'), # Mainen&Sejnowski, 1996
     morph = join(folder, 'cell_simple_long.hoc')
+    # morph = join(folder,'cell1.hoc') # Hay model
+    custom_code = [join(folder, 'Cell parameters.hoc'),
+                   join(folder, 'charge.hoc'),
+                   join(folder, 'pruning_full.hoc')]
+
+if RANK == 5:
+    # folder = "morphologies/cell_hallermann_myelin"
+    # folder = "morphologies/hay_model"
+    folder = "morphologies/cell_hallermann_unmyelin"
+    # folder = "morphologies/simple_axon_hallermann"
+    # folder = "morphologies/HallermannEtAl2012"
+    neuron.load_mechanisms(join(folder))
+    # neuron.load_mechanisms(join(folder+"/mod")) # Hay model
+    # morph = 'patdemo/cells/j4a.hoc', # Mainen&Sejnowski, 1996
+    # morph = join(folder, '28_04_10_num19.hoc')  # HallermannEtAl2012
+    # morph = join('morphologies', 'axon.hoc'), # Mainen&Sejnowski, 1996
+    morph = join(folder, 'cell_simple.hoc')
     # morph = join(folder,'cell1.hoc') # Hay model
     custom_code = [join(folder, 'Cell parameters.hoc'),
                    join(folder, 'charge.hoc'),
@@ -152,23 +154,6 @@ if RANK == 6:
                    join(folder, 'pruning_full.hoc')]
 
 if RANK == 7:
-    # folder = "morphologies/cell_hallermann_myelin"
-    # folder = "morphologies/hay_model"
-    folder = "morphologies/cell_hallermann_unmyelin"
-    # folder = "morphologies/simple_axon_hallermann"
-    # folder = "morphologies/HallermannEtAl2012"
-    neuron.load_mechanisms(join(folder))
-    # neuron.load_mechanisms(join(folder+"/mod")) # Hay model
-    # morph = 'patdemo/cells/j4a.hoc', # Mainen&Sejnowski, 1996
-    # morph = join(folder, '28_04_10_num19.hoc')  # HallermannEtAl2012
-    # morph = join('morphologies', 'axon.hoc'), # Mainen&Sejnowski, 1996
-    morph = join(folder, 'cell_simple.hoc')
-    # morph = join(folder,'cell1.hoc') # Hay model
-    custom_code = [join(folder, 'Cell parameters.hoc'),
-                   join(folder, 'charge.hoc'),
-                   join(folder, 'pruning_full.hoc')]
-
-if RANK == 8:
     # folder = "morphologies/cell_hallermann_myelin"
     # folder = "morphologies/hay_model"
     folder = "morphologies/cell_hallermann_unmyelin"
@@ -208,57 +193,106 @@ cell_parameters = {          # various cell parameters,
 COMM.Barrier()
 
 # names = ["axon myelin", "neuron myelin", "neuron nonmyelin", "axon nonmyelin"]
-names = ["REF Vert soma + axon myelin",
-         "Horiz axon myelin long", "Horiz axon myelin", "Vert axon myelin", "Vert soma + axon myelin",
+names = ["Horiz axon myelin long", "Horiz axon myelin", "Vert axon myelin", "Vert soma + axon myelin",
          "Horiz axon unmyelin long", "Horiz axon unmyelin", "Vert axon unmyelin", "Vert soma + axon unmyelin"]
 # names = ["Layer I parallel myelin", "neuron myelin", "neuron unmyelin", "axon unmyelin"]
 
 clamp = False
 
-# cell = LFPy.Cell(**cell_parameters)
+cell = LFPy.Cell(**cell_parameters)
 # Assign cell positions
-min_distance = 0  # [um]
-max_distance = 100
-num_steps = 100
-distance = np.linspace(min_distance, max_distance, num_steps)
-print("distances = {}").format(distance)
-
-dura_height = 50
-
+# TEST with different distance between cells
+# x_cell_pos = [-10, 0, 0, 10]
+# y_cell_pos = [0, -10, 10, 0]
 x_cell_pos = np.zeros(n_cells)
-y_cell_pos = np.zeros(n_cells)
-z_cell_pos = np.ones(n_cells)
+y_cell_pos = np.linspace(-50, 50, n_cells)
+# z_cell_pos = np.zeros(len(x_cell_pos))
+z_ratio = np.ones(n_cells) * -1.
+z_cell_pos_init = np.multiply(np.ones(len(x_cell_pos)), z_ratio)
+z_cell_pos = z_cell_pos_init
+# z_cell_pos = np.ones(n_cells)
+# z_cell_pos_init = np.ones(n_cells)
+# z_cell_pos = [-1000., -1000 - (np.sum(cell.length)), 0.]
 
-n_tsteps = int(cell_parameters['tstop'] / cell_parameters['dt'] + 1)
+# xrot = [0., 2., 1.]
+# cell.set_rotation(y=xrot[cell_id] * np.pi / 2)
+# cell.set_rotation(y=np.pi/2)
+# cell.set_pos(y=y_cell_pos[cell_id])
+# if RANK == 0:
+#    cell.set_rotation(x=np.pi/2)
+# cell.set_rotation(y=cell_id*np.pi/2)
+# cell.set_rotation(z=np.pi/2)
+# cell.set_rotation(x=0, y=0, z=z_rotation[cell_id])
+# cell.set_pos(x=x_cell_pos[cell_id], y=y_cell_pos[cell_id])
+if cell_id == 0 or cell_id == 1 or cell_id == 4 or cell_id == 5:
+    utils.reposition_stick_horiz(cell, x=x_cell_pos[cell_id], y=y_cell_pos[cell_id], z=z_cell_pos[cell_id])
+# elif cell_id == 3 or cell_id == 6:
+#     utils.reposition_stick_flip(cell, x=x_cell_pos[cell_id], y=y_cell_pos[cell_id], z=z_cell_pos[cell_id])
+else:
+    cell.set_pos(x=x_cell_pos[cell_id], y=y_cell_pos[cell_id], z=z_cell_pos[cell_id])
+    # utils.reposition_stick_flip(cell, x_cell_pos[cell_id], y_cell_pos[cell_id], z_cell_pos[cell_id])
+# cell.set_rotation(x=np.pi/2)
+# cell.set_rotation(y=np.pi/2)
+# cell.set_rotation(z=np.pi/2)
+
+n_tsteps = int(cell.tstop / cell.dt + 1)
 
 # print("number of segments: ", cell.totnsegs)
 
-t = np.arange(n_tsteps) * cell_parameters['dt']
+t = np.arange(n_tsteps) * cell.dt
 
 pulse_start = 240
 pulse_duration = 80
 
+# CLAMPING 1/2
+if clamp:
+    if cell_id == 0 or cell_id == 1:
+        utils.clamp_ends(cell, pulse_start, pulse_start + pulse_duration)
+
+
 if RANK == 0:
-    print("pulse duration: {0} ms".format(pulse_duration * cell_parameters['dt']))
+    print("pulse duration: {0} ms".format(pulse_duration * cell.dt))
 
 pulse = np.zeros(n_tsteps)
 pulse[pulse_start:(pulse_start + pulse_duration)] = 1.
 
 
 # TO DETERMINE OR NOT, maybe just start from zmin = - max cortical thickness
-cortical_surface_height = dura_height
+cortical_surface_height = 20
+
 
 # Parameters for the external field
 sigma = 0.3
 
-name_shape_ecog = 'quadrupole'
+name_shape_ecog = 'circle'
 polarity, n_elec, positions = utils.create_array_shape(name_shape_ecog, 25)
 source_xs = positions[0]
 source_ys = positions[1]
-source_zs = positions[2] + dura_height
+source_zs = positions[2]
+
+dura_height = 50
+
+# source_xs = np.array([-50, -50, -15, -15, 15, 15, 50, 50])
+# source_ys = np.array([-50, 50, -15, 15, 15, -15, -50, 50])
+# source_xs = np.array([-50, 0, 50, 0, 0])
+# source_ys = np.array([0, 50, 0, -50, 0])
+# source_zs = np.ones(len(source_xs))
+
+# source_geometry = np.array([0, 0, 1, 1, 1, 1, 0, 0])
+# stim_amp = 1.
+# n_stim_amp = -stim_amp / 4
+# source_geometry = np.array([0, 0, 0, 0, stim_amp])  # monopole
+# source_geometry = np.array([-stim_amp, 0, stim_amp, 0, 0])  # dipole
+# source_geometry = np.array([-stim_amp / 4, -stim_amp / 4, -stim_amp / 4, -stim_amp / 4, stim_amp])
+# source_geometry = np.array([stim_amp, stim_amp, stim_amp, stim_amp, -stim_amp])
+
+# source_geometry = np.array([-1, -1, 1, 1, 1, 1, -1, -1])
 
 # while loop? For loop?
-spatial_resolution = num_steps
+spatial_resolution = 100
+max_distance = 200
+min_distance = 0
+distance = np.linspace(min_distance, max_distance, spatial_resolution)
 current = np.zeros((n_cells, spatial_resolution))
 c_vext = np.zeros((n_cells, spatial_resolution))
 ap_loc = np.zeros((n_cells, spatial_resolution), dtype=np.int)
@@ -266,9 +300,9 @@ ap_loc = np.zeros((n_cells, spatial_resolution), dtype=np.int)
 # source_zs = np.ones(len(source_xs)) * dura_height
 
 # Stimulation Parameters:
-max_current = -200. * 10**3   # uA
-min_current = -.1 * 10**3
-current_resolution = 210
+max_current = -70. * 10**3  # uA
+min_current = -.1 * 10**3  # uA
+current_resolution = 100
 # amp_range = np.exp(np.linspace(1, np.log(max_current), current_resolution))
 amp_range = np.linspace(min_current, max_current, current_resolution)
 amp = amp_range[0]
@@ -278,13 +312,25 @@ glb_vmem = []
 glb_vext = []
 num = 0
 
+# amp = (5. * 10**6) / n_elec
+
+# TO IMPROVE
+# zs = [int(.95*np.min(cell.zmid)), int(.5*np.min(cell.zmid)),
+#       int(.1934*np.min(cell.zmid)), 0, int(.95*np.max(cell.zmid))]
+
+# zs = [-750, -500, -100, 0, 100]
+# v_idxs = [cell.get_closest_idx(0, 0, z) for z in zs]
+# v_idxs = zs
+# v_clr = lambda z: plt.cm.jet(1.0 * (z - np.min(zs)) / (np.max(zs) - np.min(zs)))
+# v_clr = lambda z: plt.cm.jet(1.0 * (z - np.min(cell.zend)) / (np.max(np.abs(cell.zmid) - np.min(np.abs(cell.zmid)))))
+
 
 # WHILE/FOR
 click = 0
 # is_spike = np.zeros(n_cells)
 is_spike = False
 
-for d_idx, depth in enumerate(distance):
+for depth in distance:
 
     while amp > max_current and not is_spike:
 
@@ -306,32 +352,30 @@ for d_idx, depth in enumerate(distance):
         v_cell_ext = np.zeros((cell.totnsegs, n_tsteps))
 
         # cell.set_pos(x=x_cell_pos[cell_id], y=y_cell_pos[cell_id], z=z_cell_pos[cell_id])
-        # if cell_id != 0:
-        if cell_id == 1 or cell_id == 2 or cell_id == 5 or cell_id == 6:
-            utils.reposition_stick_horiz(cell, x=x_cell_pos[cell_id], y=distance[d_idx], z=z_cell_pos[cell_id])
-            # print("cell {} repositioned horiz").format(cell_id)
-        # elif cell_id == 4 or cell_id == 7:
-        #     utils.reposition_stick_flip(cell, x=x_cell_pos[cell_id], y=distance[d_idx], z=z_cell_pos[cell_id])
+        z_cell_pos = z_cell_pos_init * depth
+        if cell_id == 0 or cell_id == 1 or cell_id == 4 or cell_id == 5:
+            utils.reposition_stick_horiz(cell, x=x_cell_pos[cell_id], y=y_cell_pos[cell_id], z=z_cell_pos[cell_id])
+        # elif cell_id == 3 or cell_id == 6:
+        #     utils.reposition_stick_flip(cell, x=x_cell_pos[cell_id], y=y_cell_pos[cell_id], z=z_cell_pos[cell_id])
         else:
-            if cell_id == 0:
-                cell.set_pos(x=x_cell_pos[cell_id], y=y_cell_pos[cell_id], z=z_cell_pos[cell_id])
-            else:
-                cell.set_pos(x=x_cell_pos[cell_id], y=distance[d_idx], z=z_cell_pos[cell_id])
-            # print("cell {} vert").format(cell_id)
-            # if cell_id == 0 or cell_id == 4:
-            #     print("cell_id {}, xmid[0] {}, ymid[0] {}, zmid[0] {}").format(cell_id, cell.xmid[0], cell.ymid[0], cell.zmid[0])
-                print("Y-axis displacement {0}").format(distance[d_idx])
+            cell.set_pos(x=x_cell_pos[cell_id], y=y_cell_pos[cell_id], z=z_cell_pos[cell_id])
+        # if cell_id == 0:
+        #     utils.reposition_stick_horiz(cell, x_cell_pos[cell_id], y_cell_pos[cell_id], z_cell_pos[cell_id])
+        # else:
+        #     cell.set_pos(x=x_cell_pos[cell_id], y=y_cell_pos[cell_id], z=z_cell_pos[cell_id])
+            # utils.reposition_stick_flip(cell, x_cell_pos[cell_id], y_cell_pos[cell_id], z_cell_pos[cell_id])
+        # CLAMPING 2/2
+        if clamp:
+            if cell_id == 0 or cell_id == 1:
+                utils.clamp_ends(cell, pulse_start, pulse_start + pulse_duration)
 
         v_cell_ext[:, :] = ExtPot.ext_field(cell.xmid, cell.ymid,
                                             cell.zmid).reshape(cell.totnsegs, 1) * pulse.reshape(1, n_tsteps)
 
         cell.insert_v_ext(v_cell_ext, t)
 
-        # if cell_id == 0 or cell_id == 4:
-        #     print("cell_id {}, zmin {}, zmax{}, xmid[0] {}, ymid[0] {}").format(cell_id, np.min(cell.zmid), np.max(cell.zmid), cell.xmid[0], cell.ymid[0])
-
         # Run simulation, electrode object argument in cell.simulate
-        print("running cell {2} distance from electrode: {0} current intensity: {1}").format(abs(distance[d_idx]),
+        print("running cell {2} distance from electrode: {0} current intensity: {1}").format(abs(z_cell_pos[2]),
                                                                                              amp, cell_id)
         cell.simulate(rec_imem=True, rec_vmem=True)
 
@@ -344,6 +388,8 @@ for d_idx, depth in enumerate(distance):
                   cell.get_idx_name(spike_time_loc[1])[1], cell_id, cell.get_idx_name(spike_time_loc[1])[0]))
             c_vext[cell_id][np.where(distance == depth)] = v_cell_ext[spike_time_loc[1]][spike_time_loc[0]]
             ap_loc[cell_id][np.where(distance == depth)] = spike_time_loc[1]
+        # glb_vmem.append(cell.vmem)
+        # cells.append(cell)
 
         else:
             click += 1
@@ -440,7 +486,7 @@ if cell_id == 0:
     fig.subplots_adjust(wspace=.6)
     ax = plt.subplot(133, title="Stim threshold")
     # axd = ax.twinx()
-    ax.set_xlabel(" y distance [$\mu$m]")
+    ax.set_xlabel("depth [$\mu$m]")
     ax.set_ylabel("stimulation current [$\mu$A]")
     # axd.set_ylabel("V_Ext [mV]")
     for i in range(n_cells):
@@ -524,9 +570,9 @@ if cell_id == 0:
     # cb.set_ticks(tick_locations)
     # cb.set_label('mV', labelpad=-10)
     if max_current > 0:
-        plt.savefig("geometry_selectivity_sticks_" + name_shape_ecog + "_positive.png", dpi=300)
+        plt.savefig("geometry_sensitivity_sticks" + name_shape_ecog + "_positive.png", dpi=300)
     else:
-        plt.savefig("geometry_selectivity_sticks_" + name_shape_ecog + "_negative.png", dpi=300)
+        plt.savefig("geometry_sensitivity_sticks" + name_shape_ecog + "_negative.png", dpi=300)
     # fig2 = plt.figure(2)
     # axu = fig2.gca(title="Stim threshold")
     # # axd = ax.twinx()
@@ -545,7 +591,7 @@ if cell_id == 0:
     fig.subplots_adjust(wspace=.6)
     ax = plt.subplot(111, title="Stimulation threshold")
     # axd = ax.twinx()
-    ax.set_xlabel("y distance [$\mu$m]")
+    ax.set_xlabel("depth [$\mu$m]")
     ax.set_ylabel("stimulation current [$\mu$A]")
     # axd.set_ylabel("V_Ext [mV]")
     for i in range(n_cells):
@@ -557,12 +603,11 @@ if cell_id == 0:
     # plt.locator_params(tight=True)
     if max_current < 0:
         plt.gca().invert_yaxis()
-    # plt.legend(loc="upper right")
-    # plt.legend(loc="upper left")
+    plt.legend(loc="upper left")
     if max_current > 0:
-        plt.savefig("selectivity_sticks_" + name_shape_ecog + "_positive.png", dpi=300)
+        plt.savefig("sensitivity_sticks" + name_shape_ecog + "_positive_" + str(min_distance) + "." + str(max_distance)+".png", dpi=300)
     else:
-        plt.savefig("selectivity_sticks_" + name_shape_ecog + "_negative.png", dpi=300)
+        plt.savefig("sensitivity_sticks" + name_shape_ecog + "_negative_" + str(min_distance) + "." + str(max_distance)+".png", dpi=300)
 
     plt.show()
 # ax2 = plt.subplot(111, title="Cell model", aspect=1, projection='3d',

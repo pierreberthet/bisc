@@ -4,7 +4,7 @@ External electrical stimulation of neurons, records and displays Vmem at various
 '''
 import LFPy
 import numpy as np
-import os
+# import os
 import sys
 if sys.version < '3':
     from urllib2 import urlopen
@@ -132,8 +132,8 @@ print("number of segments: ", cell.totnsegs)
 
 t = np.arange(n_tsteps) * cell.dt
 
-pulse_start = 500
-pulse_duration = 400
+pulse_start = 300
+pulse_duration = 160
 
 pulse = np.zeros(n_tsteps)
 pulse[pulse_start:(pulse_start+pulse_duration)] = 1.
@@ -182,7 +182,7 @@ c_idxs = lambda z,y: plt.cm.jet(1.* z / len(y) )
 
 
     
-amp = -40000
+amp = 160 * 10**3
 #source_amps = np.array([1, 1, 0, 0, 1, 0, 1, 1]) * amp
 source_amps = np.array([0, 0, 0, 0, 1, 0, 0, 0]) * amp
 ExtPot = surface_electrodes.ImposedPotentialField(source_amps, source_xs, source_ys, source_zs, sigma)

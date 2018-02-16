@@ -74,12 +74,12 @@ if RANK == 1:
     # cell = LFPy.TemplateCell(morphology=join(folder, "morphology/dend-C260897C-P3_axon-C220797A-P3_-_Clone_0.asc"),
                              templatefile=join(folder, 'ActiveModels/model_0603_cell08_cm045.hoc'),
                              templatename=templatename,
-                             templateargs=1 if add_synapses else 0,
+                             templateargs=join(folder, "morphs/2013_03_06_cell08_876_H41_05_Cell2.ASC"),
                              tstop=50.,
                              dt=2. ** -4,
                              extracellular=True,
                              tstart=-50,
-                             lambda_f=100.,
+                             lambda_f=200.,
                              nsegs_method='lambda_f',)
 
 
@@ -154,7 +154,7 @@ if names[cell_id] != 'Layer 2/3':
         # 'e_pas': -65.,     # reversal potential passive mechs
         'passive': False,   # switch on passive mechs
         'nsegs_method': 'lambda_f',
-        'lambda_f': 100.,
+        'lambda_f': 200.,
         'dt': 2.**-4,   # [ms] dt's should be in powers of 2 for both,
         'tstart': -50.,    # start time of simulation, recorders start at t=0
         'tstop': 50.,   # stop simulation at 200 ms. These can be overridden
@@ -266,14 +266,14 @@ sigma = 0.3
 distance = 50
 c_vext = 0.
 
-polarity, n_elec, positions = utils.create_array_shape('monopole', 25)
+polarity, n_elec, positions = utils.create_array_shape('multipole3', 25)
 source_xs = positions[0]
 source_ys = positions[1]
 source_zs = positions[2]
 
 # Stimulation Parameters:
 
-amp = -800 * (10**3)
+amp = 200 * (10**3)  # uA
 num = 0
 
 source_zs = np.ones(len(source_xs)) * distance
