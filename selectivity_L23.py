@@ -180,8 +180,8 @@ source_zs = positions[2] + dura_height
 
 # Stimulation Parameters:
 max_current = 250. * 10**3   # uA
-min_current = 50. * 10**3    # uA
-current_resolution = 50
+min_current = 150. * 10**3    # uA
+current_resolution = 5
 amp_range = np.linspace(min_current, max_current, current_resolution)
 amp = amp_range[0]
 if cell_id == 0:
@@ -262,6 +262,7 @@ for d_idx, depth in enumerate(distance):
                                                                                                   amp, names[cell_id])
         cell.simulate(rec_imem=True, rec_vmem=True)
         spike_time_loc = utils.spike_soma(cell)
+        # utils.dendritic_spike(cell)
 
         # COMM.Barrier()
         if spike_time_loc[0] is not None:

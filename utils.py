@@ -114,6 +114,25 @@ def ap_dromic(cell):
         return False
 
 
+def dendritic_spike(cell):
+    '''NOT SURE IF THIS IS VALID'''
+    '''If Vmem crossed a predefined threshold (here -20 mV), returns True if the AP was triggered by dendritic activation,
+    False otherwise, and None if the threshold was not crossed'''
+    assert cell.get_idx('dend').all(), "no basal dendrites found!!! (no 'dend'?)"
+    assert cell.get_idx('apic').all(), "no apical dendrites found!!! (no 'apic'?)"
+    dend = np.where(cell.vmem[cell.get_idx('dend[0]')[0]] > - 20)[0]
+    apic = np.where(cell.vmem[cell.get_idx('apic[0]')[0]] > - 20)[0]
+    soma = np.where(cell.vmem[0] > -20)[0]
+    if soma.size == 0:
+        return None
+    if np.argmin(soma) < np.argmin(dend) and np.argmin(soma) < np.argmin(apic):
+        print("NON DENDRITIC activation, soma {}, dend {} apic {}").format(soma[0], dend[0], apic[0])
+        return True
+    else:
+        print("DENDRITIC activation, soma {}, dend {} apic {}").format(soma[0], dend[0], apic[0])
+        return False
+
+
 def reposition_stick_horiz(cell, x=0, y=0, z=0):
     '''
     Only for stick models?
