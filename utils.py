@@ -1,6 +1,9 @@
 import LFPy as lfpy
+import os
 import numpy as np
 import matplotlib.pyplot as plt
+from glob import glob
+# import neuron
 
 
 '''
@@ -118,19 +121,47 @@ def dendritic_spike(cell):
     '''NOT SURE IF THIS IS VALID'''
     '''If Vmem crossed a predefined threshold (here -20 mV), returns True if the AP was triggered by dendritic activation,
     False otherwise, and None if the threshold was not crossed'''
-    assert cell.get_idx('dend').all(), "no basal dendrites found!!! (no 'dend'?)"
-    assert cell.get_idx('apic').all(), "no apical dendrites found!!! (no 'apic'?)"
-    dend = np.where(cell.vmem[cell.get_idx('dend[0]')[0]] > - 20)[0]
-    apic = np.where(cell.vmem[cell.get_idx('apic[0]')[0]] > - 20)[0]
+    assert (cell.get_idx('dend').any() or cell.get_idx('apic').any()), "NO DENDRITES (apical OR basal)"
     soma = np.where(cell.vmem[0] > -20)[0]
+    t_dend = None
+    t_apic = None
     if soma.size == 0:
         return None
-    if np.argmin(soma) < np.argmin(dend) and np.argmin(soma) < np.argmin(apic):
-        print("NON DENDRITIC activation, soma {}, dend {} apic {}").format(soma[0], dend[0], apic[0])
-        return True
+    dendritic = False
+    if cell.get_idx('dend').any():
+        # print("no apical dendrites found!!! (no 'apic'?)")
+        idx = cell.get_idx('dend[0]')[0]
+        if idx.size == 1:
+            dend = np.where(cell.vmem[cell.get_idx('dend[0]')[0]] > - 20)[0]
+            if soma[0] > dend[0]:
+                dendritic = True
+                t_dend = dend[0]
+        else:
+            dend = np.min(np.where(cell.vmem[cell.get_idx('dend[0]')[0]] > - 20))[1]
+            if soma[0] > dend:
+                dendritic = True
+                t_dend = dend
+
+    if cell.get_idx('apic').any():
+        # print("no apical dendrites found!!! (no 'apic'?)")
+        idx = cell.get_idx('apic[0]')[0]
+        if idx.size == 1:
+            apic = np.where(cell.vmem[cell.get_idx('apic[0]')[0]] > - 20)[0]
+            if soma[0] > apic[0]:
+                dendritic = True
+                t_apic = apic[0]
+        else:
+            apic = np.min(np.where(cell.vmem[cell.get_idx('apic[0]')[0]] > - 20))[1]
+            if soma[0] > apic:
+                dendritic = True
+                t_apic = apic
+
+    if dendritic:
+        print("DENDRITIC activation in cell {}, soma {}, dend {} apic {}").format(cell.allsecnames[0][:cell.allsecnames[0].find('.')], soma[0], t_dend, t_apic)
     else:
-        print("DENDRITIC activation, soma {}, dend {} apic {}").format(soma[0], dend[0], apic[0])
-        return False
+        print("NON DENDRITIC activation in cell {}, soma {}, dend {} apic {}").format(cell.allsecnames[0][:cell.allsecnames[0].find('.')],soma[0], t_dend, t_apic)
+
+    return dendritic
 
 
 def reposition_stick_horiz(cell, x=0, y=0, z=0):
@@ -290,6 +321,53 @@ def get_minmax(multid_array):
     #         ma = np.max()
 
     return mi, ma
+
+
+def init_neurons_epfl(layer, n_cells):
+    '''Return a list of neurons from the EPFL models '''
+    # working dir
+    neurons = glob(os.path.join('morphologies/hoc_combos_syn.1_0_10.allzips', layer + '*'))
+    assert len(neurons) > n_cells, "More threads than available neuron models"
+    print("Found {} {} neuron models. Keeping {}.").format(len(neurons), layer, n_cells)
+    neurons = neurons[:n_cells]
+
+    # Write function to sample from the total pool of neurons and model types with one layer
+
+    # for n in range(2, n_cells + 1):
+    #     # load only some layer 5 pyramidal cell types
+    #     neurons += glob(os.path.join('morphologies/hoc_combos_syn.1_0_10.allzips', 'L5_MC*'))[:1]
+    #     neurons += glob(os.path.join('morphologies/hoc_combos_syn.1_0_10.allzips', 'L5_LBC*'))[:1]
+    #     neurons += glob(os.path.join('morphologies/hoc_combos_syn.1_0_10.allzips', 'L5_NBC*'))[:1]
+
+    return neurons
+
+
+def get_epfl_model_name(list_models, short=True):
+    name = []
+    for i, model in enumerate(list_models):
+        name.append(model[(model.rfind('/') + 1):])
+        if short:
+            name[i] = name[i][:(name[i][name[i].find('_') + 1:].find('_') + name[i].find('_') + 1)]
+
+    return name
+
+
+def set_z_layer(layer_name):
+    '''Returns a random depth from a normal distribution centered around the median depth of the specified layer.
+    Values from DeFelipe et al. 2002. STD set to +/- 1/14 of the layer thickness.'''
+    if layer_name == 'L1':
+        return np.random.normal(-116, 16)
+    if layer_name == 'L23':
+        return np.random.normal(-770, 75)
+    if layer_name == 'L4':
+        return np.random.normal(-1445, 20)
+    if layer_name == 'L5':
+        return np.random.normal(-1866, 39)
+    if layer_name == 'L6':
+        return np.random.normal(-2382, 34)
+    else:
+        print("lAYER NAME NOT RECOGNIZED. Possible options are 'L1', 'L23', 'L4', 'L5', 'L6'.")
+        return None
 
 
 class ImposedPotentialField:
