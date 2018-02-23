@@ -1,14 +1,14 @@
 import os
 import posixpath
-import sys
+# import sys
 import matplotlib.pyplot as plt
-from matplotlib.gridspec import GridSpec
-from matplotlib.collections import PolyCollection, LineCollection
-from mpl_toolkits.mplot3d import Axes3D
+# from matplotlib.gridspec import GridSpec
+# from matplotlib.collections import PolyCollection, LineCollection
+# from mpl_toolkits.mplot3d import Axes3D
 from glob import glob
 import numpy as np
-from warnings import warn
-import scipy.signal as ss
+# from warnings import warn
+# import scipy.signal as ss
 import neuron
 import LFPy
 from mpi4py import MPI
@@ -29,6 +29,32 @@ RANK = COMM.Get_rank()
 
 print("Size {}, Rank {}").format(SIZE, RANK)
 
+
+def posixpth(pth):
+    """
+    Replace Windows path separators with posix style separators
+    """
+    return pth.replace(os.sep, posixpath.sep)
+
+
+def get_templatename(f):
+    '''
+    Assess from hoc file the templatename being specified within
+    Arguments
+    ---------
+    f : file, mode 'r'
+    Returns
+    -------
+    templatename : str
+    '''
+    for line in f.readlines():
+        if 'begintemplate' in line.split():
+            templatename = line.split()[-1]
+            print('template {} found!'.format(templatename))
+            continue
+    return templatename
+
+
 # working dir
 CWD = os.getcwd()
 NMODL = 'morphologies/hoc_combos_syn.1_0_10.allmods'
@@ -39,8 +65,7 @@ neuron.h.load_file("import3d.hoc")
 
 # get names of neuron models, layers options are 'L1', 'L23', 'L4', 'L5' and 'L6'
 layer_name = 'L5'
-neuron_type = 'TTPC'
-neurons = utils.init_neurons_epfl(layer_name, SIZE, neuron_type)
+neurons = utils.init_neurons_epfl(layer_name, SIZE)
 print("loaded models: {}").format(utils.get_epfl_model_name(neurons, short=True))
 
 # flag for cell template file to switch on (inactive) synapses
@@ -74,35 +99,13 @@ if not os.path.isdir(FIGS):
 neuron.load_mechanisms(os.path.join(LFPy.__path__[0], "test"))
 
 
-def posixpth(pth):
-    """
-    Replace Windows path separators with posix style separators
-    """
-    return pth.replace(os.sep, posixpath.sep)
-
-
-def get_templatename(f):
-    '''
-    Assess from hoc file the templatename being specified within
-    Arguments
-    ---------
-    f : file, mode 'r'
-    Returns
-    -------
-    templatename : str
-    '''
-    for line in f.readlines():
-        if 'begintemplate' in line.split():
-            templatename = line.split()[-1]
-            print('template {} found!'.format(templatename))
-            continue
-    return templatename
-
-
 # PARAMETERS
 # sim duration
-tstop = 33.  # ms
+tstop = 200.
 dt = 2**-6
+
+# output folder
+output_f = "/nird/home/bertehtp/outputs/"
 
 '''
 SIMULATION SETUP
@@ -126,24 +129,27 @@ PointProcParams = {'idx': 0,
 threshold = -20  # spike threshold (mV)
 samplelength = int(2. / dt)
 
-# filter settings for extracellular traces
-b, a = ss.butter(N=3, Wn=(300 * dt * 2 / 1000, 5000 * dt * 2 / 1000), btype='bandpass')
-apply_filter = True
-
-
 n_tsteps = int(tstop / dt + 1)
 
 t = np.arange(n_tsteps) * dt
 
-pulse_start = 8  # ms
-pulse_duration = 2.  # ms
+pulse_start = 80
+pulse_duration = 50
 amp = 200 * 10**3  # uA
+min_current = -300 * 10**3
+max_current = 300 * 10**3
+n_intervals = 10
+amp_spread = np.linspace(min_current, max_current, n_intervals)
+# amp_spread = np.geomspace(min_current, max_current, n_intervals)
+max_distance = 100
+distance = np.linspace(0, max_distance, n_intervals)
 
 if RANK == 0:
-    print("pulse duration: {0} ms ; pulse amplitude: {1} uA".format(pulse_duration, amp))
+    print("pulse duration: {0} ms ; pulse amplitude: {1} - {2} uA").format(pulse_duration * dt,
+                                                                           np.min(amp_spread), np.max(amp_spread))
 
 pulse = np.zeros(n_tsteps)
-pulse[int(pulse_start / dt):int(pulse_start / dt + pulse_duration / dt)] = 1.
+pulse[pulse_start:(pulse_start + pulse_duration)] = 1.
 
 
 # TO DETERMINE OR NOT, maybe just start from zmin = - max cortical thickness
@@ -152,24 +158,20 @@ cortical_surface_height = 50
 
 # Parameters for the external field
 sigma = 0.3
-name_shape_ecog = 'multipole3'
+name_shape_ecog = 'circle'
 polarity, n_elec, positions = utils.create_array_shape(name_shape_ecog, 25)
 dura_height = 50
 displacement_source = 50
+
+current = np.zeros((SIZE, n_intervals))
+c_vext = np.zeros((SIZE, n_intervals))
+ap_loc = np.zeros((SIZE, n_intervals), dtype=np.int)
+
 
 source_xs = positions[0]
 source_ys = positions[1] + displacement_source
 # source_ys = positions[1]
 source_zs = positions[2] + dura_height
-
-
-source_amps = np.multiply(polarity, amp)
-ExtPot = utils.ImposedPotentialField(source_amps, positions[0], positions[1] + displacement_source,
-                                     positions[2] + dura_height, sigma)
-
-
-
-
 
 # communication buffer where all simulation output will be gathered on RANK 0
 COMM_DICT = {}
@@ -230,29 +232,49 @@ for i, NRN in enumerate(neurons):
 
             # set view as in most other examples
             cell.set_rotation(x=np.pi / 2)
-            # cell.set_pos(z=utils.set_z_layer(layer_name))
-            cell.set_pos(z=-1200)
+            cell.set_pos(z=utils.set_z_layer(layer_name))
 
-            v_cell_ext = np.zeros((cell.totnsegs, n_tsteps))
-            v_cell_ext[:, :] = ExtPot.ext_field(cell.xmid, cell.ymid,
-                                                cell.zmid).reshape(cell.totnsegs, 1) * pulse.reshape(1, n_tsteps)
-            cell.insert_v_ext(v_cell_ext, t)
+            spiked = False
+            for amp in amp_spread:
+                lateral_d = distance[0]
+                loop = 0
+                while lateral_d < and not spiked:
+                    # displacement, amp, loop, PROBLEM
+                    lateral_d = distance[loop]
+                    source_amps = np.multiply(polarity, amp)
+                    ExtPot = utils.ImposedPotentialField(source_amps, positions[0], positions[1] + displacement_source,
+                                                         positions[2] + dura_height, sigma)
 
-            # pointProcess = LFPy.StimIntElectrode(cell, **PointProcParams)
+                    v_cell_ext = np.zeros((cell.totnsegs, n_tsteps))
+                    cell.set_pos(y=lateral_d)
+                    v_cell_ext[:, :] = ExtPot.ext_field(cell.xmid, cell.ymid, cell.zmid
+                                                        ).reshape(cell.totnsegs, 1) * pulse.reshape(1, n_tsteps)
+                    cell.insert_v_ext(v_cell_ext, t)
 
-            # electrode = LFPy.RecExtElectrode(x = np.array([-40, 40., 0, 0]),
-            #                                  y=np.array([0, 0, -40, 40]),
-            #                                  z=np.zeros(4),
-            #                                  sigma=0.3, r=5, n=50,
-            #                                  N=np.array([[1, 0, 0], [1, 0, 0], [1, 0, 0], [1, 0, 0]]),
-            #                                  method='soma_as_point')
+                    # pointProcess = LFPy.StimIntElectrode(cell, **PointProcParams)
 
-            # run simulation
-            # cell.simulate(electrode=electrode)
-            cell.simulate(rec_vmem=True, rec_imem=True)
-            print("simulation running ... cell {}").format(RANK)
-            utils.dendritic_spike(cell)
-            # print(utils.spike_segments(cell))
+                    # electrode = LFPy.RecExtElectrode(x = np.array([-40, 40., 0, 0]),
+                    #                                  y=np.array([0, 0, -40, 40]),
+                    #                                  z=np.zeros(4),
+                    #                                  sigma=0.3, r=5, n=50,
+                    #                                  N=np.array([[1, 0, 0], [1, 0, 0], [1, 0, 0], [1, 0, 0]]),
+                    #                                  method='soma_as_point')
+
+                    # run simulation
+                    # cell.simulate(electrode=electrode)
+                    cell.simulate(rec_vmem=True, rec_imem=True)
+                    print("simulation running ... cell {}").format(RANK)
+                    utils.dendritic_spike(cell)
+                    spike_time_loc = utils.spike_soma(cell)
+                    if spike_time_loc[0] is not None:
+                        spiked = True
+                        current[RANK][np.where(distance == lateral_d)[0][0]] = amp
+                        print("!spike! at time {0} and position {1}, cell {2}").format(
+                            spike_time_loc[0], cell.get_idx_name(spike_time_loc[1])[1], RANK)
+
+                        c_vext[RANK][np.where(distance == lateral_d)] = v_cell_ext[spike_time_loc[1]][spike_time_loc[0]]
+                        ap_loc[RANK][np.where(distance == lateral_d)] = spike_time_loc[1]
+                    loop += 1
 
 #             #electrode.calc_lfp()
 #             LFP = electrode.LFP
@@ -377,6 +399,28 @@ for i, NRN in enumerate(neurons):
 COMM.Barrier()
 
 if RANK == 0:
+    gather_current = []
+    # plot_current = np.zeros((n_cells, spatial_resolution))
+    # print len(utils.built_for_mpi_comm(cell, glb_vext, glb_vmem, v_idxs, RANK))
+    # single_cells = [utils.built_for_mpi_comm(cell, glb_vext, glb_vmem, v_idxs, RANK)]
+    gather_current.append({"current": current[RANK], "v_ext_at_pulse": c_vext[RANK],
+                          "ap_loc": ap_loc[RANK], "rank": RANK})
+    for i_proc in range(1, SIZE):
+        # single_cells = np.r_[single_cells, COMM.recv(source=i_proc)]
+        gather_current.append(COMM.recv(source=i_proc))
+else:
+    # print len(utils.built_for_mpi_comm(cell, glb_vext, glb_vmem, v_idxs, RANK))
+    COMM.send({"current": current[RANK], "v_ext_at_pulse": c_vext[RANK],
+              "ap_loc": ap_loc[RANK], "rank": RANK}, dest=0)
+
+COMM.Barrier()
+
+if RANK == 0:
+    print gather_current[1]['ap_loc']
+
+###############################################################
+
+if RANK == 0:
     print("simulation done")
     cells = []
     cells.append(utils.built_for_mpi_space(cell, RANK))
@@ -399,36 +443,52 @@ if RANK == 0:
     color = iter(plt.cm.rainbow(np.linspace(0, 1, SIZE)))
     # col = ['b', 'r']
     col = iter(plt.cm.tab10(np.linspace(0, 1, SIZE)))
-    figview = plt.figure(1)
-    axview = plt.subplot(111, title="3D view", aspect='auto', projection='3d', xlabel="x [$\mu$m]", ylabel="y [$\mu$m]",
-                         zlabel="z [$\mu$m]", xlim=[-750, 750], ylim=[-400, 400], zlim=[-2700, 100])
+    figview = plt.figure()
+    axview = plt.subplot(111, title="2D view", aspect='auto', xlabel="x [$\mu$m]", ylabel="z [$\mu$m]",
+                         xlim=[-750, 750], ylim=[-2500, 100])
     for nc in range(0, SIZE):
-        # spread cells along x-axis for a better overview in the 3D view
+        # spread cells along x-axis for a better overview in the 2D view
         cells[nc]['xstart'] += spread[nc]
         cells[nc]['xmid'] += spread[nc]
         cells[nc]['xend'] += spread[nc]
         current_color = color.next()
-        [axview.plot([cells[nc]['xstart'][idx], cells[nc]['xend'][idx]], [cells[nc]['ystart'][idx],
-                     cells[nc]['yend'][idx]], [cells[nc]['zstart'][idx], cells[nc]['zend'][idx]], '-',
+        [axview.plot([cells[nc]['xstart'][idx], cells[nc]['xend'][idx]],
+                     [cells[nc]['zstart'][idx], cells[nc]['zend'][idx]], '-',
                      c=current_color, clip_on=False) for idx in range(cells[nc]['totnsegs'])]
-        axview.scatter(cells[nc]['xmid'][0], cells[nc]['ymid'][0], cells[nc]['zmid'][0], c=current_color, label=names[nc])
-
+        axview.scatter(cells[nc]['xmid'][0], cells[nc]['zmid'][0],
+                       c=current_color, label=names[nc])
         axview.legend()
-        # [axview.scatter(cells[nc]['xmid'][ap], cells[nc]['ymid'][ap], cells[nc]['zmid'][ap],
-        #                 '*', c='k') for ap in gather_current[nc]['ap_loc']]
+    plt.savefig(os.path.join(output_f, "2d_view_XZ.png"), dpi=200)
+
+    figview = plt.figure()
+    axview = plt.subplot(111, title="2D view", aspect='auto', xlabel="y [$\mu$m]", ylabel="z [$\mu$m]",
+                         xlim=[-750, 750], ylim=[-2500, 100])
+    for nc in range(0, SIZE):
+        # spread cells along x-axis for a better overview in the 2D view
+        current_color = color.next()
+        [axview.plot([cells[nc]['ystart'][idx], cells[nc]['yend'][idx]],
+                     [cells[nc]['zstart'][idx], cells[nc]['zend'][idx]], '-',
+                     c=current_color, clip_on=False) for idx in range(cells[nc]['totnsegs'])]
+        axview.scatter(cells[nc]['ymid'][0], cells[nc]['zmid'][0],
+                       c=current_color, label=names[nc])
+        axview.legend()
+    plt.savefig(os.path.join(output_f, "2d_view_YZ.png"), dpi=200)
+
+    # [axview.scatter(cells[nc]['xmid'][ap], cells[nc]['ymid'][ap], cells[nc]['zmid'][ap],
+    #                 '*', c='k') for ap in gather_current[nc]['ap_loc']]
     # for i, nrn in enumerate(neurons):
     #     axview.text(cells[i]['xmid'][0], cells[i]['ymid'][0], cells[i]['zmid'][0], names[i], fontdict=font_text)
 
-        # [axview.plot([cells[nc]['xmid'][idx]], [cells[nc]['ymid'][idx]], [cells[nc]['zmid'][idx]], 'D',
-        #              c= c_idxs(cells[nc]['v_idxs'].index(idx))) for idx in cells[nc]['v_idxs']]
-        # [axview.plot([cells[nc]['xmid'][idx]], [cells[nc]['ymid'][idx]],
-        #              [cells[nc]['zmid'][idx]], 'D', c= 'k') for idx in cells[nc]['v_idxs']]
-        # ax1.text(cells[nc]['xmid'][0], cells[nc]['ymid'][0], cells[nc]['zmid'][0],
-        #          "cell {0}".format(cells[nc]['rank']))
-        # axview.text(cells[nc]['xmid'][v_idxs[widx]], cells[nc]['ymid'][v_idxs[widx]], cells[nc]['zmid'][v_idxs[widx]],
-        #             "cell {0}.".format(cells[nc]['rank']) + cells[nc]['name'])
+    # [axview.plot([cells[nc]['xmid'][idx]], [cells[nc]['ymid'][idx]], [cells[nc]['zmid'][idx]], 'D',
+    #              c= c_idxs(cells[nc]['v_idxs'].index(idx))) for idx in cells[nc]['v_idxs']]
+    # [axview.plot([cells[nc]['xmid'][idx]], [cells[nc]['ymid'][idx]],
+    #              [cells[nc]['zmid'][idx]], 'D', c= 'k') for idx in cells[nc]['v_idxs']]
+    # ax1.text(cells[nc]['xmid'][0], cells[nc]['ymid'][0], cells[nc]['zmid'][0],
+    #          "cell {0}".format(cells[nc]['rank']))
+    # axview.text(cells[nc]['xmid'][v_idxs[widx]], cells[nc]['ymid'][v_idxs[widx]], cells[nc]['zmid'][v_idxs[widx]],
+    #             "cell {0}.".format(cells[nc]['rank']) + cells[nc]['name'])
 
-    axview.scatter(source_xs, source_ys, source_zs, c=source_amps)
+    # axview.scatter(source_xs, source_ys, source_zs, c=source_amps)
     plt.tight_layout()
     plt.show()
 

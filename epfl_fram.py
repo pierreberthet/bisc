@@ -1,13 +1,13 @@
 import os
 import posixpath
-import sys
+# import sys
 import matplotlib.pyplot as plt
-from matplotlib.gridspec import GridSpec
-from matplotlib.collections import PolyCollection, LineCollection
+# from matplotlib.gridspec import GridSpec
+# from matplotlib.collections import PolyCollection, LineCollection
 # from mpl_toolkits.mplot3d import Axes3D
 from glob import glob
 import numpy as np
-from warnings import warn
+# from warnings import warn
 # import scipy.signal as ss
 import neuron
 import LFPy
@@ -28,6 +28,32 @@ SIZE = COMM.Get_size()
 RANK = COMM.Get_rank()
 
 print("Size {}, Rank {}").format(SIZE, RANK)
+
+
+def posixpth(pth):
+    """
+    Replace Windows path separators with posix style separators
+    """
+    return pth.replace(os.sep, posixpath.sep)
+
+
+def get_templatename(f):
+    '''
+    Assess from hoc file the templatename being specified within
+    Arguments
+    ---------
+    f : file, mode 'r'
+    Returns
+    -------
+    templatename : str
+    '''
+    for line in f.readlines():
+        if 'begintemplate' in line.split():
+            templatename = line.split()[-1]
+            print('template {} found!'.format(templatename))
+            continue
+    return templatename
+
 
 # working dir
 CWD = os.getcwd()
@@ -73,37 +99,13 @@ if not os.path.isdir(FIGS):
 neuron.load_mechanisms(os.path.join(LFPy.__path__[0], "test"))
 
 
-def posixpth(pth):
-    """
-    Replace Windows path separators with posix style separators
-    """
-    return pth.replace(os.sep, posixpath.sep)
-
-
-def get_templatename(f):
-    '''
-    Assess from hoc file the templatename being specified within
-    Arguments
-    ---------
-    f : file, mode 'r'
-    Returns
-    -------
-    templatename : str
-    '''
-    for line in f.readlines():
-        if 'begintemplate' in line.split():
-            templatename = line.split()[-1]
-            print('template {} found!'.format(templatename))
-            continue
-    return templatename
-
-
-
-
 # PARAMETERS
 # sim duration
 tstop = 200.
 dt = 2**-6
+
+# output folder
+output_f = "/nird/home/bertehtp/outputs/"
 
 '''
 SIMULATION SETUP
@@ -126,11 +128,6 @@ PointProcParams = {'idx': 0,
 # spike sampling
 threshold = -20  # spike threshold (mV)
 samplelength = int(2. / dt)
-
-# filter settings for extracellular traces
-b, a = ss.butter(N=3, Wn=(300 * dt * 2 / 1000, 5000 * dt * 2 / 1000), btype='bandpass')
-apply_filter = True
-
 
 n_tsteps = int(tstop / dt + 1)
 
@@ -167,9 +164,6 @@ source_zs = positions[2] + dura_height
 source_amps = np.multiply(polarity, amp)
 ExtPot = utils.ImposedPotentialField(source_amps, positions[0], positions[1] + displacement_source,
                                      positions[2] + dura_height, sigma)
-
-
-
 
 
 # communication buffer where all simulation output will be gathered on RANK 0
@@ -246,14 +240,6 @@ for i, NRN in enumerate(neurons):
             #                                  sigma=0.3, r=5, n=50,
             #                                  N=np.array([[1, 0, 0], [1, 0, 0], [1, 0, 0], [1, 0, 0]]),
             #                                  method='soma_as_point')
-
-
-
-
-
-
-
-
 
             # run simulation
             # cell.simulate(electrode=electrode)
@@ -406,20 +392,48 @@ if RANK == 0:
     color = iter(plt.cm.rainbow(np.linspace(0, 1, SIZE)))
     # col = ['b', 'r']
     col = iter(plt.cm.tab10(np.linspace(0, 1, SIZE)))
-    figview = plt.figure(1)
-    axview = plt.subplot(111, title="3D view", aspect='auto', projection='3d', xlabel="x [$\mu$m]", ylabel="y [$\mu$m]",
-                         zlabel="z [$\mu$m]", xlim=[-750, 750], ylim=[-400, 400], zlim=[-2700, 100])
+    figview = plt.figure()
+    axview = plt.subplot(111, title="2D view", aspect='auto', xlabel="x [$\mu$m]", ylabel="z [$\mu$m]",
+                         xlim=[-750, 750], ylim=[-2500, 100])
     for nc in range(0, SIZE):
-        # spread cells along x-axis for a better overview in the 3D view
+        # spread cells along x-axis for a better overview in the 2D view
         cells[nc]['xstart'] += spread[nc]
         cells[nc]['xmid'] += spread[nc]
         cells[nc]['xend'] += spread[nc]
         current_color = color.next()
-        [axview.plot([cells[nc]['xstart'][idx], cells[nc]['xend'][idx]], [cells[nc]['ystart'][idx],
-                     cells[nc]['yend'][idx]], [cells[nc]['zstart'][idx], cells[nc]['zend'][idx]], '-',
+        [axview.plot([cells[nc]['xstart'][idx], cells[nc]['xend'][idx]],
+                     [cells[nc]['zstart'][idx], cells[nc]['zend'][idx]], '-',
                      c=current_color, clip_on=False) for idx in range(cells[nc]['totnsegs'])]
-        axview.scatter(cells[nc]['xmid'][0], cells[nc]['ymid'][0], cells[nc]['zmid'][0], c=current_color, label=names[nc])
+        axview.scatter(cells[nc]['xmid'][0], cells[nc]['zmid'][0],
+                       c=current_color, label=names[nc])
         axview.legend()
+    plt.savefig(os.path.join(output_f, "2d_view_XZ.png"), dpi=200)
+
+    figview = plt.figure()
+    axview = plt.subplot(111, title="2D view", aspect='auto', xlabel="y [$\mu$m]", ylabel="z [$\mu$m]",
+                         xlim=[-750, 750], ylim=[-2500, 100])
+    for nc in range(0, SIZE):
+        # spread cells along x-axis for a better overview in the 2D view
+        current_color = color.next()
+        [axview.plot([cells[nc]['ystart'][idx], cells[nc]['yend'][idx]],
+                     [cells[nc]['zstart'][idx], cells[nc]['zend'][idx]], '-',
+                     c=current_color, clip_on=False) for idx in range(cells[nc]['totnsegs'])]
+        axview.scatter(cells[nc]['ymid'][0], cells[nc]['zmid'][0],
+                       c=current_color, label=names[nc])
+        axview.legend()
+    plt.savefig(os.path.join(output_f, "2d_view_YZ.png"), dpi=200)
+
+
+
+
+
+
+
+
+
+
+
+
         # [axview.scatter(cells[nc]['xmid'][ap], cells[nc]['ymid'][ap], cells[nc]['zmid'][ap],
         #                 '*', c='k') for ap in gather_current[nc]['ap_loc']]
     # for i, nrn in enumerate(neurons):
