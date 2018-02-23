@@ -4,11 +4,11 @@ import sys
 import matplotlib.pyplot as plt
 from matplotlib.gridspec import GridSpec
 from matplotlib.collections import PolyCollection, LineCollection
-from mpl_toolkits.mplot3d import Axes3D
+# from mpl_toolkits.mplot3d import Axes3D
 from glob import glob
 import numpy as np
 from warnings import warn
-import scipy.signal as ss
+# import scipy.signal as ss
 import neuron
 import LFPy
 from mpi4py import MPI
@@ -39,8 +39,7 @@ neuron.h.load_file("import3d.hoc")
 
 # get names of neuron models, layers options are 'L1', 'L23', 'L4', 'L5' and 'L6'
 layer_name = 'L5'
-neuron_type = 'TTPC'
-neurons = utils.init_neurons_epfl(layer_name, SIZE, neuron_type)
+neurons = utils.init_neurons_epfl(layer_name, SIZE)
 print("loaded models: {}").format(utils.get_epfl_model_name(neurons, short=True))
 
 # flag for cell template file to switch on (inactive) synapses
@@ -99,9 +98,11 @@ def get_templatename(f):
     return templatename
 
 
+
+
 # PARAMETERS
 # sim duration
-tstop = 33.  # ms
+tstop = 200.
 dt = 2**-6
 
 '''
@@ -135,15 +136,15 @@ n_tsteps = int(tstop / dt + 1)
 
 t = np.arange(n_tsteps) * dt
 
-pulse_start = 8  # ms
-pulse_duration = 2.  # ms
+pulse_start = 80
+pulse_duration = 50
 amp = 200 * 10**3  # uA
 
 if RANK == 0:
-    print("pulse duration: {0} ms ; pulse amplitude: {1} uA".format(pulse_duration, amp))
+    print("pulse duration: {0} ms ; pulse amplitude: {1} uA".format(pulse_duration * dt, amp))
 
 pulse = np.zeros(n_tsteps)
-pulse[int(pulse_start / dt):int(pulse_start / dt + pulse_duration / dt)] = 1.
+pulse[pulse_start:(pulse_start + pulse_duration)] = 1.
 
 
 # TO DETERMINE OR NOT, maybe just start from zmin = - max cortical thickness
@@ -152,7 +153,7 @@ cortical_surface_height = 50
 
 # Parameters for the external field
 sigma = 0.3
-name_shape_ecog = 'multipole3'
+name_shape_ecog = 'circle'
 polarity, n_elec, positions = utils.create_array_shape(name_shape_ecog, 25)
 dura_height = 50
 displacement_source = 50
@@ -230,8 +231,7 @@ for i, NRN in enumerate(neurons):
 
             # set view as in most other examples
             cell.set_rotation(x=np.pi / 2)
-            # cell.set_pos(z=utils.set_z_layer(layer_name))
-            cell.set_pos(z=-1200)
+            cell.set_pos(z=utils.set_z_layer(layer_name))
 
             v_cell_ext = np.zeros((cell.totnsegs, n_tsteps))
             v_cell_ext[:, :] = ExtPot.ext_field(cell.xmid, cell.ymid,
@@ -260,7 +260,6 @@ for i, NRN in enumerate(neurons):
             cell.simulate(rec_vmem=True, rec_imem=True)
             print("simulation running ... cell {}").format(RANK)
             utils.dendritic_spike(cell)
-            # print(utils.spike_segments(cell))
 
 #             #electrode.calc_lfp()
 #             LFP = electrode.LFP
@@ -420,7 +419,6 @@ if RANK == 0:
                      cells[nc]['yend'][idx]], [cells[nc]['zstart'][idx], cells[nc]['zend'][idx]], '-',
                      c=current_color, clip_on=False) for idx in range(cells[nc]['totnsegs'])]
         axview.scatter(cells[nc]['xmid'][0], cells[nc]['ymid'][0], cells[nc]['zmid'][0], c=current_color, label=names[nc])
-
         axview.legend()
         # [axview.scatter(cells[nc]['xmid'][ap], cells[nc]['ymid'][ap], cells[nc]['zmid'][ap],
         #                 '*', c='k') for ap in gather_current[nc]['ap_loc']]
@@ -436,7 +434,7 @@ if RANK == 0:
         # axview.text(cells[nc]['xmid'][v_idxs[widx]], cells[nc]['ymid'][v_idxs[widx]], cells[nc]['zmid'][v_idxs[widx]],
         #             "cell {0}.".format(cells[nc]['rank']) + cells[nc]['name'])
 
-    axview.scatter(source_xs, source_ys, source_zs, c=source_amps)
+    # axview.scatter(source_xs, source_ys, source_zs, c=source_amps)
     plt.tight_layout()
     plt.show()
 
