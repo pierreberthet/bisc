@@ -4,11 +4,11 @@ import sys
 import matplotlib.pyplot as plt
 from matplotlib.gridspec import GridSpec
 from matplotlib.collections import PolyCollection, LineCollection
-from mpl_toolkits.mplot3d import Axes3D
+# from mpl_toolkits.mplot3d import Axes3D
 from glob import glob
 import numpy as np
 from warnings import warn
-import scipy.signal as ss
+# import scipy.signal as ss
 import neuron
 import LFPy
 from mpi4py import MPI

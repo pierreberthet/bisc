@@ -327,8 +327,10 @@ def init_neurons_epfl(layer, n_cells):
     '''Return a list of neurons from the EPFL models '''
     # working dir
     neurons = glob(os.path.join('morphologies/hoc_combos_syn.1_0_10.allzips', layer + '*'))
-    assert len(neurons) > n_cells, "More threads than available neuron models"
-    print("Found {} {} neuron models. Keeping {}.").format(len(neurons), layer, n_cells)
+    # assert len(neurons) > n_cells, "More threads than available neuron models"
+    if len(neurons) > n_cells:
+        print("More threads than available neuron models")
+    print("Found {} {} neuron models. Keeping {}.").format(len(neurons), layer, np.min(n_cells, len(neurons)))
     neurons = neurons[:n_cells]
 
     # Write function to sample from the total pool of neurons and model types with one layer
