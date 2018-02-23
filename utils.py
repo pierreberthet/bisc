@@ -109,7 +109,7 @@ def ap_dromic(cell):
     soma = np.where(cell.vmem[0] > -20)[0]
     if axon.size == 0 or soma.size == 0:
         return None
-    if np.argmin(soma) < np.argmin(axon):
+    if soma[0] < axon[0]:
         print("ORTHODROMIC AP soma {}, axon {}").format(soma[0], axon[0])
         return True
     else:
