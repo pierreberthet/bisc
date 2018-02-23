@@ -80,9 +80,10 @@ depth_check = -350
 #     for yidx, y in enumerate(yf3):
 #         v_field_ext_xy2[xidx, yidx] = ExtPot.ext_field(x, y, depth_check)
 
-v_field_ext_xz, d_field_xz, dd_field_xz = utils.external_field(ExtPot, space_resolution=space_resolution, x_extent=x_extent,
-											   y_extent=None, z_extent=z_extent, z_top=cortical_surface_height,
-											   axis='xz', dderivative=True, plan=None)
+v_field_ext_xz, d_field_xz, dd_field_xz = utils.external_field(ExtPot, space_resolution=space_resolution,
+															   x_extent=x_extent, y_extent=None, z_extent=z_extent,
+															   z_top=cortical_surface_height, axis='xz',
+															   dderivative=True, plan=None)
 
 v_field_ext_xy, d_field_xy, dd_field_xy = utils.external_field(ExtPot, space_resolution=space_resolution, x_extent=x_extent,
 											   y_extent=x_extent, z_extent=None, z_top=cortical_surface_height,

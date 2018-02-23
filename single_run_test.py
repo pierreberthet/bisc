@@ -158,7 +158,7 @@ if RANK == 0:
 if 'my[0]' in cell.allsecnames:
     #zs = [cell.get_idx('apic[0]')[0], cell.get_idx('soma')[0], cell.get_idx('axon[0]')[0], cell.get_idx('node[0]')[0],cell.get_idx('my[0]')[int(len(cell.get_idx('my[0]'))/2)],\
     # cell.get_idx('node[1]')[len(cell.get_idx('node[1]'))-1], cell.get_idx(cell.allsecnames[len(cell.allsecnames)-1])[0] ]
-    #zs = [cell.get_idx('apic[0]')[0], cell.get_idx('soma')[0], cell.get_idx('axon[0]')[0]]
+    # zs = [cell.get_idx('apic[0]')[0], cell.get_idx('soma')[0], cell.get_idx('axon[0]')[0]]
     zs = [cell.get_idx('axon[0]')[0]]
     [zs.append(cell.get_idx('node')[idx]) for idx in range(len(cell.get_idx('node')))]
     #[zs.append(cell.get_idx('my')[::10][idx]) for idx in range(len(cell.get_idx('my')[::10]))  ]
@@ -170,18 +170,16 @@ v_idxs = zs
 print("rank: {0}  v_idxs:{1}").format(RANK, v_idxs)
 
 
-#zs = [int(.95*np.min(cell.zmid)), int(.5*np.min(cell.zmid)), int(.1934*np.min(cell.zmid)), 0, int(.95*np.max(cell.zmid))]
-#zs = [-750, -500, -100, 0, 100]
-#v_idxs = [cell.get_closest_idx(0, 0, z) for z in zs]
+# zs = [int(.95*np.min(cell.zmid)), int(.5*np.min(cell.zmid)), int(.1934*np.min(cell.zmid)), 0, int(.95*np.max(cell.zmid))]
+# zs = [-750, -500, -100, 0, 100]
+# v_idxs = [cell.get_closest_idx(0, 0, z) for z in zs]
 
-#v_clr_z = lambda z: plt.cm.jet(1.0 * (z - np.min(zs)) / (np.max(zs) - np.min(zs)))
-#v_clr_x = lambda z: plt.cm.jet(1.0 * (z - np.min(cell.xend)) / (np.max(np.abs(cell.xmid) - np.min(np.abs(cell.xmid)))))
-#v_clr_y = lambda z: plt.cm.jet(1.0 * (z - np.min(cell.yend)) / (np.max(np.abs(cell.ymid) - np.min(np.abs(cell.ymid)))))
-#v_clr_z = lambda z: plt.cm.jet(1.0 * (z - np.min(cell.zend)) / (np.max(np.abs(cell.zmid) - np.min(np.abs(cell.zmid)))))
+# v_clr_z = lambda z: plt.cm.jet(1.0 * (z - np.min(zs)) / (np.max(zs) - np.min(zs)))
+# v_clr_x = lambda z: plt.cm.jet(1.0 * (z - np.min(cell.xend)) / (np.max(np.abs(cell.xmid) - np.min(np.abs(cell.xmid)))))
+# v_clr_y = lambda z: plt.cm.jet(1.0 * (z - np.min(cell.yend)) / (np.max(np.abs(cell.ymid) - np.min(np.abs(cell.ymid)))))
+# v_clr_z = lambda z: plt.cm.jet(1.0 * (z - np.min(cell.zend)) / (np.max(np.abs(cell.zmid) - np.min(np.abs(cell.zmid)))))
 c_idxs = lambda z,y: plt.cm.jet(1.* z / len(y) )
 
-
-    
 amp = 160 * 10**3
 #source_amps = np.array([1, 1, 0, 0, 1, 0, 1, 1]) * amp
 source_amps = np.array([0, 0, 0, 0, 1, 0, 0, 0]) * amp
@@ -210,17 +208,17 @@ glb_vmem = cell.vmem
 COMM.Barrier()
 
 # plot 3d view of evolution of vmem as a function of stimulation amplitude (legend)
-widx = 0 #to select in len(v_idxs)
+widx = 0  # to select in len(v_idxs)
 
-if RANK==0:
-    #print len(utils.built_for_mpi_comm(cell, glb_vext, glb_vmem, v_idxs, RANK))
-    #single_cells = [utils.built_for_mpi_comm(cell, glb_vext, glb_vmem, v_idxs, RANK)]
+if RANK == 0:
+    # print len(utils.built_for_mpi_comm(cell, glb_vext, glb_vmem, v_idxs, RANK))
+    # single_cells = [utils.built_for_mpi_comm(cell, glb_vext, glb_vmem, v_idxs, RANK)]
     cells.append(utils.built_for_mpi_comm(cell, glb_vext, glb_vmem, v_idxs, widx, RANK))
     for i_proc in range(1, SIZE):
-       #single_cells = np.r_[single_cells, COMM.recv(source=i_proc)]
+       # single_cells = np.r_[single_cells, COMM.recv(source=i_proc)]
        cells.append(COMM.recv(source=i_proc))
 else:
-    #print len(utils.built_for_mpi_comm(cell, glb_vext, glb_vmem, v_idxs, RANK))
+    # print len(utils.built_for_mpi_comm(cell, glb_vext, glb_vmem, v_idxs, RANK))
     COMM.send(utils.built_for_mpi_comm(cell, glb_vext, glb_vmem, v_idxs, widx, RANK), dest=0)
 
 COMM.Barrier()
@@ -228,8 +226,8 @@ COMM.Barrier()
 
 ##### FIGURES #####
 
-if RANK==0:
-    
+if RANK == 0:
+
     threeD = False
 
     #fig = plt.figure()
@@ -270,17 +268,16 @@ if RANK==0:
                   c='k', clip_on=False) for idx in range(cells[nc]['totnsegs'])]
         [ax1.plot([cells[nc]['xmid'][idx]], [cells[nc]['ymid'][idx]], [cells[nc]['zmid'][idx]], 'D', c= c_idxs(cells[nc]['v_idxs'].index(idx), cells[nc]['v_idxs'])) for idx in cells[nc]['v_idxs']]
         ax1.text(cells[nc]['xmid'][0], cells[nc]['ymid'][0], cells[nc]['zmid'][0], "cell {0}".format(cells[nc]['rank']))
-    
+
     ax1.scatter(source_xs, source_ys, source_zs, c=source_amps)
     # PLOT a large array in order to mimic the BISC chip
-    #x= np.arange(-500, 500, 50) #pitch is around 20 - 25 um
-    #y= np.arange(-500, 500, 50)
-    #xs, ys = np.meshgrid(x, y)
-    #zs = np.ones([len(xs), len(xs[0])]) * cortical_surface_height #- 141
-    #ax1.scatter(xs, ys , zs, c='y')
-    
-    #ax.axes.set_yticks(yinfo)
-    #ax.axes.set_yticklabels(yinfo)
+    # x = np.arange(-500, 500, 50) #pitch is around 20 - 25 um
+    # y = np.arange(-500, 500, 50)
+    # xs, ys = np.meshgrid(x, y)
+    # zs = np.ones([len(xs), len(xs[0])]) * cortical_surface_height #- 141
+    # ax1.scatter(xs, ys , zs, c='y')
+
+    # ax.axes.set_yticks(yinfo)
+    # ax.axes.set_yticklabels(yinfo)
     plt.savefig('fig_single_3d_stick', dpi=300, format='png')
     plt.show()
-
