@@ -126,35 +126,42 @@ def dendritic_spike(cell):
     t_dend = None
     t_apic = None
     if soma.size == 0:
+        print("NO SOMATIC SPIKE")
         return None
     dendritic = False
     if cell.get_idx('dend').any():
         # print("no apical dendrites found!!! (no 'apic'?)")
-        idx = cell.get_idx('dend[0]')[0]
+        idx = cell.get_idx('dend[0]')
         if idx.size == 1:
-            dend = np.where(cell.vmem[cell.get_idx('dend[0]')[0]] > - 20)[0]
-            if soma[0] > dend[0]:
-                dendritic = True
-                t_dend = dend[0]
+            dend = np.where(cell.vmem[idx[0]] > - 20)[0]
+            if dend.size != 0:
+                if soma[0] > dend[0]:
+                    dendritic = True
+                    t_dend = dend[0]
         else:
-            dend = np.min(np.where(cell.vmem[cell.get_idx('dend[0]')[0]] > - 20))[1]
-            if soma[0] > dend:
-                dendritic = True
-                t_dend = dend
+            dend = np.where(cell.vmem[idx] > -20)
+            if dend[0].size != 0:
+                dend = np.min(dend[1])
+                if soma[0] > dend:
+                    dendritic = True
+                    t_dend = dend
 
     if cell.get_idx('apic').any():
         # print("no apical dendrites found!!! (no 'apic'?)")
-        idx = cell.get_idx('apic[0]')[0]
+        idx = cell.get_idx('apic[0]')
         if idx.size == 1:
-            apic = np.where(cell.vmem[cell.get_idx('apic[0]')[0]] > - 20)[0]
-            if soma[0] > apic[0]:
-                dendritic = True
-                t_apic = apic[0]
+            apic = np.where(cell.vmem[idx[0]] > - 20)[0]
+            if apic.size != 0:
+                if soma[0] > apic[0]:
+                    dendritic = True
+                    t_apic = apic[0]
         else:
-            apic = np.min(np.where(cell.vmem[cell.get_idx('apic[0]')[0]] > - 20))[1]
-            if soma[0] > apic:
-                dendritic = True
-                t_apic = apic
+            apic = np.where(cell.vmem[idx] > -20)
+            if apic[0].size != 0:
+                apic = np.min(apic[1])
+                if soma[0] > apic:
+                    dendritic = True
+                    t_apic = apic
 
     if dendritic:
         print("DENDRITIC activation in cell {}, soma {}, dend {} apic {}").format(cell.allsecnames[0][:cell.allsecnames[0].find('.')], soma[0], t_dend, t_apic)
@@ -323,16 +330,19 @@ def get_minmax(multid_array):
     return mi, ma
 
 
-def init_neurons_epfl(layer, n_cells):
+def init_neurons_epfl(layer, n_threads, neuron_type=''):
     '''Return a list of neurons from the EPFL models '''
+    neurons = glob(os.path.join('morphologies/hoc_combos_syn.1_0_10.allzips', layer + '_*' + neuron_type + '*_*'))
+    assert len(neurons) >= n_threads, "More threads than available neuron models"
+    print("Found {} {} neuron models. Keeping {}.").format(len(neurons), layer, n_threads)
+    neurons = neurons[:n_threads]
     # working dir
     neurons = glob(os.path.join('morphologies/hoc_combos_syn.1_0_10.allzips', layer + '*'))
     # assert len(neurons) > n_cells, "More threads than available neuron models"
-    if len(neurons) > n_cells:
+    if len(neurons) > n_threads:
         print("More threads than available neuron models")
-    print("Found {} {} neuron models. Keeping {}.").format(len(neurons), layer, np.min(n_cells, len(neurons)))
-    neurons = neurons[:n_cells]
-
+    print("Found {} {} neuron models. Keeping {}.").format(len(neurons), layer, np.min(n_threads, len(neurons)))
+    neurons = neurons[:n_threads]
     # Write function to sample from the total pool of neurons and model types with one layer
 
     # for n in range(2, n_cells + 1):
