@@ -46,7 +46,7 @@ def return_first_spike_time_and_idx(vmem):
     Also contains the time step when this occurred.
     '''
     if np.max(vmem) < -20:
-        print "No spikes detected"
+        print("No spikes detected")
         return [None, None]
     for t_idx in range(1, vmem.shape[1]):
         if np.max(vmem.T[t_idx]) > -20:
@@ -59,7 +59,7 @@ def spike_soma(cell):
     with the most depolarized membrane value. Also contains the time step when this occurred.'''
     idx = cell.get_idx('soma')
     if np.max(cell.vmem[idx]) < -20:
-        print "No spikes detected"
+        print("No spikes detected")
         return [None, None]
     else:
         if idx.size == 1:
@@ -703,7 +703,7 @@ def create_array_shape(shape=None, pitch=None, names=False):
             r_i = 75.  # um, radius of the inner circle
             r_e = r_i + 2 * pitch  # um, radius of the external circle
             if 2 * np.pi * r_i / n_elec < np.sqrt(pitch ** 2 + pitch ** 2):
-                print "spatial resolution is too big, please change the number of sources or r"
+                print("spatial resolution is too big, please change the number of sources or r")
                 return
             source_xs = []
             source_ys = []
