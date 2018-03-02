@@ -94,7 +94,6 @@ def spike_compartments(cell):
     spike_time_comp = np.zeros(cell.totnsegs)
     for idx in range(cell.totnsegs):
         if np.max(cell.vmem[idx]) < -20:
-            # print "No spikes detected"
             spike_time_comp[idx] = None
         else:
             spike_time_comp[idx] = np.where(cell.vmem[idx] > -20.)[0][0]
@@ -303,7 +302,7 @@ def plot_segment_vmem(cell, seg_name):
 
     plt.figure()
     for name in cell.allsecnames:
-        print name
+        print(name)
         plt.plot(cell.tvec, cell.vmem[cell.get_idx(name)[0]])
 
     plt.show()
@@ -758,7 +757,7 @@ def get_templatename(f):
     for line in f.readlines():
         if 'begintemplate' in line.split():
             templatename = line.split()[-1]
-            print 'template {} found!'.format(templatename)
+            print('template {} found!').format(templatename)
             continue
 
     return templatename
