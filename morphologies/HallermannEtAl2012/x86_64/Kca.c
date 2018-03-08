@@ -1,4 +1,4 @@
-/* Created by Language version: 6.2.0 */
+/* Created by Language version: 7.5.0 */
 /* NOT VECTORIZED */
 #define NRN_VECTORIZED 0
 #include <stdio.h>
@@ -170,7 +170,7 @@ static void _ode_matsol(_NrnThread*, _Memb_list*, int);
  static void _ode_matsol_instance1(_threadargsproto_);
  /* connect range variables in _p that hoc is supposed to know about */
  static const char *_mechanism[] = {
- "6.2.0",
+ "7.5.0",
 "kca",
  "gbar_kca",
  0,
@@ -241,7 +241,7 @@ extern void _cvode_abstol( Symbol**, double*, int);
  	hoc_register_cvode(_mechtype, _ode_count, _ode_map, _ode_spec, _ode_matsol);
  	hoc_register_tolerance(_mechtype, _hoc_state_tol, &_atollist);
  	hoc_register_var(hoc_scdoub, hoc_vdoub, hoc_intfunc);
- 	ivoc_help("help ?1 kca /media/erebus/oslo/code/darpa/LFPy/examples/HallermannEtAl2012/x86_64/Kca.mod\n");
+ 	ivoc_help("help ?1 kca /nird/home/u1/berthetp/darpa/bisc/morphologies/HallermannEtAl2012/x86_64/Kca.mod\n");
  hoc_register_limits(_mechtype, _hoc_parm_limits);
  hoc_register_units(_mechtype, _hoc_parm_units);
  }
