@@ -1,3 +1,5 @@
+import matplotlib
+matplotlib.use('Agg')
 import os
 import posixpath
 # import sys
@@ -27,7 +29,7 @@ COMM = MPI.COMM_WORLD
 SIZE = COMM.Get_size()
 RANK = COMM.Get_rank()
 
-print("Size {}, Rank {}").format(SIZE, RANK)
+print("Size {}, Rank {}".format(SIZE, RANK))
 
 
 def posixpth(pth):
@@ -58,45 +60,58 @@ def get_templatename(f):
 # working dir
 CWD = os.getcwd()
 NMODL = 'morphologies/hoc_combos_syn.1_0_10.allmods'
+compile_mech = False  # Recompile all the mechanisms (usually needed once), otherwise this step is bypassed.
 
 # load some required neuron-interface files
 neuron.h.load_file("stdrun.hoc")
 neuron.h.load_file("import3d.hoc")
 
 # get names of neuron models, layers options are 'L1', 'L23', 'L4', 'L5' and 'L6'
-layer_name = 'L5'
+layer_name = 'L1'
 neurons = utils.init_neurons_epfl(layer_name, SIZE)
-print("loaded models: {}").format(utils.get_epfl_model_name(neurons, short=True))
+print("loaded models: {}".format(utils.get_epfl_model_name(neurons, short=True)))
 
 # flag for cell template file to switch on (inactive) synapses
 add_synapses = False
 
 # attempt to set up a folder with all unique mechanism mod files, compile, and
 # load them all
-if RANK == 0:
-    if not os.path.isdir(NMODL):
-        os.mkdir(NMODL)
-    for NRN in neurons:
-        for nmodl in glob(os.path.join(NRN, 'mechanisms', '*.mod')):
-            while not os.path.isfile(os.path.join(NMODL,
-                                                  os.path.split(nmodl)[-1])):
-                os.system('cp {} {}'.format(nmodl,
-                                            os.path.join(NMODL, '.')))
-    os.chdir(NMODL)
-    os.system('nrnivmodl')
-    os.chdir(CWD)
+# if RANK == 0:
+#     if not os.path.isdir(NMODL):
+#         os.mkdir(NMODL)
+#     for NRN in neurons:
+#         for nmodl in glob(os.path.join(NRN, 'mechanisms', '*.mod')):
+#             while not os.path.isfile(os.path.join(NMODL,
+#                                                   os.path.split(nmodl)[-1])):
+#                 os.system('cp {} {}'.format(nmodl,
+#                                             os.path.join(NMODL, '.')))
+#     os.chdir(NMODL)
+#     os.system('nrnivmodl')
+#     os.chdir(CWD)
+
+if compile_mech:
+    mech = 'mechanisms'
+    for i, NRN in enumerate(neurons):
+        if RANK == i:
+            os.chdir(CWD)
+            os.chdir(NRN)
+            os.chdir(mech)
+            if os.path.isdir('x86_64'):
+                os.system('rm -r x86_64')
+            os.system('nrnivmodl')
+            os.chdir(CWD)
 COMM.Barrier()
-neuron.load_mechanisms(NMODL)
+# neuron.load_mechanisms(NMODL)
 
 os.chdir(CWD)
 
-FIGS = 'outputs/epfl_column'
-if not os.path.isdir(FIGS):
-    os.mkdir(FIGS)
+# FIGS = 'outputs/epfl_column'
+# if not os.path.isdir(FIGS):
+#     os.mkdir(FIGS)
 
 
 # load the LFPy SinSyn mechanism for stimulus
-neuron.load_mechanisms(os.path.join(LFPy.__path__[0], "test"))
+# neuron.load_mechanisms(os.path.join(LFPy.__path__[0], "test"))
 
 
 # PARAMETERS
@@ -105,7 +120,7 @@ tstop = 200.
 dt = 2**-6
 
 # output folder
-output_f = "/nird/home/bertehtp/outputs/"
+output_f = "/nird/home/bertehtp/outputs/epfl_geo"
 
 '''
 SIMULATION SETUP
@@ -244,7 +259,7 @@ for i, NRN in enumerate(neurons):
             # run simulation
             # cell.simulate(electrode=electrode)
             cell.simulate(rec_vmem=True, rec_imem=True)
-            print("simulation running ... cell {}").format(RANK)
+            print("simulation running ... cell {}".format(RANK))
             utils.dendritic_spike(cell)
 
 #             #electrode.calc_lfp()
@@ -407,7 +422,7 @@ if RANK == 0:
         axview.scatter(cells[nc]['xmid'][0], cells[nc]['zmid'][0],
                        c=current_color, label=names[nc])
         axview.legend()
-    plt.savefig(os.path.join(output_f, "2d_view_XZ.png"), dpi=200)
+    plt.savefig(os.path.join(output_f, "2D_view_XZ.png"), dpi=200)
 
     figview = plt.figure()
     axview = plt.subplot(111, title="2D view", aspect='auto', xlabel="y [$\mu$m]", ylabel="z [$\mu$m]",
@@ -421,32 +436,21 @@ if RANK == 0:
         axview.scatter(cells[nc]['ymid'][0], cells[nc]['zmid'][0],
                        c=current_color, label=names[nc])
         axview.legend()
-    plt.savefig(os.path.join(output_f, "2d_view_YZ.png"), dpi=200)
+    plt.savefig(os.path.join(output_f, "2D_view_YZ.png"), dpi=200)
 
-
-
-
-
-
-
-
-
-
-
-
-        # [axview.scatter(cells[nc]['xmid'][ap], cells[nc]['ymid'][ap], cells[nc]['zmid'][ap],
-        #                 '*', c='k') for ap in gather_current[nc]['ap_loc']]
+    # [axview.scatter(cells[nc]['xmid'][ap], cells[nc]['ymid'][ap], cells[nc]['zmid'][ap],
+    #                 '*', c='k') for ap in gather_current[nc]['ap_loc']]
     # for i, nrn in enumerate(neurons):
     #     axview.text(cells[i]['xmid'][0], cells[i]['ymid'][0], cells[i]['zmid'][0], names[i], fontdict=font_text)
 
-        # [axview.plot([cells[nc]['xmid'][idx]], [cells[nc]['ymid'][idx]], [cells[nc]['zmid'][idx]], 'D',
-        #              c= c_idxs(cells[nc]['v_idxs'].index(idx))) for idx in cells[nc]['v_idxs']]
-        # [axview.plot([cells[nc]['xmid'][idx]], [cells[nc]['ymid'][idx]],
-        #              [cells[nc]['zmid'][idx]], 'D', c= 'k') for idx in cells[nc]['v_idxs']]
-        # ax1.text(cells[nc]['xmid'][0], cells[nc]['ymid'][0], cells[nc]['zmid'][0],
-        #          "cell {0}".format(cells[nc]['rank']))
-        # axview.text(cells[nc]['xmid'][v_idxs[widx]], cells[nc]['ymid'][v_idxs[widx]], cells[nc]['zmid'][v_idxs[widx]],
-        #             "cell {0}.".format(cells[nc]['rank']) + cells[nc]['name'])
+    # [axview.plot([cells[nc]['xmid'][idx]], [cells[nc]['ymid'][idx]], [cells[nc]['zmid'][idx]], 'D',
+    #              c= c_idxs(cells[nc]['v_idxs'].index(idx))) for idx in cells[nc]['v_idxs']]
+    # [axview.plot([cells[nc]['xmid'][idx]], [cells[nc]['ymid'][idx]],
+    #              [cells[nc]['zmid'][idx]], 'D', c= 'k') for idx in cells[nc]['v_idxs']]
+    # ax1.text(cells[nc]['xmid'][0], cells[nc]['ymid'][0], cells[nc]['zmid'][0],
+    #          "cell {0}".format(cells[nc]['rank']))
+    # axview.text(cells[nc]['xmid'][v_idxs[widx]], cells[nc]['ymid'][v_idxs[widx]], cells[nc]['zmid'][v_idxs[widx]],
+    #             "cell {0}.".format(cells[nc]['rank']) + cells[nc]['name'])
 
     # axview.scatter(source_xs, source_ys, source_zs, c=source_amps)
     plt.tight_layout()

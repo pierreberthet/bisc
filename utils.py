@@ -163,9 +163,9 @@ def dendritic_spike(cell):
                     t_apic = apic
 
     if dendritic:
-        print("DENDRITIC activation in cell {}, soma {}, dend {} apic {}").format(cell.allsecnames[0][:cell.allsecnames[0].find('.')], soma[0], t_dend, t_apic)
+        print("DENDRITIC activation in cell {}, soma {}, dend {} apic {}".format(cell.allsecnames[0][:cell.allsecnames[0].find('.')], soma[0], t_dend, t_apic))
     else:
-        print("NON DENDRITIC activation in cell {}, soma {}, dend {} apic {}").format(cell.allsecnames[0][:cell.allsecnames[0].find('.')],soma[0], t_dend, t_apic)
+        print("NON DENDRITIC activation in cell {}, soma {}, dend {} apic {}".format(cell.allsecnames[0][:cell.allsecnames[0].find('.')],soma[0], t_dend, t_apic))
 
     return dendritic
 
@@ -335,7 +335,7 @@ def init_neurons_epfl(layer, n_threads, neuron_type=''):
     # assert len(neurons) > n_cells, "More threads than available neuron models"
     if len(neurons) < n_threads:
         print("More threads than available neuron models")
-    print("Found {} {} neuron models. Keeping {}.").format(len(neurons), layer, np.min([n_threads, len(neurons)]))
+    print("Found {} {} neuron models. Keeping {}.".format(len(neurons), layer, np.min([n_threads, len(neurons)])))
     neurons = neurons[:n_threads]
     # Write function to sample from the total pool of neurons and model types with one layer
 
@@ -696,8 +696,8 @@ def create_array_shape(shape=None, pitch=None, names=False):
             size_bisc = 1000
             xs = np.cos(np.linspace(-np.pi, np.pi, n_elec))
             ys = np.sin(np.linspace(-np.pi, np.pi, n_elec))
-            x_mesh = range(-size_bisc / 2, (size_bisc + pitch) / 2, pitch)
-            y_mesh = range(-size_bisc / 2, (size_bisc + pitch) / 2, pitch)
+            x_mesh = range(-size_bisc // 2, (size_bisc + pitch) // 2, pitch)
+            y_mesh = range(-size_bisc // 2, (size_bisc + pitch) // 2, pitch)
 
             r_i = 75.  # um, radius of the inner circle
             r_e = r_i + 2 * pitch  # um, radius of the external circle
@@ -757,7 +757,7 @@ def get_templatename(f):
     for line in f.readlines():
         if 'begintemplate' in line.split():
             templatename = line.split()[-1]
-            print('template {} found!').format(templatename)
+            print('template {} found!'.format(templatename))
             continue
 
     return templatename
