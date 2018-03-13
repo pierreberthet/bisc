@@ -44,23 +44,20 @@ dt = 2**-6
 NMODL = 'morphologies/hoc_combos_syn.1_0_10.allmods'
 CWD = os.getcwd()
 
-NRN = "morphologies/hoc_combos_syn.1_0_10.allzips/L23_BTC_bAC217_1"
+NRN = "morphologies/hoc_combos_syn.1_0_10.allzips/L1_DAC_bNAC219_1/"
 for nmodl in glob(os.path.join(NRN, 'mechanisms', '*.mod')):
     while not os.path.isfile(os.path.join(NMODL,
                                           os.path.split(nmodl)[-1])):
         os.system('cp {} {}'.format(nmodl,
                                     os.path.join(NMODL, '.')))
-	os.chdir(NMODL)
-    os.system('nrnivmodl')        
+    os.chdir(NMODL)
+    # os.system('nrnivmodl')
     os.chdir(CWD)
 neuron.load_mechanisms(NMODL)
 
 os.chdir(CWD)
 
-
-
-
-neuron.load_mechanisms(NRN)
+# neuron.load_mechanisms(NRN)
 
 # os.chdir(CWD)
 os.chdir(NRN)
@@ -103,7 +100,7 @@ if not hasattr(neuron.h, templatename):
 
 add_synapses = False
 
-morphologyfile = "morphology/C190898A-I1_-_Clone_5.asc"
+morphologyfile = "morphology/sm090918b1-3_idA_-_Scale_x1.000_y1.025_z1.000.asc"
 cell = LFPy.TemplateCell(morphology=morphologyfile,
                          templatefile=posixpth(os.path.join(NRN, 'template.hoc')),
                          templatename=templatename,
