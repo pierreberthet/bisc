@@ -19,6 +19,8 @@ try:
 except ImportError:
     print('install AllenSDK from http://alleninstitute.github.io/AllenSDK/')
 
+neuron.h.load_file("stdrun.hoc")
+neuron.h.load_file("import3d.hoc")
 
 base_dir = os.getcwd()
 working_directory = 'morphologies/ABI/'  # set to where the models have been downloaded
