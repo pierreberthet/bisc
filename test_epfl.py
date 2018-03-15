@@ -2,6 +2,8 @@
 '''
 Test loading and running cell models from the Blue Brain Project Database
 '''
+import matplotlib
+matplotlib.use('Agg')
 import os
 import posixpath
 import sys
@@ -23,12 +25,12 @@ COMM = MPI.COMM_WORLD
 SIZE = COMM.Get_size()
 RANK = COMM.Get_rank()
 
-print("Size {}, Rank {}").format(SIZE, RANK)
+print("Size {}, Rank {}".format(SIZE, RANK))
 
 base_dir = os.getcwd()
 
-CWD = 'morphologies/hoc_combos_syn.1_0_10.allzips/'  # set to where the models have been downloaded
-
+# CWD = 'morphologies/hoc_combos_syn.1_0_10.allzips/'  # set to where the models have been downloaded
+NMODL = 'morphologies/hoc_combos_syn.1_0_10.allmods'
 # neurons = glob(os.path.join(CWD, '*'))
 
 FIGS = 'outputs/epfl_column'
@@ -40,10 +42,11 @@ neuron.h.load_file("stdrun.hoc")
 neuron.h.load_file("import3d.hoc")
 
 # get names of neuron models, layers options are 'L1', 'L23', 'L4', 'L5' and 'L6'
-layer_name = 'L23'
-neuron_type = 'DBC'
-neurons = utils.init_neurons_epfl(layer_name, SIZE, neuron_type)
-print("loaded models: {}").format(utils.get_epfl_model_name(neurons, short=False))
+layer_name = 'L5'
+# neuron_type = 'DBC'
+# neurons = utils.init_neurons_epfl(layer_name, SIZE, neuron_type)
+neurons = utils.init_neurons_epfl(layer_name, SIZE)
+print("loaded models: {}".format(utils.get_epfl_model_name(neurons, short=False)))
 
 # os.chdir(CWD)
 
@@ -51,7 +54,7 @@ print("loaded models: {}").format(utils.get_epfl_model_name(neurons, short=False
 add_synapses = False
 
 # load the LFPy SinSyn mechanism for stimulus
-# neuron.load_mechanisms(os.path.join(LFPy.__path__[0], "test"))
+neuron.load_mechanisms(os.path.join(LFPy.__path__[0], "test"))
 
 
 def posixpth(pth):
@@ -94,7 +97,7 @@ PointProcParams = {'idx': 0,
                    'pptype': 'SinSyn',
                    'delay': 200.,
                    'dur': tstop - 30.,
-                   'pkamp': 0.5,
+                   'pkamp': 5,  # .5 nA
                    'freq': 0.,
                    'phase': np.pi / 2,
                    'bias': 0.,
@@ -147,12 +150,9 @@ source_amps = np.multiply(polarity, amp)
 # ExtPot = utils.ImposedPotentialField(source_amps, positions[0], positions[1] + displacement_source,
 #                                      positions[2] + dura_height, sigma)
 
-
-
-
-
 # communication buffer where all simulation output will be gathered on RANK 0
 COMM_DICT = {}
+neuron.load_mechanisms(NMODL)
 
 COUNTER = 0
 for i, NRN in enumerate(neurons):
@@ -220,7 +220,7 @@ for i, NRN in enumerate(neurons):
 
             pointProcess = LFPy.StimIntElectrode(cell, **PointProcParams)
 
-            electrode = LFPy.RecExtElectrode(x = np.array([-40, 40., 0, 0]),
+            electrode = LFPy.RecExtElectrode(x=np.array([-40, 40., 0, 0]),
                                              y=np.array([0, 0, -40, 40]),
                                              z=np.zeros(4),
                                              sigma=0.3, r=5, n=50,
@@ -244,10 +244,10 @@ for i, NRN in enumerate(neurons):
             crossings = (cell.somav[:-1] < threshold) & (cell.somav[1:] >= threshold)
             spike_inds = np.where(crossings)[0]
             # sampled spike waveforms for each event
-            spw = np.zeros((crossings.sum()*LFP.shape[0], 2*samplelength))
-            tspw = np.arange(-samplelength, samplelength)*dt
+            spw = np.zeros((crossings.sum() * LFP.shape[0], 2 * samplelength))
+            tspw = np.arange(-samplelength, samplelength) * dt
             # set spike time where voltage gradient is largest
-            n = 0 # counter
+            n = 0  # counter
             for j, i in enumerate(spike_inds):
                 inds = np.arange(i - samplelength, i + samplelength)
                 w = cell.somav[inds]
@@ -260,8 +260,8 @@ for i, NRN in enumerate(neurons):
 
             # fill in sampled spike waveforms and times of spikes in comm_dict
             COMM_DICT.update({
-                os.path.split(NRN)[-1] + '_' + os.path.split(morphologyfile)[-1].strip('.asc') : dict(
-                    spw = spw,
+                os.path.split(NRN)[-1] + '_' + os.path.split(morphologyfile)[-1].strip('.asc'): dict(
+                    spw=spw,
                 )
             })
 
@@ -308,11 +308,11 @@ for i, NRN in enumerate(neurons):
             n = electrode.x.size
             for j in range(n):
                 zips = []
-                for x in spw[j::n,]:
+                for x in spw[j::n, ]:
                     zips.append(list(zip(tspw, x)))
                 linecol = LineCollection(zips,
                                          linewidths=0.5,
-                                         colors=plt.cm.Spectral(int(255.*j/n)),
+                                         colors=plt.cm.Spectral(int(255. * j / n)),
                                          rasterized=True)
                 ax.add_collection(linecol)
                 # ax.plot(tspw, x, rasterized=True)
@@ -334,12 +334,12 @@ for i, NRN in enumerate(neurons):
             ax.set_xlabel('(ms)', labelpad=0)
             ax.set_ylabel('(mV)', labelpad=0)
 
-            fig.savefig(os.path.join(CWD, FIGS, os.path.split(NRN)[-1] + '_' +
-            os.path.split(morphologyfile)[-1].replace('.asc', '.pdf')), dpi=200)
+            fig.savefig(os.path.join(base_dir, FIGS, os.path.split(NRN)[-1] + '_' +
+                        os.path.split(morphologyfile)[-1].replace('.asc', '.pdf')), dpi=200)
             plt.close(fig)
 
         COUNTER += 1
-        os.chdir(CWD)
+        os.chdir(base_dir)
 
 COMM.Barrier()
 
@@ -379,13 +379,15 @@ if RANK == 0:
                 marker = 'd'
             elif 'TTPC' in key:
                 marker = '^'
+            else:
+                marker = 's'
             ax.plot(w, p2p, marker, lw=0.1, markersize=5, mec='none', label=key, alpha=0.25)
         ax.set_xlabel('(ms)', labelpad=0)
         ax.set_ylabel('(mV)', labelpad=0)
         if k == 0:
-            ax.legend(loc='upper left', bbox_to_anchor=(1,1), frameon=False, fontsize=7)
-    fig.savefig(os.path.join(CWD, FIGS, 'P2P_time_amplitude.pdf'))
-    print("wrote {}".format(os.path.join(CWD, FIGS, 'P2P_time_amplitude.pdf')))
+            ax.legend(loc='upper left', bbox_to_anchor=(1, 1), frameon=False, fontsize=7)
+    fig.savefig(os.path.join(base_dir, FIGS, 'P2P_time_amplitude.pdf'))
+    print("wrote {}".format(os.path.join(base_dir, FIGS, 'P2P_time_amplitude.pdf')))
     plt.close(fig)
 else:
     pass

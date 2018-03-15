@@ -1,3 +1,5 @@
+import matplotlib
+matplotlib.use('Agg')
 import os
 import posixpath
 # import sys
@@ -27,7 +29,7 @@ COMM = MPI.COMM_WORLD
 SIZE = COMM.Get_size()
 RANK = COMM.Get_rank()
 
-print("Size {}, Rank {}").format(SIZE, RANK)
+print("Size {}, Rank {}".format(SIZE, RANK))
 
 
 def posixpth(pth):
@@ -66,7 +68,7 @@ neuron.h.load_file("import3d.hoc")
 # get names of neuron models, layers options are 'L1', 'L23', 'L4', 'L5' and 'L6'
 layer_name = 'L5'
 neurons = utils.init_neurons_epfl(layer_name, SIZE)
-print("loaded models: {}").format(utils.get_epfl_model_name(neurons, short=True))
+print("loaded models: {}".format(utils.get_epfl_model_name(neurons, short=True)))
 
 # flag for cell template file to switch on (inactive) synapses
 add_synapses = False
@@ -233,9 +235,10 @@ for i, NRN in enumerate(neurons):
 
             # set view as in most other examples
             cell.set_rotation(x=np.pi / 2)
-            cell.set_pos(z=utils.set_z_layer(layer_name))
+            # cell.set_pos(z=utils.set_z_layer(layer_name))
+            cell.set_pos(z=-np.max(cell.zend))
 
-            spiked = False
+            spiked = True  # artificially set to True, to engage the loop, but anyway tested for distance = 0
             for amp in amp_spread:
                 dis = distance[0]
                 loop = 0
@@ -419,7 +422,7 @@ else:
 COMM.Barrier()
 
 if RANK == 0:
-    print gather_current[1]['ap_loc']
+    print(gather_current[1]['ap_loc'])
 
 ###############################################################
 
