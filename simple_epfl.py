@@ -1,5 +1,4 @@
 import os
-import sys
 import posixpath
 import neuron
 import LFPy

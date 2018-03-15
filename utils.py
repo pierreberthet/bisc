@@ -63,7 +63,7 @@ def spike_soma(cell):
         return [None, None]
     else:
         if idx.size == 1:
-            t_ap = np.where(cell.vmem[idx[0]] > -20)[0][0]
+            t_ap = np.where(cell.vmem[idx] > -20)[0][0]
             return [t_ap, idx[0]]
         else:
             t_ap = np.min(np.where(cell.vmem[idx] > -20)[1])
