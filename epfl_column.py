@@ -175,17 +175,16 @@ for i, NRN in enumerate(neurons):
         # Load main cell template
         neuron.h.load_file(1, "template.hoc")
 
-
     for idx, morphologyfile in enumerate(glob(os.path.join('morphology', '*'))):
         if idx == RANK:
             # Instantiate the cell(s) using LFPy
             cell = LFPy.TemplateCell(morphology=morphologyfile,
-                             templatefile=posixpth(os.path.join(NRN, 'template.hoc')),
-                             templatename=templatename,
-                             templateargs=1 if add_synapses else 0,
-                             tstop=tstop,
-                             dt=dt,
-                             nsegs_method=None)
+                                     templatefile=posixpth(os.path.join(NRN, 'template.hoc')),
+                                     templatename=templatename,
+                                     templateargs=1 if add_synapses else 0,
+                                     tstop=tstop,
+                                     dt=dt,
+                                     nsegs_method=None)
         
             #set view as in most other examples
             cell.set_rotation(x=np.pi/2)
