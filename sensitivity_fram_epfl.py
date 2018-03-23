@@ -67,7 +67,7 @@ neuron.h.load_file("import3d.hoc")
 
 # get names of neuron models, layers options are 'L1', 'L23', 'L4', 'L5' and 'L6'
 layer_name = 'L5'
-neuron_type = 'TTPC2'
+neuron_type = 'MC'
 # neurons = utils.init_neurons_epfl(layer_name, SIZE)
 neurons = utils.init_neurons_epfl(layer_name, SIZE, neuron_type)
 print("loaded models: {}".format(utils.get_epfl_model_name(neurons, short=True)))
@@ -142,8 +142,8 @@ t = np.arange(n_tsteps) * dt
 pulse_start = 80
 pulse_duration = 50
 amp = 100 * 10**3  # uA
-min_current = -300 * 10**3
-max_current = 300 * 10**3
+min_current = -100 * 10**3
+max_current = 100 * 10**3
 n_intervals = 10
 amp_spread = np.linspace(min_current, max_current, n_intervals)
 # amp_spread = np.geomspace(min_current, max_current, n_intervals)
@@ -271,6 +271,10 @@ for i, NRN in enumerate(neurons):
                     # cell.simulate(electrode=electrode)
                     cell.simulate(rec_vmem=True, rec_imem=True)
                     print("simulation running ... loop {} ; amp {}nA ; distance {}um ; cell {}".format(loop, amp, dis, RANK))
+                    # DEBUG
+                    if np.isnan(cell.vmem).any():
+                        print("NaN for cell {}".format(RANK))
+                    
                     utils.dendritic_spike(cell)
                     spike_time_loc = utils.spike_soma(cell)
                     if spike_time_loc[0] is not None:
