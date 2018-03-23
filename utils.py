@@ -351,7 +351,7 @@ def init_neurons_epfl(layer, n_threads, neuron_type=''):
     if len(neurons) < n_threads:
         print("More threads than available neuron models")
     print("Found {} {} neuron models. Keeping {}.".format(len(neurons), layer, np.min([n_threads, len(neurons)])))
-    neurons = neurons[:n_threads]
+    neurons = neurons[:np.min([n_threads, len(neurons)])]
     # Write function to sample from the total pool of neurons and model types with one layer
 
     # for n in range(2, n_cells + 1):
