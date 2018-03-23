@@ -58,15 +58,15 @@ def spike_soma(cell):
     If many compartments crossed threshold during a unique time step, it returns the index of the compartment
     with the most depolarized membrane value. Also contains the time step when this occurred.'''
     idx = cell.get_idx('soma')
-    if np.max(cell.vmem[idx]) < -20:
+    if np.nanmax(cell.vmem[idx]) < -20:
         print("No spikes detected")
         return [None, None]
     else:
         if idx.size == 1:
-            t_ap = np.where(cell.vmem[idx] > -20)[0][0]
+            t_ap = np.where(cell.vmem[idx[0]] > -20)[0][0]
             return [t_ap, idx[0]]
         else:
-            t_ap = np.min(np.where(cell.vmem[idx] > -20)[1])
+            t_ap = np.nanmin(np.where(cell.vmem[idx] > -20)[1])
             return [t_ap, idx[np.argmax(cell.vmem[idx].T[t_ap])]]
 
 
@@ -124,6 +124,7 @@ def dendritic_spike(cell):
     soma = np.where(cell.vmem[0] > -20)[0]
     t_dend = None
     t_apic = None
+    t_axon = None
     if soma.size == 0:
         print("NO SOMATIC SPIKE")
         return None
@@ -162,10 +163,24 @@ def dendritic_spike(cell):
                     dendritic = True
                     t_apic = apic
 
+    if cell.get_idx('axon').any():
+        idx = cell.get_idx('axon[0]')
+        if idx.size == 1:
+            axon = np.where(cell.vmem[idx[0]] > - 20)[0]
+            if axon.size != 0:
+                t_axon = axon[0]
+        else:
+            axon = np.where(cell.vmem[idx] > -20)
+            if axon[0].size != 0:
+                axon = np.min(axon[1])
+                t_axon = axon
+
     if dendritic:
-        print("DENDRITIC activation in cell {}, soma {}, dend {} apic {}".format(cell.allsecnames[0][:cell.allsecnames[0].find('.')], soma[0], t_dend, t_apic))
+        print("DENDRITIC activation in cell {}, soma {}, dend {} apic {} axon {}".format(
+            cell.allsecnames[0][:cell.allsecnames[0].find('.')], soma[0], t_dend, t_apic, t_axon))
     else:
-        print("NON DENDRITIC activation in cell {}, soma {}, dend {} apic {}".format(cell.allsecnames[0][:cell.allsecnames[0].find('.')],soma[0], t_dend, t_apic))
+        print("NON DENDRITIC activation in cell {}, soma {}, dend {} apic {} axon {}".format(
+            cell.allsecnames[0][:cell.allsecnames[0].find('.')], soma[0], t_dend, t_apic, t_axon))
 
     return dendritic
 

@@ -70,6 +70,8 @@ layer_name = 'L5'
 neurons = utils.init_neurons_epfl(layer_name, SIZE)
 print("loaded models: {}".format(utils.get_epfl_model_name(neurons, short=True)))
 
+print("REACH")
+
 # flag for cell template file to switch on (inactive) synapses
 add_synapses = False
 
@@ -107,7 +109,7 @@ tstop = 200.
 dt = 2**-6
 
 # output folder
-output_f = "/nird/home/bertehtp/outputs/"
+output_f = "/nird/home/berthetp/outputs/"
 
 '''
 SIMULATION SETUP
@@ -137,7 +139,7 @@ t = np.arange(n_tsteps) * dt
 
 pulse_start = 80
 pulse_duration = 50
-amp = 200 * 10**3  # uA
+amp = 100 * 10**3  # uA
 min_current = -300 * 10**3
 max_current = 300 * 10**3
 n_intervals = 10
@@ -266,7 +268,7 @@ for i, NRN in enumerate(neurons):
                     # run simulation
                     # cell.simulate(electrode=electrode)
                     cell.simulate(rec_vmem=True, rec_imem=True)
-                    print("simulation running ... cell {}".format(RANK))
+                    print("simulation running ... loop {} ; amp {}nA ; distance {}$\mu$m ; cell {}".format(loop, amp, dis, RANK))
                     utils.dendritic_spike(cell)
                     spike_time_loc = utils.spike_soma(cell)
                     if spike_time_loc[0] is not None:
