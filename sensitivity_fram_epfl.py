@@ -68,9 +68,9 @@ neuron.h.load_file("import3d.hoc")
 
 # get names of neuron models, layers options are 'L1', 'L23', 'L4', 'L5' and 'L6'
 layer_name = 'L5'
-neuron_type = 'MC'
-# neurons = utils.init_neurons_epfl(layer_name, SIZE)
-neurons = utils.init_neurons_epfl(layer_name, SIZE, neuron_type)
+# neuron_type = 'MC'
+neurons = utils.init_neurons_epfl(layer_name, SIZE)
+# neurons = utils.init_neurons_epfl(layer_name, SIZE, neuron_type)
 print("loaded models: {}".format(utils.get_epfl_model_name(neurons, short=True)))
 
 print("REACH")
@@ -143,12 +143,12 @@ t = np.arange(n_tsteps) * dt
 pulse_start = 80
 pulse_duration = 50
 amp = 100 * 10**3  # uA
-min_current = -100 * 10**3
-max_current = 100 * 10**3
-n_intervals = 10
+min_current = -300 * 10**3
+max_current = 300 * 10**3
+n_intervals = 16
 amp_spread = np.linspace(min_current, max_current, n_intervals)
 # amp_spread = np.geomspace(min_current, max_current, n_intervals)
-max_distance = 100
+max_distance = 200
 distance = np.linspace(0, max_distance, n_intervals)
 
 if RANK == 0:
@@ -255,12 +255,12 @@ for i, NRN in enumerate(neurons):
                     ExtPot = utils.ImposedPotentialField(source_amps, positions[0], positions[1] + displacement_source,
                                                          positions[2] + dura_height, sigma)
 
-                    print("DEBUG i1 rank {}".format(RANK))
+                    # print("DEBUG i1 rank {}".format(RANK))
 
                     v_cell_ext = np.zeros((cell.totnsegs, n_tsteps))
-                    print("DEBUG i2 rank {}".format(RANK))
+                    # print("DEBUG i2 rank {}".format(RANK))
                     # cell.set_pos(z=dis)
-                    print("DEBUG i3 rank {}".format(RANK))
+                    # print("DEBUG i3 rank {}".format(RANK))
                     v_cell_ext[:, :] = ExtPot.ext_field(cell.xmid, cell.ymid, cell.zmid
                                                         ).reshape(cell.totnsegs, 1) * pulse.reshape(1, n_tsteps)
 
@@ -279,7 +279,7 @@ for i, NRN in enumerate(neurons):
                     cell.set_pos(z=-np.max(cell.zend) - dis)
 
                     cell.insert_v_ext(v_cell_ext, t)
-                    print("DEBUG i5 rank {}".format(RANK))
+                    # print("DEBUG i5 rank {}".format(RANK))
 
                     # pointProcess = LFPy.StimIntElectrode(cell, **PointProcParams)
 
@@ -292,7 +292,7 @@ for i, NRN in enumerate(neurons):
 
                     # run simulation
                     # cell.simulate(electrode=electrode)
-                    print("DEBUG about to simulate rank {}".format(RANK))
+                    # print("DEBUG about to simulate rank {}".format(RANK))
                     cell.simulate(rec_vmem=True, rec_imem=True)
                     print("simulation running ... loop {} ; amp {}nA ; distance {}um ; cell {}".format(loop, amp, dis, RANK))
                     # DEBUG
@@ -305,21 +305,17 @@ for i, NRN in enumerate(neurons):
                         spiked = True
                         print("!spike! at time {0} and position {1}, cell {2}".format(
                             spike_time_loc[0], cell.get_idx_name(spike_time_loc[1])[1], RANK))
-
-                        # c_vext[RANK][np.where(distance == dis)] = v_cell_ext[spike_time_loc[1]][spike_time_loc[0]]
-                        print("DEBUG 0 rank {}".format(RANK))
-
+                        # print("DEBUG 0 rank {}".format(RANK))
                         current[RANK][np.where(amp_spread == amp)[0][0]] = dis
-                        print("DEBUG 1 rank {}".format(RANK))
+                        # print("DEBUG 1 rank {}".format(RANK))
                         c_vext[RANK][np.where(amp_spread == amp)] = v_cell_ext[spike_time_loc[1]][spike_time_loc[0]]
-                        print("DEBUG 2 rank {}".format(RANK))
+                        # print("DEBUG 2 rank {}".format(RANK))
                         ap_loc[RANK][np.where(amp_spread == amp)] = spike_time_loc[1]
-                        print("DEBUG 3 rank {}".format(RANK))
-                        # ap_loc[RANK][np.where(distance == dis)] = spike_time_loc[1]
+                        # print("DEBUG 3 rank {}".format(RANK))
                     else:
                         spiked = False
                     loop += 1
-                    print('loop {}'.format(loop))
+                    # print('loop {}'.format(loop))
 
 #             #electrode.calc_lfp()
 #             LFP = electrode.LFP
@@ -469,11 +465,13 @@ if RANK == 0 and SIZE > 1:
 if RANK == 0:
     print("simulation done")
     cells = []
-    cells.append(utils.built_for_mpi_space(cell, RANK))
+    temp_trx = utils.built_for_mpi_space(cell, RANK)
+    cells.append(temp_trx)
     for i_proc in range(1, SIZE):
         cells.append(COMM.recv(source=i_proc))
 else:
-    COMM.send(utils.built_for_mpi_space(cell, RANK), dest=0)
+    temp_trx = utils.built_for_mpi_space(cell, RANK)
+    COMM.send(temp_trx, dest=0)
 
 COMM.Barrier()
 print("DEBUG 0 rank {}".format(RANK))
@@ -491,8 +489,8 @@ if RANK == 0:
     # col = ['b', 'r']
     col = iter(plt.cm.tab10(np.linspace(0, 1, SIZE)))
     figview = plt.figure()
-    axview = plt.subplot(111, title="2D view XZ", aspect='auto', xlabel="x [$\mu$m]", ylabel="z [$\mu$m]",
-                         xlim=[-750, 750], ylim=[-2500, 100])
+    axview = plt.subplot(111, title="2D view XZ", aspect='auto', xlabel="x [$\mu$m]", ylabel="z [$\mu$m]")
+                         # xlim=[-750, 750], ylim=[-2500, 100])
     for nc in range(0, SIZE):
         # spread cells along x-axis for a better overview in the 2D view
         cells[nc]['xstart'] += spread[nc]
@@ -510,8 +508,8 @@ if RANK == 0:
     # print("DEBUG 1 rank {}".format(RANK))
 
     figview = plt.figure()
-    axview = plt.subplot(111, title="2D view YZ", aspect='auto', xlabel="y [$\mu$m]", ylabel="z [$\mu$m]",
-                         xlim=[-750, 750], ylim=[-2500, 100])
+    axview = plt.subplot(111, title="2D view YZ", aspect='auto', xlabel="y [$\mu$m]", ylabel="z [$\mu$m]")
+                         # xlim=[-750, 750], ylim=[-2500, 100])
     # print("DEBUG 2 rank {}".format(RANK))
 
     color = iter(plt.cm.rainbow(np.linspace(0, 1, SIZE)))
@@ -534,8 +532,8 @@ if RANK == 0:
     fig.subplots_adjust(wspace=.6)
     ax = plt.subplot(111, title="Stimulation threshold")
     # axd = ax.twinx()
-    ax.set_xlabel("depth [$\mu$m]")
-    ax.set_ylabel("stimulation current [$\mu$A]")
+    ax.set_xlabel("stimulation current [$\mu$A]")
+    ax.set_ylabel("depth [$\mu$m]")
     # axd.set_ylabel("V_Ext [mV]")
     for i in range(SIZE):
         ax.plot(amp_spread,
