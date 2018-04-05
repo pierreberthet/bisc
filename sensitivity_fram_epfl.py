@@ -145,7 +145,7 @@ pulse_duration = 50
 amp = 100 * 10**3  # uA
 min_current = -300 * 10**3
 max_current = 300 * 10**3
-n_intervals = 16
+n_intervals = 5
 amp_spread = np.linspace(min_current, max_current, n_intervals)
 # amp_spread = np.geomspace(min_current, max_current, n_intervals)
 max_distance = 200
@@ -465,13 +465,21 @@ if RANK == 0 and SIZE > 1:
 if RANK == 0:
     print("simulation done")
     cells = []
-    temp_trx = utils.built_for_mpi_space(cell, RANK)
-    cells.append(temp_trx)
+    cells.append(utils.built_for_mpi_space_light(cell, RANK))
     for i_proc in range(1, SIZE):
         cells.append(COMM.recv(source=i_proc))
 else:
-    temp_trx = utils.built_for_mpi_space(cell, RANK)
-    COMM.send(temp_trx, dest=0)
+    COMM.send(utils.built_for_mpi_space_light(cell, RANK), dest=0)
+
+# Traceback (most recent call last):
+#   File "sensitivity_fram_epfl.py", line 471, in <module>
+#     cells.append(COMM.recv(source=i_proc))
+#   File "MPI/Comm.pyx", line 1192, in mpi4py.MPI.Comm.recv (src/mpi4py.MPI.c:106889)
+#   File "MPI/msgpickle.pxi", line 292, in mpi4py.MPI.PyMPI_recv (src/mpi4py.MPI.c:43053)
+#   File "MPI/msgpickle.pxi", line 143, in mpi4py.MPI.Pickle.load (src/mpi4py.MPI.c:41248)
+# _pickle.UnpicklingError: invalid load key, '\x00'.
+# SOLVED by removing size of the contained data (stripped vmem and v_ext)
+
 
 COMM.Barrier()
 print("DEBUG 0 rank {}".format(RANK))
@@ -502,8 +510,10 @@ if RANK == 0:
                      c=current_color, clip_on=False) for idx in range(cells[nc]['totnsegs'])]
         axview.scatter(cells[nc]['xmid'][0], cells[nc]['zmid'][0],
                        c=current_color, label=names[nc])
-        axview.legend()
-    plt.savefig(os.path.join(output_f, "2d_view_XZ.png"), dpi=200)
+    art = []
+    lgd = axview.legend(loc=9, prop={'size': 6}, bbox_to_anchor=(1.01, 1.), ncol=2)
+    art.append(lgd)
+    plt.savefig(os.path.join(output_f, "2d_view_XZ.png"), additional_artists=art, bbox_inches="tight", dpi=200)
     plt.close()
     # print("DEBUG 1 rank {}".format(RANK))
 
@@ -524,7 +534,10 @@ if RANK == 0:
         axview.scatter(cells[nc]['ymid'][0], cells[nc]['zmid'][0],
                        c=current_color, label=names[nc])
         axview.legend()
-    plt.savefig(os.path.join(output_f, "2d_view_YZ.png"), dpi=200)
+    art = []
+    lgd = axview.legend(loc=9, prop={'size': 6}, bbox_to_anchor=(1.01, 1.), ncol=2)
+    art.append(lgd)
+    plt.savefig(os.path.join(output_f, "2d_view_YZ.png"), additional_artists=art, bbox_inches="tight", dpi=200)
 
     color = iter(plt.cm.rainbow(np.linspace(0, 1, SIZE)))
 

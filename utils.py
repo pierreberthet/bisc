@@ -38,6 +38,17 @@ def built_for_mpi_space(cell, rank, extra1=None, extra2=None):
             'xend': cell.xend, 'yend': cell.yend, 'zend': cell.zend}
 
 
+def built_for_mpi_space_light(cell, rank, extra1=None, extra2=None):
+    '''
+    Return a dict of array useful for plotting cells in 3D space, in parallel simulation
+    (cell objet can not be communicated directly between thread).
+    '''
+    return {'totnsegs': cell.totnsegs, 'rank': rank, 'extra1': extra1,
+            'xstart': cell.xstart, 'ystart': cell.ystart, 'zstart': cell.zstart, 'extra2': extra2,
+            'xmid': cell.xmid, 'ymid': cell.ymid, 'zmid': cell.zmid,
+            'xend': cell.xend, 'yend': cell.yend, 'zend': cell.zend}
+
+
 def return_first_spike_time_and_idx(vmem):
     '''
     Return the index of the segment where Vmem first crossed the threshold (Usually set at -20 mV.
