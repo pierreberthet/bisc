@@ -145,7 +145,7 @@ pulse_duration = 50
 amp = 100 * 10**3  # uA
 min_current = -300 * 10**3
 max_current = 300 * 10**3
-n_intervals = 5
+n_intervals = 30
 amp_spread = np.linspace(min_current, max_current, n_intervals)
 # amp_spread = np.geomspace(min_current, max_current, n_intervals)
 max_distance = 200
@@ -511,7 +511,7 @@ if RANK == 0:
         axview.scatter(cells[nc]['xmid'][0], cells[nc]['zmid'][0],
                        c=current_color, label=names[nc])
     art = []
-    lgd = axview.legend(loc=9, prop={'size': 6}, bbox_to_anchor=(1.01, 1.), ncol=2)
+    lgd = axview.legend(loc=9, prop={'size': 6}, bbox_to_anchor=(0.5, -0.1), ncol=6)
     art.append(lgd)
     plt.savefig(os.path.join(output_f, "2d_view_XZ.png"), additional_artists=art, bbox_inches="tight", dpi=200)
     plt.close()
@@ -535,7 +535,7 @@ if RANK == 0:
                        c=current_color, label=names[nc])
         axview.legend()
     art = []
-    lgd = axview.legend(loc=9, prop={'size': 6}, bbox_to_anchor=(1.01, 1.), ncol=2)
+    lgd = axview.legend(loc=9, prop={'size': 6}, bbox_to_anchor=(0.5, -0.1), ncol=6)
     art.append(lgd)
     plt.savefig(os.path.join(output_f, "2d_view_YZ.png"), additional_artists=art, bbox_inches="tight", dpi=200)
 
@@ -560,10 +560,16 @@ if RANK == 0:
     # plt.locator_params(tight=True)
     # if max_current < 0:
     #     plt.gca().invert_yaxis()
-    plt.legend(loc="upper left")
+    # plt.legend(loc="upper left")
+    art = []
+    lgd = ax.legend(loc=9, prop={'size': 6}, bbox_to_anchor=(0.5, -0.1), ncol=6)
+    art.append(lgd)
+    # plt.savefig(os.path.join(output_f, "2d_view_YZ.png"),  dpi=200)
+
     # if max_current > 0:
     plt.savefig(output_f + "sensitivity_" + layer_name + '_' + name_shape_ecog +
-                "_" + str(int(min(amp_spread))) + "." + str(int(max(amp_spread))) + ".png", dpi=300)
+                "_" + str(int(min(amp_spread))) + "." + str(int(max(amp_spread))) + ".png",
+                additional_artists=art, bbox_inches="tight", dpi=300)
     # else:
     #     plt.savefig("sensitivity_" + layer_name + '_' + name_shape_ecog +
     #                 "_negative_" + str(min_distance) + "." + str(max_distance) + ".png", dpi=300)
