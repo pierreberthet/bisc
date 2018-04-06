@@ -16,6 +16,7 @@ import LFPy
 from mpi4py import MPI
 import utils
 import plotting_convention
+import json
 
 
 # plt.rcParams.update({'axes.labelsize': 8,
@@ -145,7 +146,7 @@ pulse_duration = 50
 amp = 100 * 10**3  # uA
 min_current = -300 * 10**3
 max_current = 300 * 10**3
-n_intervals = 30
+n_intervals = 20
 amp_spread = np.linspace(min_current, max_current, n_intervals)
 # amp_spread = np.geomspace(min_current, max_current, n_intervals)
 max_distance = 200
@@ -459,6 +460,13 @@ COMM.Barrier()
 
 if RANK == 0 and SIZE > 1:
     print(gather_current[1]['ap_loc'])
+    dump_filename = "D_sensitivity_" + layer_name + '_' + name_shape_ecog +\
+        "_" + str(int(min(amp_spread))) + "." + str(int(max(amp_spread))) + ".json"
+    print("DUMPING JSON to {}".format(dump_filename))
+    with open(dump_filename, 'w') as f_dump:
+        json.dump(gather_current, f_dump)
+    print("DEBUG dumping completed")
+
 
 ###############################################################
 
