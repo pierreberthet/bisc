@@ -17,6 +17,7 @@ from mpi4py import MPI
 import utils
 import plotting_convention
 import json
+import global_parameters as param
 
 
 # plt.rcParams.update({'axes.labelsize': 8,
@@ -61,14 +62,14 @@ def get_templatename(f):
 
 # working dir
 CWD = os.getcwd()
-NMODL = 'morphologies/hoc_combos_syn.1_0_10.allmods'
+compilation_folder = param.filename['compilation_folder']
 
 # load some required neuron-interface files
 neuron.h.load_file("stdrun.hoc")
 neuron.h.load_file("import3d.hoc")
 
 # get names of neuron models, layers options are 'L1', 'L23', 'L4', 'L5' and 'L6'
-layer_name = 'L5'
+layer_name = param.sim['layer']
 # neuron_type = 'MC'
 neurons = utils.init_neurons_epfl(layer_name, SIZE)
 # neurons = utils.init_neurons_epfl(layer_name, SIZE, neuron_type)
@@ -79,22 +80,8 @@ print("REACH")
 # flag for cell template file to switch on (inactive) synapses
 add_synapses = False
 
-# attempt to set up a folder with all unique mechanism mod files, compile, and
-# load them all
-# if RANK == 0:
-#     if not os.path.isdir(NMODL):
-#         os.mkdir(NMODL)
-#     for NRN in neurons:
-#         for nmodl in glob(os.path.join(NRN, 'mechanisms', '*.mod')):
-#             while not os.path.isfile(os.path.join(NMODL,
-#                                                   os.path.split(nmodl)[-1])):
-#                 os.system('cp {} {}'.format(nmodl,
-#                                             os.path.join(NMODL, '.')))
-#     os.chdir(NMODL)
-#     os.system('nrnivmodl')
-#     os.chdir(CWD)
 COMM.Barrier()
-neuron.load_mechanisms(NMODL)
+neuron.load_mechanisms(compilation_folder)
 
 os.chdir(CWD)
 
@@ -109,11 +96,11 @@ neuron.load_mechanisms(os.path.join(LFPy.__path__[0], "test"))
 
 # PARAMETERS
 # sim duration
-tstop = 200.
-dt = 2**-6
+tstop = param.sim['t_stop']
+dt = param['dt']
 
 # output folder
-output_f = "/nird/home/berthetp/outputs/"
+output_f = param.filename['output_folder']
 
 '''
 SIMULATION SETUP
@@ -134,22 +121,22 @@ PointProcParams = {'idx': 0,
 
 
 # spike sampling
-threshold = -20  # spike threshold (mV)
-samplelength = int(2. / dt)
+threshold = param.sim['spike_threshold']
+# samplelength = int(2. / dt)
 
 n_tsteps = int(tstop / dt + 1)
 
 t = np.arange(n_tsteps) * dt
 
-pulse_start = 80
-pulse_duration = 50
-amp = 100 * 10**3  # uA
-min_current = -300 * 10**3
-max_current = 300 * 10**3
-n_intervals = 20
+pulse_start = param.sim['pulse_start']
+pulse_duration = param.sim['pulse_duration']
+amp = param.sim['ampere']
+min_current = param.sim['min_stim_current']
+max_current = param.sim['max_stim_current']
+n_intervals = param.sim['n_intervals']
 amp_spread = np.linspace(min_current, max_current, n_intervals)
 # amp_spread = np.geomspace(min_current, max_current, n_intervals)
-max_distance = 200
+max_distance = param.sim['max_distance']
 distance = np.linspace(0, max_distance, n_intervals)
 
 if RANK == 0:
@@ -300,22 +287,23 @@ for i, NRN in enumerate(neurons):
                     spike_time_loc = utils.spike_soma(cell)
                     if spike_time_loc[0] is not None:
                         spiked = True
+
+                        detail_spike = utils.return_first_spike_time_and_idx(cell.vmem)
                         print("!spike! at time {0} and position {1}, cell {2}".format(
-                            spike_time_loc[0], cell.get_idx_name(spike_time_loc[1])[1], RANK))
+                            detail_spike[0], cell.get_idx_name(detail_spike[1])[1], RANK))
                         # print("DEBUG 0 rank {}".format(RANK))
                         current[RANK][np.where(amp_spread == amp)[0][0]] = dis
                         # print("DEBUG 1 rank {}".format(RANK))
-                        detail_spike = utils.return_first_spike_time_and_idx(cell.vmem)
 
-                        c_vext[RANK][np.where(amp_spread == amp)] = v_cell_ext[detail_spike[1]][detail_spike[0]]
+                        c_vext[RANK][np.where(amp_spread == amp)[0][0]] = v_cell_ext[detail_spike[1]][detail_spike[0]]
                         # print("DEBUG 2 rank {}".format(RANK))
-                        ap_loc[RANK][np.where(amp_spread == amp)] = detail_spike[1]
+                        ap_loc[RANK][np.where(amp_spread == amp)[0][0]] = detail_spike[1]
                         # print("DEBUG 3 rank {}".format(RANK))
                     else:
                         spiked = False
                     loop += 1
                     # print('loop {}'.format(loop))
-
+            print("loop: {}, dis: {}, spike: {}, amp: {}, rank: {}".format(loop, dis, spiked, amp, RANK))
 #             #electrode.calc_lfp()
 #             LFP = electrode.LFP
 #             if apply_filter:
@@ -504,7 +492,7 @@ if RANK == 0:
     names = utils.get_epfl_model_name(neurons, short=True)
     f_tempdump = "names.json"
     # print("DUMPING names JSON to {}".format(f_tempdump))
-    with open(f_tempdump, 'w') as f_dump:
+    with open(os.path.join(output_f, f_tempdump), 'w') as f_dump:
         json.dump(names, f_dump)
     # print("DEBUG names dumping completed")
 
@@ -589,58 +577,58 @@ if RANK == 0:
 
 # FIGURES ###############################################################################
 
-    # font_text = {'family': 'serif',
-    #              'color': 'black',
-    #              'weight': 'normal',
-    #              'size': 13,
-    #              }
-    # hbetween = 100
-    # spread = np.linspace(-hbetween * (SIZE - 1), hbetween * (SIZE - 1), SIZE)
+    font_text = {'family': 'serif',
+                 'color': 'black',
+                 'weight': 'normal',
+                 'size': 13,
+                 }
+    hbetween = 100
+    spread = np.linspace(-hbetween * (SIZE - 1), hbetween * (SIZE - 1), SIZE)
 
-    # color = iter(plt.cm.rainbow(np.linspace(0, 1, SIZE)))
-    # # col = ['b', 'r']
+    color = iter(plt.cm.rainbow(np.linspace(0, 1, SIZE)))
+    # col = ['b', 'r']
     # col = iter(plt.cm.tab10(np.linspace(0, 1, SIZE)))
 
-    # figview = plt.figure()
-    # axview = plt.subplot(111, title="2D view XZ", aspect='auto', xlabel="x [$\mu$m]", ylabel="z [$\mu$m]")
-    # for nc in range(0, SIZE):
-    #     # spread cells along x-axis for a better overview in the 2D view
-    #     cells[nc]['xstart'] += spread[nc]
-    #     cells[nc]['xmid'] += spread[nc]
-    #     cells[nc]['xend'] += spread[nc]
-    #     current_color = next(color)
-    #     [axview.plot([cells[nc]['xstart'][idx], cells[nc]['xend'][idx]],
-    #                  [cells[nc]['zstart'][idx], cells[nc]['zend'][idx]], '-',
-    #                  c=current_color, clip_on=False) for idx in range(cells[nc]['totnsegs'])]
-    #     axview.scatter(cells[nc]['xmid'][0], cells[nc]['zmid'][0],
-    #                    c=current_color, label=names[nc])
-    # art = []
-    # lgd = axview.legend(loc=9, prop={'size': 6}, bbox_to_anchor=(0.5, -0.1), ncol=6)
-    # art.append(lgd)
-    # plt.savefig(os.path.join(output_f, "2d_view_XZ.png"), additional_artists=art, bbox_inches="tight", dpi=200)
-    # plt.close()
-    # # print("DEBUG 1 rank {}".format(RANK))
+    figview = plt.figure()
+    axview = plt.subplot(111, title="2D view XZ", aspect='auto', xlabel="x [$\mu$m]", ylabel="z [$\mu$m]")
+    for nc in range(0, SIZE):
+        # spread cells along x-axis for a better overview in the 2D view
+        cells[nc]['xstart'] += spread[nc]
+        cells[nc]['xmid'] += spread[nc]
+        cells[nc]['xend'] += spread[nc]
+        current_color = next(color)
+        [axview.plot([cells[nc]['xstart'][idx], cells[nc]['xend'][idx]],
+                     [cells[nc]['zstart'][idx], cells[nc]['zend'][idx]], '-',
+                     c=current_color, clip_on=False) for idx in range(cells[nc]['totnsegs'])]
+        axview.scatter(cells[nc]['xmid'][0], cells[nc]['zmid'][0],
+                       c=current_color, label=names[nc])
+    art = []
+    lgd = axview.legend(loc=9, prop={'size': 6}, bbox_to_anchor=(0.5, -0.1), ncol=6)
+    art.append(lgd)
+    plt.savefig(os.path.join(output_f, "2d_view_XZ.png"), additional_artists=art, bbox_inches="tight", dpi=200)
+    plt.close()
+    # print("DEBUG 1 rank {}".format(RANK))
 
-    # figview = plt.figure()
-    # axview = plt.subplot(111, title="2D view YZ", aspect='auto', xlabel="y [$\mu$m]", ylabel="z [$\mu$m]")
+    figview = plt.figure()
+    axview = plt.subplot(111, title="2D view YZ", aspect='auto', xlabel="y [$\mu$m]", ylabel="z [$\mu$m]")
 
-    # color = iter(plt.cm.rainbow(np.linspace(0, 1, SIZE)))
-    # for nc in range(0, SIZE):
-    #     # spread cells along x-axis for a better overview in the 2D view
-    #     # current_color = color.next()
-    #     current_color = next(color)
+    color = iter(plt.cm.rainbow(np.linspace(0, 1, SIZE)))
+    for nc in range(0, SIZE):
+        # spread cells along x-axis for a better overview in the 2D view
+        # current_color = color.next()
+        current_color = next(color)
 
-    #     [axview.plot([cells[nc]['ystart'][idx], cells[nc]['yend'][idx]],
-    #                  [cells[nc]['zstart'][idx], cells[nc]['zend'][idx]], '-',
-    #                  c=current_color, clip_on=False) for idx in range(cells[nc]['totnsegs'])]
-    #     axview.scatter(cells[nc]['ymid'][0], cells[nc]['zmid'][0],
-    #                    c=current_color, label=names[nc])
-    #     axview.legend()
-    # art = []
-    # lgd = axview.legend(loc=9, prop={'size': 6}, bbox_to_anchor=(0.5, -0.1), ncol=6)
-    # art.append(lgd)
-    # plt.savefig(os.path.join(output_f, "2d_view_YZ.png"), additional_artists=art, bbox_inches="tight", dpi=200)
-    # plt.close()
+        [axview.plot([cells[nc]['ystart'][idx], cells[nc]['yend'][idx]],
+                     [cells[nc]['zstart'][idx], cells[nc]['zend'][idx]], '-',
+                     c=current_color, clip_on=False) for idx in range(cells[nc]['totnsegs'])]
+        axview.scatter(cells[nc]['ymid'][0], cells[nc]['zmid'][0],
+                       c=current_color, label=names[nc])
+        axview.legend()
+    art = []
+    lgd = axview.legend(loc=9, prop={'size': 6}, bbox_to_anchor=(0.5, -0.1), ncol=6)
+    art.append(lgd)
+    plt.savefig(os.path.join(output_f, "2d_view_YZ.png"), additional_artists=art, bbox_inches="tight", dpi=200)
+    plt.close()
 
     color = iter(plt.cm.rainbow(np.linspace(0, 1, SIZE)))
 
@@ -669,9 +657,9 @@ if RANK == 0:
     # plt.savefig(os.path.join(output_f, "2d_view_YZ.png"),  dpi=200)
 
     # if max_current > 0:
-    plt.savefig(output_f + "sensitivity_" + layer_name + '_' + name_shape_ecog +
+    plt.savefig(os.path.join(output_f, "sensitivity_" + layer_name + '_' + name_shape_ecog +
                 "_" + str(int(min(amp_spread))) + "." + str(int(max(amp_spread))) + ".png",
-                additional_artists=art, bbox_inches="tight", dpi=300)
+                additional_artists=art, bbox_inches="tight", dpi=300))
     # else:
     #     plt.savefig("sensitivity_" + layer_name + '_' + name_shape_ecog +
     #                 "_negative_" + str(min_distance) + "." + str(max_distance) + ".png", dpi=300)
