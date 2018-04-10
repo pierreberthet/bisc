@@ -3,6 +3,7 @@ import os
 import numpy as np
 import matplotlib.pyplot as plt
 from glob import glob
+import json
 # import neuron
 
 
@@ -47,6 +48,20 @@ def built_for_mpi_space_light(cell, rank, extra1=None, extra2=None):
             'xstart': cell.xstart, 'ystart': cell.ystart, 'zstart': cell.zstart, 'extra2': extra2,
             'xmid': cell.xmid, 'ymid': cell.ymid, 'zmid': cell.zmid,
             'xend': cell.xend, 'yend': cell.yend, 'zend': cell.zend}
+
+
+def mpi_dump_geo(cells, size, output_folder):
+    '''Save geometries of the neurons simulated in JSON list'''
+    positions = ['xstart', 'xmid', 'xend', 'ystart', 'ymid', 'yend', 'zstart', 'zmid', 'zend']
+    for geo in positions:
+        f_tempdump = geo + '.json'
+        geo_temp = []
+        for n in range(size):
+            geo_temp.append(cells[n][geo])
+        # print("DUMPING geo JSON to {}".format(f_tempdump))
+        with open(os.path.join(output_folder, f_tempdump), 'w') as f_dump:
+            json.dump(geo_temp[0].tolist(), f_dump)
+        # print("Geometries dumping completed")
 
 
 def return_first_spike_time_and_idx(vmem):

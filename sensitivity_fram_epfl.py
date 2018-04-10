@@ -256,12 +256,8 @@ for i, NRN in enumerate(neurons):
                     ExtPot = utils.ImposedPotentialField(source_amps, positions[0], positions[1] + displacement_source,
                                                          positions[2] + dura_height, sigma)
 
-                    # print("DEBUG i1 rank {}".format(RANK))
-
                     v_cell_ext = np.zeros((cell.totnsegs, n_tsteps))
-                    # print("DEBUG i2 rank {}".format(RANK))
-                    # cell.set_pos(z=dis)
-                    # print("DEBUG i3 rank {}".format(RANK))
+
                     v_cell_ext[:, :] = ExtPot.ext_field(cell.xmid, cell.ymid, cell.zmid
                                                         ).reshape(cell.totnsegs, 1) * pulse.reshape(1, n_tsteps)
 
@@ -309,9 +305,11 @@ for i, NRN in enumerate(neurons):
                         # print("DEBUG 0 rank {}".format(RANK))
                         current[RANK][np.where(amp_spread == amp)[0][0]] = dis
                         # print("DEBUG 1 rank {}".format(RANK))
-                        c_vext[RANK][np.where(amp_spread == amp)] = v_cell_ext[spike_time_loc[1]][spike_time_loc[0]]
+                        detail_spike = utils.return_first_spike_time_and_idx(cell.vmem)
+
+                        c_vext[RANK][np.where(amp_spread == amp)] = v_cell_ext[detail_spike[1]][detail_spike[0]]
                         # print("DEBUG 2 rank {}".format(RANK))
-                        ap_loc[RANK][np.where(amp_spread == amp)] = spike_time_loc[1]
+                        ap_loc[RANK][np.where(amp_spread == amp)] = detail_spike[1]
                         # print("DEBUG 3 rank {}".format(RANK))
                     else:
                         spiked = False
@@ -441,31 +439,112 @@ for i, NRN in enumerate(neurons):
 print("i got out! rank {}".format(RANK))
 COMM.Barrier()
 
+
+# DATA DUMP ##########################################################################3
+
+output_f = os.path.join(output_f, "D_sensitivity_" + layer_name + '_' + name_shape_ecog +
+                        "_" + str(int(min(amp_spread))) + "." + str(int(max(amp_spread))))
+
 if RANK == 0:
-    gather_current = []
-    # plot_current = np.zeros((SIZE, spatial_resolution))
-    # print len(utils.built_for_mpi_comm(cell, glb_vext, glb_vmem, v_idxs, RANK))
-    # single_cells = [utils.built_for_mpi_comm(cell, glb_vext, glb_vmem, v_idxs, RANK)]
-    gather_current.append({"current": current[RANK], "v_ext_at_pulse": c_vext[RANK],
-                          "ap_loc": ap_loc[RANK], "rank": RANK})
+    try:
+        os.mkdir(output_f)
+    except OSError:
+        duplicate = str(np.random.random_integers(0, 666))
+        output_f = output_f + '_' + duplicate
+        os.mkdir(output_f)
+
     for i_proc in range(1, SIZE):
-        # single_cells = np.r_[single_cells, COMM.recv(source=i_proc)]
-        gather_current.append(COMM.recv(source=i_proc))
+        current[i_proc] = COMM.recv(source=i_proc)
 else:
-    # print len(utils.built_for_mpi_comm(cell, glb_vext, glb_vmem, v_idxs, RANK))
-    COMM.send({"current": current[RANK], "v_ext_at_pulse": c_vext[RANK],
-              "ap_loc": ap_loc[RANK], "rank": RANK}, dest=0)
+    COMM.send(current[RANK], dest=0)
 
 COMM.Barrier()
 
-if RANK == 0 and SIZE > 1:
-    print(gather_current[1]['ap_loc'])
-    dump_filename = "D_sensitivity_" + layer_name + '_' + name_shape_ecog +\
-        "_" + str(int(min(amp_spread))) + "." + str(int(max(amp_spread))) + ".json"
-    print("DUMPING JSON to {}".format(dump_filename))
-    with open(dump_filename, 'w') as f_dump:
-        json.dump(gather_current, f_dump)
-    print("DEBUG dumping completed")
+if RANK == 0:
+    f_tempdump = 'currents.json'
+    # print("DUMPING data JSON to {}".format(f_tempdump))
+    with open(os.path.join(output_f, f_tempdump), 'w') as f_dump:
+        json.dump(current.tolist(), f_dump)
+    # print("DEBUG 0 dumping completed")
+
+COMM.Barrier()
+
+if RANK == 0:
+    for i_proc in range(1, SIZE):
+        c_vext[i_proc] = COMM.recv(source=i_proc)
+else:
+    COMM.send(c_vext[RANK], dest=0)
+
+COMM.Barrier()
+
+if RANK == 0:
+    f_tempdump = 'c_vext.json'
+    # print("DUMPING c_vext JSON to {}".format(f_tempdump))
+    with open(os.path.join(output_f, f_tempdump), 'w') as f_dump:
+        json.dump(c_vext.tolist(), f_dump)
+    # print("DEBUG 1 dumping completed")
+
+COMM.Barrier()
+
+if RANK == 0:
+    for i_proc in range(1, SIZE):
+        ap_loc[i_proc] = COMM.recv(source=i_proc)
+else:
+    COMM.send(ap_loc[RANK], dest=0)
+
+COMM.Barrier()
+
+if RANK == 0:
+    f_tempdump = 'ap_loc.json'
+    # print("DUMPING ap_loc JSON to {}".format(f_tempdump))
+    with open(os.path.join(output_f, f_tempdump), 'w') as f_dump:
+        json.dump(ap_loc.tolist(), f_dump)
+    # print("DEBUG 2 dumping completed")
+
+    names = utils.get_epfl_model_name(neurons, short=True)
+    f_tempdump = "names.json"
+    # print("DUMPING names JSON to {}".format(f_tempdump))
+    with open(f_tempdump, 'w') as f_dump:
+        json.dump(names, f_dump)
+    # print("DEBUG names dumping completed")
+
+COMM.Barrier()
+
+
+
+
+
+
+
+# if RANK == 0:
+
+#     gather_current = []
+#     # plot_current = np.zeros((SIZE, spatial_resolution))
+#     # print len(utils.built_for_mpi_comm(cell, glb_vext, glb_vmem, v_idxs, RANK))
+#     # single_cells = [utils.built_for_mpi_comm(cell, glb_vext, glb_vmem, v_idxs, RANK)]
+#     gather_current.append({"current": current[RANK], "v_ext_at_pulse": c_vext[RANK],
+#                           "ap_loc": ap_loc[RANK], "rank": RANK})
+#     for i_proc in range(1, SIZE):
+#         # single_cells = np.r_[single_cells, COMM.recv(source=i_proc)]
+#         gather_current.append(COMM.recv(source=i_proc))
+# else:
+#     # print len(utils.built_for_mpi_comm(cell, glb_vext, glb_vmem, v_idxs, RANK))
+#     COMM.send({"current": current[RANK], "v_ext_at_pulse": c_vext[RANK],
+#               "ap_loc": ap_loc[RANK], "rank": RANK}, dest=0)
+
+# COMM.Barrier()
+
+
+# if RANK == 0 and SIZE > 1:
+#     output_f = "D_sensitivity_" + layer_name + '_' + name_shape_ecog +\
+#         "_" + str(int(min(amp_spread))) + "." + str(int(max(amp_spread)))
+#     print(gather_current[1]['ap_loc'])
+#     data_name = ['current', 'v_ext_at_pulse', 'ap_loc', 'names']
+
+#     print("DUMPING data JSON to {}".format(dump_data_filename))
+#     with open(dump_data_filename, 'w') as f_dump:
+#         json.dump(gather_current.tolist(), f_dump)
+#     print("DEBUG dumping completed")
 
 
 ###############################################################
@@ -493,59 +572,75 @@ COMM.Barrier()
 print("DEBUG 0 rank {}".format(RANK))
 
 if RANK == 0:
-    names = utils.get_epfl_model_name(neurons, short=True)
-    font_text = {'family': 'serif',
-                 'color': 'black',
-                 'weight': 'normal',
-                 'size': 13,
-                 }
-    hbetween = 50
-    spread = np.linspace(-hbetween * (SIZE - 1), hbetween * (SIZE - 1), SIZE)
-    color = iter(plt.cm.rainbow(np.linspace(0, 1, SIZE)))
-    # col = ['b', 'r']
-    col = iter(plt.cm.tab10(np.linspace(0, 1, SIZE)))
-    figview = plt.figure()
-    axview = plt.subplot(111, title="2D view XZ", aspect='auto', xlabel="x [$\mu$m]", ylabel="z [$\mu$m]")
-                         # xlim=[-750, 750], ylim=[-2500, 100])
-    for nc in range(0, SIZE):
-        # spread cells along x-axis for a better overview in the 2D view
-        cells[nc]['xstart'] += spread[nc]
-        cells[nc]['xmid'] += spread[nc]
-        cells[nc]['xend'] += spread[nc]
-        current_color = next(color)
-        [axview.plot([cells[nc]['xstart'][idx], cells[nc]['xend'][idx]],
-                     [cells[nc]['zstart'][idx], cells[nc]['zend'][idx]], '-',
-                     c=current_color, clip_on=False) for idx in range(cells[nc]['totnsegs'])]
-        axview.scatter(cells[nc]['xmid'][0], cells[nc]['zmid'][0],
-                       c=current_color, label=names[nc])
-    art = []
-    lgd = axview.legend(loc=9, prop={'size': 6}, bbox_to_anchor=(0.5, -0.1), ncol=6)
-    art.append(lgd)
-    plt.savefig(os.path.join(output_f, "2d_view_XZ.png"), additional_artists=art, bbox_inches="tight", dpi=200)
-    plt.close()
-    # print("DEBUG 1 rank {}".format(RANK))
+    # dump_geo_filename = "D_geo_" + layer_name + '_' + name_shape_ecog +\
+    #     "_" + str(int(min(amp_spread))) + "." + str(int(max(amp_spread))) + ".json"
+    # print("DUMPING geo JSON to {}".format(dump_geo_filename))
+    # with open(dump_geo_filename, 'w') as f_dump:
+    #     json.dump(cells.tolist(), f_dump)
+    # print("DEBUG dumping completed")
+    utils.mpi_dump_geo(cells, SIZE, output_f)
 
-    figview = plt.figure()
-    axview = plt.subplot(111, title="2D view YZ", aspect='auto', xlabel="y [$\mu$m]", ylabel="z [$\mu$m]")
-                         # xlim=[-750, 750], ylim=[-2500, 100])
-    # print("DEBUG 2 rank {}".format(RANK))
+    # f_tempdump = 'geometry.json'
+    # print("DUMPING ap_loc JSON to {}".format(f_tempdump))
+    # with open(os.path.join(output_f, f_tempdump), 'w') as f_dump:
+    #     json.dump(cells.tolist(), f_dump)
+    # print("DEBUG 3 dumping completed")
 
-    color = iter(plt.cm.rainbow(np.linspace(0, 1, SIZE)))
-    for nc in range(0, SIZE):
-        # spread cells along x-axis for a better overview in the 2D view
-        # current_color = color.next()
-        current_color = next(color)
 
-        [axview.plot([cells[nc]['ystart'][idx], cells[nc]['yend'][idx]],
-                     [cells[nc]['zstart'][idx], cells[nc]['zend'][idx]], '-',
-                     c=current_color, clip_on=False) for idx in range(cells[nc]['totnsegs'])]
-        axview.scatter(cells[nc]['ymid'][0], cells[nc]['zmid'][0],
-                       c=current_color, label=names[nc])
-        axview.legend()
-    art = []
-    lgd = axview.legend(loc=9, prop={'size': 6}, bbox_to_anchor=(0.5, -0.1), ncol=6)
-    art.append(lgd)
-    plt.savefig(os.path.join(output_f, "2d_view_YZ.png"), additional_artists=art, bbox_inches="tight", dpi=200)
+# FIGURES ###############################################################################
+
+    # font_text = {'family': 'serif',
+    #              'color': 'black',
+    #              'weight': 'normal',
+    #              'size': 13,
+    #              }
+    # hbetween = 100
+    # spread = np.linspace(-hbetween * (SIZE - 1), hbetween * (SIZE - 1), SIZE)
+
+    # color = iter(plt.cm.rainbow(np.linspace(0, 1, SIZE)))
+    # # col = ['b', 'r']
+    # col = iter(plt.cm.tab10(np.linspace(0, 1, SIZE)))
+
+    # figview = plt.figure()
+    # axview = plt.subplot(111, title="2D view XZ", aspect='auto', xlabel="x [$\mu$m]", ylabel="z [$\mu$m]")
+    # for nc in range(0, SIZE):
+    #     # spread cells along x-axis for a better overview in the 2D view
+    #     cells[nc]['xstart'] += spread[nc]
+    #     cells[nc]['xmid'] += spread[nc]
+    #     cells[nc]['xend'] += spread[nc]
+    #     current_color = next(color)
+    #     [axview.plot([cells[nc]['xstart'][idx], cells[nc]['xend'][idx]],
+    #                  [cells[nc]['zstart'][idx], cells[nc]['zend'][idx]], '-',
+    #                  c=current_color, clip_on=False) for idx in range(cells[nc]['totnsegs'])]
+    #     axview.scatter(cells[nc]['xmid'][0], cells[nc]['zmid'][0],
+    #                    c=current_color, label=names[nc])
+    # art = []
+    # lgd = axview.legend(loc=9, prop={'size': 6}, bbox_to_anchor=(0.5, -0.1), ncol=6)
+    # art.append(lgd)
+    # plt.savefig(os.path.join(output_f, "2d_view_XZ.png"), additional_artists=art, bbox_inches="tight", dpi=200)
+    # plt.close()
+    # # print("DEBUG 1 rank {}".format(RANK))
+
+    # figview = plt.figure()
+    # axview = plt.subplot(111, title="2D view YZ", aspect='auto', xlabel="y [$\mu$m]", ylabel="z [$\mu$m]")
+
+    # color = iter(plt.cm.rainbow(np.linspace(0, 1, SIZE)))
+    # for nc in range(0, SIZE):
+    #     # spread cells along x-axis for a better overview in the 2D view
+    #     # current_color = color.next()
+    #     current_color = next(color)
+
+    #     [axview.plot([cells[nc]['ystart'][idx], cells[nc]['yend'][idx]],
+    #                  [cells[nc]['zstart'][idx], cells[nc]['zend'][idx]], '-',
+    #                  c=current_color, clip_on=False) for idx in range(cells[nc]['totnsegs'])]
+    #     axview.scatter(cells[nc]['ymid'][0], cells[nc]['zmid'][0],
+    #                    c=current_color, label=names[nc])
+    #     axview.legend()
+    # art = []
+    # lgd = axview.legend(loc=9, prop={'size': 6}, bbox_to_anchor=(0.5, -0.1), ncol=6)
+    # art.append(lgd)
+    # plt.savefig(os.path.join(output_f, "2d_view_YZ.png"), additional_artists=art, bbox_inches="tight", dpi=200)
+    # plt.close()
 
     color = iter(plt.cm.rainbow(np.linspace(0, 1, SIZE)))
 
@@ -557,8 +652,7 @@ if RANK == 0:
     ax.set_ylabel("depth [$\mu$m]")
     # axd.set_ylabel("V_Ext [mV]")
     for i in range(SIZE):
-        ax.plot(amp_spread,
-                gather_current[i]['current'],
+        ax.plot(amp_spread, current[i],
                 color=next(color), label=names[i])
         # ax.plot(distance[:len(gather_current[i]['current'].nonzero()[0])],
         #         gather_current[i]['current'][gather_current[i]['current'].nonzero()[0]] / 1000.,
@@ -634,6 +728,8 @@ if RANK == 0:
 #     plt.close(fig)
 # else:
 #     pass
+    plt.close()
+
     os.chdir(CWD)
 print("END rank {}".format(RANK))
 
