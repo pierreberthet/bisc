@@ -17,7 +17,7 @@ from mpi4py import MPI
 import utils
 import plotting_convention
 import json
-import global_parameters as param
+import global_parameters as glob_params
 
 
 # plt.rcParams.update({'axes.labelsize': 8,
@@ -31,6 +31,9 @@ import global_parameters as param
 COMM = MPI.COMM_WORLD
 SIZE = COMM.Get_size()
 RANK = COMM.Get_rank()
+
+
+params = glob_params.parameter()
 
 print("Size {}, Rank {}".format(SIZE, RANK))
 
@@ -62,14 +65,14 @@ def get_templatename(f):
 
 # working dir
 CWD = os.getcwd()
-compilation_folder = param.filename['compilation_folder']
+compilation_folder = params.filename['compilation_folder']
 
 # load some required neuron-interface files
 neuron.h.load_file("stdrun.hoc")
 neuron.h.load_file("import3d.hoc")
 
 # get names of neuron models, layers options are 'L1', 'L23', 'L4', 'L5' and 'L6'
-layer_name = param.sim['layer']
+layer_name = params.sim['layer']
 # neuron_type = 'MC'
 neurons = utils.init_neurons_epfl(layer_name, SIZE)
 # neurons = utils.init_neurons_epfl(layer_name, SIZE, neuron_type)
@@ -96,11 +99,11 @@ neuron.load_mechanisms(os.path.join(LFPy.__path__[0], "test"))
 
 # PARAMETERS
 # sim duration
-tstop = param.sim['t_stop']
-dt = param['dt']
+tstop = params.sim['t_stop']
+dt = params.sim['dt']
 
 # output folder
-output_f = param.filename['output_folder']
+output_f = params.filename['output_folder']
 
 '''
 SIMULATION SETUP
@@ -121,22 +124,22 @@ PointProcParams = {'idx': 0,
 
 
 # spike sampling
-threshold = param.sim['spike_threshold']
+threshold = params.sim['spike_threshold']
 # samplelength = int(2. / dt)
 
 n_tsteps = int(tstop / dt + 1)
 
 t = np.arange(n_tsteps) * dt
 
-pulse_start = param.sim['pulse_start']
-pulse_duration = param.sim['pulse_duration']
-amp = param.sim['ampere']
-min_current = param.sim['min_stim_current']
-max_current = param.sim['max_stim_current']
-n_intervals = param.sim['n_intervals']
+pulse_start = params.sim['pulse_start']
+pulse_duration = params.sim['pulse_duration']
+amp = params.sim['ampere']
+min_current = params.sim['min_stim_current']
+max_current = params.sim['max_stim_current']
+n_intervals = params.sim['n_intervals']
 amp_spread = np.linspace(min_current, max_current, n_intervals)
 # amp_spread = np.geomspace(min_current, max_current, n_intervals)
-max_distance = param.sim['max_distance']
+max_distance = params.sim['max_distance']
 distance = np.linspace(0, max_distance, n_intervals)
 
 if RANK == 0:
@@ -227,8 +230,8 @@ for i, NRN in enumerate(neurons):
 
             # set view as in most other examples
             cell.set_rotation(x=np.pi / 2)
-            # cell.set_pos(z=utils.set_z_layer(layer_name))
-            cell.set_pos(z=-np.max(cell.zend))
+            cell.set_pos(z=utils.set_z_layer(layer_name))
+            # cell.set_pos(z=-np.max(cell.zend))
 
             spiked = True  # artificially set to True, to engage the loop, but anyway tested for distance = 0
             for amp in amp_spread:
@@ -259,8 +262,8 @@ for i, NRN in enumerate(neurons):
 
                     # set view as in most other examples
                     cell.set_rotation(x=np.pi / 2)
-                    # cell.set_pos(z=utils.set_z_layer(layer_name))
-                    cell.set_pos(z=-np.max(cell.zend) - dis)
+                    cell.set_pos(z=utils.set_z_layer(layer_name))
+                    # cell.set_pos(z=-np.max(cell.zend) - dis)
 
                     cell.insert_v_ext(v_cell_ext, t)
                     # print("DEBUG i5 rank {}".format(RANK))
@@ -495,6 +498,17 @@ if RANK == 0:
     with open(os.path.join(output_f, f_tempdump), 'w') as f_dump:
         json.dump(names, f_dump)
     # print("DEBUG names dumping completed")
+
+    f_tempdump = params.filename['simulation_filenames_dump']
+    # print("DUMPING names JSON to {}".format(f_tempdump))
+    with open(os.path.join(output_f, f_tempdump), 'w') as f_dump:
+        json.dump(params.filename, f_dump)
+
+    f_tempdump = params.filename['simulation_parameters_dump']
+    # print("DUMPING names JSON to {}".format(f_tempdump))
+    with open(os.path.join(output_f, f_tempdump), 'w') as f_dump:
+        json.dump(params.sim, f_dump)
+
 
 COMM.Barrier()
 

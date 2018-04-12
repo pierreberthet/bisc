@@ -400,18 +400,29 @@ def get_epfl_model_name(list_models, short=True):
 
 
 def set_z_layer(layer_name):
-    '''Returns a random depth from a normal distribution centered around the median depth of the specified layer.
-    Values from DeFelipe et al. 2002. STD set to +/- 1/14 of the layer thickness.'''
+    '''Returns a random depth from a normal distribution centered around the median depth of the specified layer.'''
+    # Values from DeFelipe et al. 2002. STD set to +/- 1/14 of the layer thickness.
+    # if layer_name == 'L1':
+    #     return np.random.normal(-116, 16)
+    # if layer_name == 'L23':
+    #     return np.random.normal(-770, 75)
+    # if layer_name == 'L4':
+    #     return np.random.normal(-1445, 20)
+    # if layer_name == 'L5':
+    #     return np.random.normal(-1866, 39)
+    # if layer_name == 'L6':
+    #     return np.random.normal(-2382, 34)
+    # BBP values [Markram et al. 2015]
     if layer_name == 'L1':
-        return np.random.normal(-116, 16)
+        return np.random.normal(-83, 16)
     if layer_name == 'L23':
-        return np.random.normal(-770, 75)
+        return np.random.normal(-416, 40)
     if layer_name == 'L4':
-        return np.random.normal(-1445, 20)
+        return np.random.normal(-763, 20)
     if layer_name == 'L5':
-        return np.random.normal(-1866, 39)
+        return np.random.normal(-1120, 52)
     if layer_name == 'L6':
-        return np.random.normal(-2382, 34)
+        return np.random.normal(-1733, 70)
     else:
         print("lAYER NAME NOT RECOGNIZED. Possible options are 'L1', 'L23', 'L4', 'L5', 'L6'.")
         return None
