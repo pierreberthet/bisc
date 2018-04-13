@@ -1,6 +1,8 @@
 '''
 Parameters for simulation of neuronal models (bluebrain only?)
 '''
+import json
+import os
 # import numpy as np
 
 
@@ -22,6 +24,10 @@ class parameter(object):
         if params_fn is None:
             self.set_defaults()
             self.set_filenames()
+
+        else:
+            self.sim = json.load(open(os.path.join(params_fn, 'simulation_parameters.json'), 'r'))
+            self.filename = json.load(open(os.path.join(params_fn, 'simulation_filenames.json'), 'r'))
 
     def set_defaults(self):
 
