@@ -24,10 +24,12 @@ class parameter(object):
         if params_fn is None:
             self.set_defaults()
             self.set_filenames()
+            self.set_figures()
 
         else:
             self.sim = json.load(open(os.path.join(params_fn, 'simulation_parameters.json'), 'r'))
             self.filename = json.load(open(os.path.join(params_fn, 'simulation_filenames.json'), 'r'))
+            self.set_figures()
 
     def set_defaults(self):
 
@@ -49,7 +51,13 @@ class parameter(object):
 
         self.sim['max_distance'] = 300
 
-        self.sim['layer'] = 'L5'
+        self.sim['layer'] = 'L1'
+
+    def set_figures(self):
+
+        # FIGURES #####################################
+        self.fig = {}
+        self.fig['space_between_neurons'] = 300  # 100
 
     def set_filenames(self):
 

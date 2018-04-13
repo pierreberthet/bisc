@@ -433,10 +433,10 @@ COMM.Barrier()
 
 # DATA DUMP ##########################################################################3
 
-output_f = os.path.join(output_f, "D_sensitivity_" + layer_name + '_' + name_shape_ecog +
-                        "_" + str(int(min(amp_spread))) + "." + str(int(max(amp_spread))))
 
 if RANK == 0:
+    output_f = os.path.join(output_f, "D_sensitivity_" + layer_name + '_' + name_shape_ecog +
+                            "_" + str(int(min(amp_spread))) + "." + str(int(max(amp_spread))))
     try:
         os.mkdir(output_f)
     except OSError:
@@ -451,12 +451,18 @@ else:
 
 COMM.Barrier()
 
+output_f = COMM.bcast(output_f, root=0)
+
+COMM.Barrier()
+
 if RANK == 0:
     f_tempdump = 'currents.json'
     # print("DUMPING data JSON to {}".format(f_tempdump))
     with open(os.path.join(output_f, f_tempdump), 'w') as f_dump:
         json.dump(current.tolist(), f_dump)
     # print("DEBUG 0 dumping completed")
+
+current = COMM.bcast(current, root=0)
 
 COMM.Barrier()
 
@@ -465,6 +471,8 @@ if RANK == 0:
         c_vext[i_proc] = COMM.recv(source=i_proc)
 else:
     COMM.send(c_vext[RANK], dest=0)
+
+c_vext = COMM.bcast(c_vext, root=0)
 
 COMM.Barrier()
 
@@ -485,6 +493,10 @@ else:
 
 COMM.Barrier()
 
+ap_loc = COMM.bcast(ap_loc, root=0)
+
+names = utils.get_epfl_model_name(neurons, short=True)
+
 if RANK == 0:
     f_tempdump = 'ap_loc.json'
     # print("DUMPING ap_loc JSON to {}".format(f_tempdump))
@@ -492,7 +504,6 @@ if RANK == 0:
         json.dump(ap_loc.tolist(), f_dump)
     # print("DEBUG 2 dumping completed")
 
-    names = utils.get_epfl_model_name(neurons, short=True)
     f_tempdump = "names.json"
     # print("DUMPING names JSON to {}".format(f_tempdump))
     with open(os.path.join(output_f, f_tempdump), 'w') as f_dump:
@@ -571,7 +582,18 @@ else:
 
 
 COMM.Barrier()
-print("DEBUG 0 rank {}".format(RANK))
+# print("DEBUG 0 rank {}".format(RANK))
+
+# BROADCAST Data to parallelize figure processing
+if RANK != 0:
+    cells = []
+cells = COMM.bcast(cells, root=0)
+
+print("BROADCAST Succesful")
+
+
+COMM.Barrier()
+
 
 if RANK == 0:
     # dump_geo_filename = "D_geo_" + layer_name + '_' + name_shape_ecog +\
@@ -589,6 +611,10 @@ if RANK == 0:
     # print("DEBUG 3 dumping completed")
 
 
+
+
+
+
 # FIGURES ###############################################################################
 
     font_text = {'family': 'serif',
@@ -596,7 +622,7 @@ if RANK == 0:
                  'weight': 'normal',
                  'size': 13,
                  }
-    hbetween = 100
+    hbetween = params.fig['space_between_neurons']
     spread = np.linspace(-hbetween * (SIZE - 1), hbetween * (SIZE - 1), SIZE)
 
     color = iter(plt.cm.rainbow(np.linspace(0, 1, SIZE)))
@@ -623,6 +649,7 @@ if RANK == 0:
     plt.close()
     # print("DEBUG 1 rank {}".format(RANK))
 
+if RANK == 1:
     figview = plt.figure()
     axview = plt.subplot(111, title="2D view YZ", aspect='auto', xlabel="y [$\mu$m]", ylabel="z [$\mu$m]")
 
@@ -631,7 +658,6 @@ if RANK == 0:
         # spread cells along x-axis for a better overview in the 2D view
         # current_color = color.next()
         current_color = next(color)
-
         [axview.plot([cells[nc]['ystart'][idx], cells[nc]['yend'][idx]],
                      [cells[nc]['zstart'][idx], cells[nc]['zend'][idx]], '-',
                      c=current_color, clip_on=False) for idx in range(cells[nc]['totnsegs'])]
@@ -643,6 +669,8 @@ if RANK == 0:
     art.append(lgd)
     plt.savefig(os.path.join(output_f, "2d_view_YZ.png"), additional_artists=art, bbox_inches="tight", dpi=200)
     plt.close()
+
+if RANK == 2:
 
     color = iter(plt.cm.rainbow(np.linspace(0, 1, SIZE)))
 
@@ -672,8 +700,8 @@ if RANK == 0:
 
     # if max_current > 0:
     plt.savefig(os.path.join(output_f, "sensitivity_" + layer_name + '_' + name_shape_ecog +
-                "_" + str(int(min(amp_spread))) + "." + str(int(max(amp_spread))) + ".png",
-                additional_artists=art, bbox_inches="tight", dpi=300))
+                "_" + str(int(min(amp_spread))) + "." + str(int(max(amp_spread))) + ".png"),
+                additional_artists=art, bbox_inches="tight", dpi=300)
     # else:
     #     plt.savefig("sensitivity_" + layer_name + '_' + name_shape_ecog +
     #                 "_negative_" + str(min_distance) + "." + str(max_distance) + ".png", dpi=300)
@@ -732,7 +760,10 @@ if RANK == 0:
 #     pass
     plt.close()
 
-    os.chdir(CWD)
 print("END rank {}".format(RANK))
+
+COMM.Barrier()
+if RANK == 0:
+    os.chdir(CWD)
 
 COMM.Barrier()
