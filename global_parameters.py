@@ -43,6 +43,8 @@ class parameter(object):
         self.sim['pulse_duration'] = 50
         self.sim['ampere'] = 100 * 10**3  # uA
 
+        self.sim['ecog_type'] = 'circle2'
+
         self.sim['spike_threshold'] = -20  # spike threshold (mV)
 
         self.sim['min_stim_current'] = -300 * 10**3  # uA
@@ -51,13 +53,13 @@ class parameter(object):
 
         self.sim['max_distance'] = 300
 
-        self.sim['layer'] = 'L1'
+        self.sim['layer'] = 'L5'
 
     def set_figures(self):
 
         # FIGURES #####################################
         self.fig = {}
-        self.fig['space_between_neurons'] = 300  # 100
+        self.fig['space_between_neurons'] = 400  # 100
 
     def set_filenames(self):
 

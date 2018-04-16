@@ -156,7 +156,7 @@ cortical_surface_height = 50
 
 # Parameters for the external field
 sigma = 0.3
-name_shape_ecog = 'circle'
+name_shape_ecog = params.sim['ecog_type']
 polarity, n_elec, positions = utils.create_array_shape(name_shape_ecog, 25)
 dura_height = 50
 displacement_source = 50
@@ -230,7 +230,7 @@ for i, NRN in enumerate(neurons):
 
             # set view as in most other examples
             cell.set_rotation(x=np.pi / 2)
-            cell.set_pos(z=utils.set_z_layer(layer_name))
+            cell.set_pos(z=utils.set_z_layer(layer_name, cell))
             # cell.set_pos(z=-np.max(cell.zend))
 
             spiked = True  # artificially set to True, to engage the loop, but anyway tested for distance = 0
@@ -262,7 +262,7 @@ for i, NRN in enumerate(neurons):
 
                     # set view as in most other examples
                     cell.set_rotation(x=np.pi / 2)
-                    cell.set_pos(z=utils.set_z_layer(layer_name))
+                    cell.set_pos(z=utils.set_z_layer(layer_name, cell))
                     # cell.set_pos(z=-np.max(cell.zend) - dis)
 
                     cell.insert_v_ext(v_cell_ext, t)
@@ -617,58 +617,58 @@ if RANK == 0:
 
 # FIGURES ###############################################################################
 
-    font_text = {'family': 'serif',
-                 'color': 'black',
-                 'weight': 'normal',
-                 'size': 13,
-                 }
-    hbetween = params.fig['space_between_neurons']
-    spread = np.linspace(-hbetween * (SIZE - 1), hbetween * (SIZE - 1), SIZE)
+#     font_text = {'family': 'serif',
+#                  'color': 'black',
+#                  'weight': 'normal',
+#                  'size': 13,
+#                  }
+#     hbetween = params.fig['space_between_neurons']
+#     spread = np.linspace(-hbetween * (SIZE - 1), hbetween * (SIZE - 1), SIZE)
 
-    color = iter(plt.cm.rainbow(np.linspace(0, 1, SIZE)))
-    # col = ['b', 'r']
-    # col = iter(plt.cm.tab10(np.linspace(0, 1, SIZE)))
+#     color = iter(plt.cm.rainbow(np.linspace(0, 1, SIZE)))
+#     # col = ['b', 'r']
+#     # col = iter(plt.cm.tab10(np.linspace(0, 1, SIZE)))
 
-    figview = plt.figure()
-    axview = plt.subplot(111, title="2D view XZ", aspect='auto', xlabel="x [$\mu$m]", ylabel="z [$\mu$m]")
-    for nc in range(0, SIZE):
-        # spread cells along x-axis for a better overview in the 2D view
-        cells[nc]['xstart'] += spread[nc]
-        cells[nc]['xmid'] += spread[nc]
-        cells[nc]['xend'] += spread[nc]
-        current_color = next(color)
-        [axview.plot([cells[nc]['xstart'][idx], cells[nc]['xend'][idx]],
-                     [cells[nc]['zstart'][idx], cells[nc]['zend'][idx]], '-',
-                     c=current_color, clip_on=False) for idx in range(cells[nc]['totnsegs'])]
-        axview.scatter(cells[nc]['xmid'][0], cells[nc]['zmid'][0],
-                       c=current_color, label=names[nc])
-    art = []
-    lgd = axview.legend(loc=9, prop={'size': 6}, bbox_to_anchor=(0.5, -0.1), ncol=6)
-    art.append(lgd)
-    plt.savefig(os.path.join(output_f, "2d_view_XZ.png"), additional_artists=art, bbox_inches="tight", dpi=200)
-    plt.close()
-    # print("DEBUG 1 rank {}".format(RANK))
+#     figview = plt.figure()
+#     axview = plt.subplot(111, title="2D view XZ", aspect='auto', xlabel="x [$\mu$m]", ylabel="z [$\mu$m]")
+#     for nc in range(0, SIZE):
+#         # spread cells along x-axis for a better overview in the 2D view
+#         cells[nc]['xstart'] += spread[nc]
+#         cells[nc]['xmid'] += spread[nc]
+#         cells[nc]['xend'] += spread[nc]
+#         current_color = next(color)
+#         [axview.plot([cells[nc]['xstart'][idx], cells[nc]['xend'][idx]],
+#                      [cells[nc]['zstart'][idx], cells[nc]['zend'][idx]], '-',
+#                      c=current_color, clip_on=False) for idx in range(cells[nc]['totnsegs'])]
+#         axview.scatter(cells[nc]['xmid'][0], cells[nc]['zmid'][0],
+#                        c=current_color, label=names[nc])
+#     art = []
+#     lgd = axview.legend(loc=9, prop={'size': 6}, bbox_to_anchor=(0.5, -0.1), ncol=6)
+#     art.append(lgd)
+#     plt.savefig(os.path.join(output_f, "2d_view_XZ.png"), additional_artists=art, bbox_inches="tight", dpi=200)
+#     plt.close()
+#     # print("DEBUG 1 rank {}".format(RANK))
 
-if RANK == 1:
-    figview = plt.figure()
-    axview = plt.subplot(111, title="2D view YZ", aspect='auto', xlabel="y [$\mu$m]", ylabel="z [$\mu$m]")
+# if RANK == 1:
+#     figview = plt.figure()
+#     axview = plt.subplot(111, title="2D view YZ", aspect='auto', xlabel="y [$\mu$m]", ylabel="z [$\mu$m]")
 
-    color = iter(plt.cm.rainbow(np.linspace(0, 1, SIZE)))
-    for nc in range(0, SIZE):
-        # spread cells along x-axis for a better overview in the 2D view
-        # current_color = color.next()
-        current_color = next(color)
-        [axview.plot([cells[nc]['ystart'][idx], cells[nc]['yend'][idx]],
-                     [cells[nc]['zstart'][idx], cells[nc]['zend'][idx]], '-',
-                     c=current_color, clip_on=False) for idx in range(cells[nc]['totnsegs'])]
-        axview.scatter(cells[nc]['ymid'][0], cells[nc]['zmid'][0],
-                       c=current_color, label=names[nc])
-        axview.legend()
-    art = []
-    lgd = axview.legend(loc=9, prop={'size': 6}, bbox_to_anchor=(0.5, -0.1), ncol=6)
-    art.append(lgd)
-    plt.savefig(os.path.join(output_f, "2d_view_YZ.png"), additional_artists=art, bbox_inches="tight", dpi=200)
-    plt.close()
+#     color = iter(plt.cm.rainbow(np.linspace(0, 1, SIZE)))
+#     for nc in range(0, SIZE):
+#         # spread cells along x-axis for a better overview in the 2D view
+#         # current_color = color.next()
+#         current_color = next(color)
+#         [axview.plot([cells[nc]['ystart'][idx], cells[nc]['yend'][idx]],
+#                      [cells[nc]['zstart'][idx], cells[nc]['zend'][idx]], '-',
+#                      c=current_color, clip_on=False) for idx in range(cells[nc]['totnsegs'])]
+#         axview.scatter(cells[nc]['ymid'][0], cells[nc]['zmid'][0],
+#                        c=current_color, label=names[nc])
+#         axview.legend()
+#     art = []
+#     lgd = axview.legend(loc=9, prop={'size': 6}, bbox_to_anchor=(0.5, -0.1), ncol=6)
+#     art.append(lgd)
+#     plt.savefig(os.path.join(output_f, "2d_view_YZ.png"), additional_artists=art, bbox_inches="tight", dpi=200)
+#     plt.close()
 
 if RANK == 2:
 

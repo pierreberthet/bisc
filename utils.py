@@ -399,7 +399,8 @@ def get_epfl_model_name(list_models, short=True):
     return name
 
 
-def set_z_layer(layer_name):
+def set_z_layer(layer_name, cell):
+
     '''Returns a random depth from a normal distribution centered around the median depth of the specified layer.'''
     # Values from DeFelipe et al. 2002. STD set to +/- 1/14 of the layer thickness.
     # if layer_name == 'L1':
@@ -414,15 +415,30 @@ def set_z_layer(layer_name):
     #     return np.random.normal(-2382, 34)
     # BBP values [Markram et al. 2015]
     if layer_name == 'L1':
-        return np.random.normal(-83, 16)
+        z = np.random.normal(-83, 16)
+        if np.max(cell.zend + z) > 0:
+            z = -(np.max(cell.zend) + 10)
+        return z
     if layer_name == 'L23':
-        return np.random.normal(-416, 40)
+        z = np.random.normal(-416, 40)
+        if np.max(cell.zend + z) > 0:
+            z = -(np.max(cell.zend) + 10)
+        return z
     if layer_name == 'L4':
-        return np.random.normal(-763, 20)
+        z = np.random.normal(-763, 20)
+        if np.max(cell.zend + z) > 0:
+            z = -(np.max(cell.zend) + 10)
+        return z
     if layer_name == 'L5':
-        return np.random.normal(-1120, 52)
+        z = np.random.normal(-1120, 52)
+        if np.max(cell.zend + z) > 0:
+            z = -(np.max(cell.zend) + 10)
+        return z
     if layer_name == 'L6':
-        return np.random.normal(-1733, 70)
+        z = np.random.normal(-1733, 70)
+        if np.max(cell.zend + z) > 0:
+            z = -(np.max(cell.zend) + 10)
+        return z
     else:
         print("lAYER NAME NOT RECOGNIZED. Possible options are 'L1', 'L23', 'L4', 'L5', 'L6'.")
         return None
@@ -787,6 +803,45 @@ def create_array_shape(shape=None, pitch=None, names=False):
             source_xs = np.asarray(source_xs)
             source_ys = np.asarray(source_ys)
             source_zs = np.asarray(source_zs)
+
+        elif shape == 'circle2':
+            n_elec = 12
+            while (n_elec // 4) != 0:
+                n_elec += 1
+            polarity = []
+            source_zs = np.zeros(n_elec * 2)
+            size_bisc = 1000
+            xs = np.cos(np.linspace(-np.pi, np.pi, n_elec))
+            ys = np.sin(np.linspace(-np.pi, np.pi, n_elec))
+            x_mesh = range(-size_bisc // 2, (size_bisc + pitch) // 2, pitch)
+            y_mesh = range(-size_bisc // 2, (size_bisc + pitch) // 2, pitch)
+
+            r = 4.5 * pitch  # um, radius of the circle
+            # r_e = r_i + 2 * pitch  # um, radius of the external circle
+            if 2 * np.pi * r / n_elec < np.sqrt(pitch ** 2 + pitch ** 2):
+                print("spatial resolution is too big, please change the number of sources or r")
+                return
+            source_xs = []
+            source_ys = []
+
+            for square in range(n_elec // 4):
+                source_xs.append(- pitch / 2. - square * pitch)
+                source_ys.append(- pitch / 2. - square * pitch)
+
+                source_xs.append(- pitch / 2. - square * pitch)
+                source_ys.append(pitch / 2. + square * pitch)
+
+                source_xs.append(pitch / 2. + square * pitch)
+                source_ys.append(- pitch / 2. - square * pitch)
+
+                source_xs.append(pitch / 2. + square * pitch)
+                source_ys.append(pitch / 2. + square * pitch)
+
+            for x in xs * r:
+                source_xs.append(x_mesh[np.argmin(abs(x_mesh - x))])
+                polarity.append(1.)
+            for y in ys * r:
+                source_ys.append(y_mesh[np.argmin(abs(y_mesh - y))])
 
         else:
             print("Unknown geometry for the current source arrangement")
