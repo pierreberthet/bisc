@@ -806,7 +806,7 @@ def create_array_shape(shape=None, pitch=None, names=False):
 
         elif shape == 'circle2':
             n_elec = 12
-            while (n_elec // 4) != 0:
+            while (n_elec % 4) != 0:
                 n_elec += 1
             polarity = []
             source_zs = np.zeros(n_elec * 2)
