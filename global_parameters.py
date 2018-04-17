@@ -43,7 +43,7 @@ class parameter(object):
         self.sim['pulse_duration'] = 50
         self.sim['ampere'] = 100 * 10**3  # uA
 
-        self.sim['ecog_type'] = 'circle2'
+        self.sim['ecog_type'] = 'multipole2'
 
         self.sim['spike_threshold'] = -20  # spike threshold (mV)
 
@@ -59,7 +59,7 @@ class parameter(object):
 
         # FIGURES #####################################
         self.fig = {}
-        self.fig['space_between_neurons'] = 400  # 100
+        self.fig['space_between_neurons'] = 1000  # 100
 
     def set_filenames(self):
 

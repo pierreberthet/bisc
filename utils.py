@@ -57,11 +57,13 @@ def mpi_dump_geo(cells, size, output_folder):
         f_tempdump = geo + '.json'
         geo_temp = []
         for n in range(size):
-            geo_temp.append(cells[n][geo])
+            geo_temp.append(cells[n][geo].tolist())
         # print("DUMPING geo JSON to {}".format(f_tempdump))
+        print("TYPE geo_temp {} 1 {}".format(type(geo_temp), type(geo_temp[1])))
         with open(os.path.join(output_folder, f_tempdump), 'w') as f_dump:
-            json.dump(geo_temp[0].tolist(), f_dump)
+            json.dump(geo_temp, f_dump)  # Cumbersome, must be a better way!
         # print("Geometries dumping completed")
+    return
 
 
 def return_first_spike_time_and_idx(vmem):
@@ -827,21 +829,31 @@ def create_array_shape(shape=None, pitch=None, names=False):
             for square in range(n_elec // 4):
                 source_xs.append(- pitch / 2. - square * pitch)
                 source_ys.append(- pitch / 2. - square * pitch)
+                polarity.append(1.)
 
                 source_xs.append(- pitch / 2. - square * pitch)
                 source_ys.append(pitch / 2. + square * pitch)
+                polarity.append(1.)
 
                 source_xs.append(pitch / 2. + square * pitch)
                 source_ys.append(- pitch / 2. - square * pitch)
+                polarity.append(1.)
 
                 source_xs.append(pitch / 2. + square * pitch)
                 source_ys.append(pitch / 2. + square * pitch)
+                polarity.append(1.)
 
             for x in xs * r:
                 source_xs.append(x_mesh[np.argmin(abs(x_mesh - x))])
-                polarity.append(1.)
+                polarity.append(-1.)
             for y in ys * r:
                 source_ys.append(y_mesh[np.argmin(abs(y_mesh - y))])
+
+            n_elec = n_elec * 2
+            # need to convert lists to arrays
+            source_xs = np.asarray(source_xs)
+            source_ys = np.asarray(source_ys)
+            source_zs = np.asarray(source_zs)
 
         else:
             print("Unknown geometry for the current source arrangement")
