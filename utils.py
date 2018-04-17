@@ -60,7 +60,7 @@ def mpi_dump_geo(cells, size, output_folder):
             geo_temp.append(cells[n][geo])
         # print("DUMPING geo JSON to {}".format(f_tempdump))
         with open(os.path.join(output_folder, f_tempdump), 'w') as f_dump:
-            json.dump(geo_temp[0].tolist(), f_dump)
+            json.dump(np.asarray(geo_temp).tolist(), f_dump)  # Cumbersome, must be a better way!
         # print("Geometries dumping completed")
 
 
@@ -827,21 +827,31 @@ def create_array_shape(shape=None, pitch=None, names=False):
             for square in range(n_elec // 4):
                 source_xs.append(- pitch / 2. - square * pitch)
                 source_ys.append(- pitch / 2. - square * pitch)
+                polarity.append(1.)
 
                 source_xs.append(- pitch / 2. - square * pitch)
                 source_ys.append(pitch / 2. + square * pitch)
+                polarity.append(1.)
 
                 source_xs.append(pitch / 2. + square * pitch)
                 source_ys.append(- pitch / 2. - square * pitch)
+                polarity.append(1.)
 
                 source_xs.append(pitch / 2. + square * pitch)
                 source_ys.append(pitch / 2. + square * pitch)
+                polarity.append(1.)
 
             for x in xs * r:
                 source_xs.append(x_mesh[np.argmin(abs(x_mesh - x))])
-                polarity.append(1.)
+                polarity.append(-1.)
             for y in ys * r:
                 source_ys.append(y_mesh[np.argmin(abs(y_mesh - y))])
+
+            n_elec = n_elec * 2
+            # need to convert lists to arrays
+            source_xs = np.asarray(source_xs)
+            source_ys = np.asarray(source_ys)
+            source_zs = np.asarray(source_zs)
 
         else:
             print("Unknown geometry for the current source arrangement")
