@@ -58,11 +58,8 @@ def mpi_dump_geo(cells, size, output_folder):
         geo_temp = []
         for n in range(size):
             geo_temp.append(cells[n][geo].tolist())
-        # print("DUMPING geo JSON to {}".format(f_tempdump))
-        print("TYPE geo_temp {} 1 {}".format(type(geo_temp), type(geo_temp[1])))
         with open(os.path.join(output_folder, f_tempdump), 'w') as f_dump:
             json.dump(geo_temp, f_dump)  # Cumbersome, must be a better way!
-        # print("Geometries dumping completed")
     return
 
 

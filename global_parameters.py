@@ -36,24 +36,25 @@ class parameter(object):
         # SIMULATION ####################################
         self.sim = {}
 
-        self.sim['t_stop'] = 200.
+        self.sim['t_stop'] = 100.
         self.sim['dt'] = 2**-6
 
-        self.sim['pulse_start'] = 80
-        self.sim['pulse_duration'] = 50
+        self.sim['pulse_start'] = 3000
+        self.sim['pulse_duration'] = 64   # 1 ms
         self.sim['ampere'] = 100 * 10**3  # uA
 
-        self.sim['ecog_type'] = 'multipole2'
+        self.sim['ecog_type'] = 'circle2'
 
         self.sim['spike_threshold'] = -20  # spike threshold (mV)
 
         self.sim['min_stim_current'] = -300 * 10**3  # uA
-        self.sim['max_stim_current'] = 300 * 10**3  # uA
-        self.sim['n_intervals'] = 30
+        self.sim['max_stim_current'] = 0 * 10**3  # uA
+        self.sim['n_intervals'] = 50
 
         self.sim['max_distance'] = 300
 
-        self.sim['layer'] = 'L5'
+        self.sim['layer'] = 'L23'
+        self.sim['neuron_type'] = ''
 
     def set_figures(self):
 
@@ -69,6 +70,8 @@ class parameter(object):
         self.filename['current_dump'] = 'currents.json'
         self.filename['ap_loc_dump'] = 'ap_loc.json'
         self.filename['c_vext_dump'] = 'c_vext.json'
+        self.filename['max_vmem_dump'] = 'max_vmem.json'
+        self.filename['t_max_vmem_dump'] = 't_max_vmem.json'
 
         self.filename['model_names'] = 'names.json'
 
