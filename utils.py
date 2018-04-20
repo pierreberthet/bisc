@@ -398,7 +398,7 @@ def get_epfl_model_name(list_models, short=True):
     return name
 
 
-def set_z_layer(layer_name, cell):
+def set_z_layer(layer_name):
 
     '''Returns a random depth from a normal distribution centered around the median depth of the specified layer.'''
     # Values from DeFelipe et al. 2002. STD set to +/- 1/14 of the layer thickness.
@@ -415,28 +415,18 @@ def set_z_layer(layer_name, cell):
     # BBP values [Markram et al. 2015]
     if layer_name == 'L1':
         z = np.random.normal(-83, 16)
-        if np.max(cell.zend + z) > 0:
-            z = -(np.max(cell.zend) + 10)
         return z
     if layer_name == 'L23':
         z = np.random.normal(-416, 40)
-        if np.max(cell.zend + z) > 0:
-            z = -(np.max(cell.zend) + 10)
         return z
     if layer_name == 'L4':
         z = np.random.normal(-763, 20)
-        if np.max(cell.zend + z) > 0:
-            z = -(np.max(cell.zend) + 10)
         return z
     if layer_name == 'L5':
         z = np.random.normal(-1120, 52)
-        if np.max(cell.zend + z) > 0:
-            z = -(np.max(cell.zend) + 10)
         return z
     if layer_name == 'L6':
         z = np.random.normal(-1733, 70)
-        if np.max(cell.zend + z) > 0:
-            z = -(np.max(cell.zend) + 10)
         return z
     else:
         print("lAYER NAME NOT RECOGNIZED. Possible options are 'L1', 'L23', 'L4', 'L5', 'L6'.")

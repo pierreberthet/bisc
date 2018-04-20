@@ -94,7 +94,7 @@ if not os.path.isdir(FIGS):
 
 
 # load the LFPy SinSyn mechanism for stimulus
-neuron.load_mechanisms(os.path.join(LFPy.__path__[0], "test"))
+# neuron.load_mechanisms(os.path.join(LFPy.__path__[0], "test"))
 
 
 # PARAMETERS
@@ -111,16 +111,16 @@ pulse duration  should be set to .2 ms, 200 us (typical of empirical in vivo mic
 
 '''
 
-PointProcParams = {'idx': 0,
-                   'pptype': 'SinSyn',
-                   'delay': 200.,
-                   'dur': tstop - 30.,
-                   'pkamp': 0.5,
-                   'freq': 0.,
-                   'phase': np.pi / 2,
-                   'bias': 0.,
-                   'record_current': False
-                   }
+# PointProcParams = {'idx': 0,
+#                    'pptype': 'SinSyn',
+#                    'delay': 200.,
+#                    'dur': tstop - 30.,
+#                    'pkamp': 0.5,
+#                    'freq': 0.,
+#                    'phase': np.pi / 2,
+#                    'bias': 0.,
+#                    'record_current': False
+#                    }
 
 
 # spike sampling
@@ -159,7 +159,7 @@ sigma = 0.3
 name_shape_ecog = params.sim['ecog_type']
 polarity, n_elec, positions = utils.create_array_shape(name_shape_ecog, 25)
 dura_height = 50
-displacement_source = 50
+displacement_source = 0
 
 current = np.zeros((SIZE, n_intervals))
 c_vext = np.zeros((SIZE, n_intervals))
@@ -179,8 +179,10 @@ COMM_DICT = {}
 COUNTER = 0
 for i, NRN in enumerate(neurons):
     if RANK == i:
-        os.chdir(CWD)
+        print("DEBUG that is me !!! rank {}".format(RANK))
+        # os.chdir(CWD)
         os.chdir(NRN)
+        print("Now in {} rank {}".format(NRN, RANK))
 
         # get the template name
         f = open("template.hoc", 'r')
@@ -218,32 +220,32 @@ for i, NRN in enumerate(neurons):
         if not hasattr(neuron.h, templatename):
             # Load main cell template
             neuron.h.load_file(1, "template.hoc")
-
+        print("DEBUG_ morphology file {}".format(glob(os.path.join('morphology', '*'))))
         for idx, morphologyfile in enumerate(glob(os.path.join('morphology', '*'))):
             # Instantiate the cell(s) using LFPy
             print("debug idx {} rank {} morph {}".format(idx, RANK, morphologyfile))
-            cell = LFPy.TemplateCell(morphology=morphologyfile,
-                                     templatefile=posixpth(os.path.join(NRN, 'template.hoc')),
-                                     templatename=templatename,
-                                     templateargs=1 if add_synapses else 0,
-                                     tstop=tstop,
-                                     dt=dt,
-                                     extracellular=True,
-                                     nsegs_method=None)
+            # cell = LFPy.TemplateCell(morphology=morphologyfile,
+            #                          templatefile=posixpth(os.path.join(NRN, 'template.hoc')),
+            #                          templatename=templatename,
+            #                          templateargs=1 if add_synapses else 0,
+            #                          tstop=tstop,
+            #                          dt=dt,
+            #                          extracellular=True,
+            #                          nsegs_method=None)
 
-            # set view as in most other examples
-            cell.set_rotation(x=np.pi / 2)
-            cell.set_pos(z=utils.set_z_layer(layer_name, cell))
-            # cell.set_pos(z=-np.max(cell.zend))
-
-            spiked = True  # artificially set to True, to engage the loop, but anyway tested for distance = 0
+            # # set view as in most other examples
+            # cell.set_rotation(x=np.pi / 2)
+            # cell.set_pos(z=utils.set_z_layer(layer_name, cell))
+            # # cell.set_pos(z=-np.max(cell.zend))
+            z_init = utils.set_z_layer(layer_name)
+            # spiked = True  # artificially set to True, to engage the loop, but anyway tested for distance = 0
             for i_amp, amp in enumerate(amp_spread):
                 dis = distance[0]
                 loop = 0
                 spiked = True  # artificially set to True, to engage the loop, but anyway tested for distance = 0
                 print("debug01 loop {} rank {} amp {} distance {}".format(loop, RANK, amp, dis))
 
-                while spiked and loop < len(distance):
+                while spiked and loop <= len(distance):
                     # displacement, amp, loop, PROBLEM
                     dis = distance[loop]
                     print("debug001 loop {} rank {} amp {} distance {}".format(loop, RANK, amp, dis))
@@ -251,12 +253,7 @@ for i, NRN in enumerate(neurons):
                     source_amps = np.multiply(polarity, amp)
                     ExtPot = utils.ImposedPotentialField(source_amps, positions[0], positions[1] + displacement_source,
                                                          positions[2] + dura_height, sigma)
-
-                    v_cell_ext = np.zeros((cell.totnsegs, n_tsteps))
-
-                    v_cell_ext[:, :] = ExtPot.ext_field(cell.xmid, cell.ymid, cell.zmid
-                                                        ).reshape(cell.totnsegs, 1) * pulse.reshape(1, n_tsteps)
-
+                    LFPy.cell.neuron.init()
                     cell = LFPy.TemplateCell(morphology=morphologyfile,
                                              templatefile=posixpth(os.path.join(NRN, 'template.hoc')),
                                              templatename=templatename,
@@ -268,8 +265,14 @@ for i, NRN in enumerate(neurons):
 
                     # set view as in most other examples
                     cell.set_rotation(x=np.pi / 2)
-                    cell.set_pos(z=utils.set_z_layer(layer_name, cell))
-                    # cell.set_pos(z=-np.max(cell.zend) - dis)
+                    if np.max((cell.zend) + z_init) > 0:
+                        cell.set_pos(z=-np.max(cell.zend) - (dis + params.sim['safety_distance_surface_neuron']))
+                    else:
+                        cell.set_pos(z=z_init - dis)
+
+                    v_cell_ext = np.zeros((cell.totnsegs, n_tsteps))
+                    v_cell_ext[:, :] = ExtPot.ext_field(cell.xmid, cell.ymid, cell.zmid
+                                                        ).reshape(cell.totnsegs, 1) * pulse.reshape(1, n_tsteps)
 
                     cell.insert_v_ext(v_cell_ext, t)
                     # print("DEBUG i5 rank {}".format(RANK))
@@ -294,25 +297,37 @@ for i, NRN in enumerate(neurons):
 
                     utils.dendritic_spike(cell)
                     spike_time_loc = utils.spike_soma(cell)
-                    max_vmem[RANK][i_amp] = np.max(cell.vmem[0])
-                    t_max_vmem[RANK][i_amp] = np.argmax(cell.vmem[0])
-                    print("Max vmem {}, at t {} rank {}".format(max_vmem[RANK][i_amp], t_max_vmem[RANK][i_amp], RANK))
+
                     if spike_time_loc[0] is not None:
                         spiked = True
 
                         detail_spike = utils.return_first_spike_time_and_idx(cell.vmem)
-                        print("!spike! at time {0} and position {1}, cell {2}".format(
+                        print("!spike! at time {0} and position {1}, rank {2}".format(
                             detail_spike[0], cell.get_idx_name(detail_spike[1])[1], RANK))
                         # print("DEBUG 0 rank {}".format(RANK))
-                        current[RANK][np.where(amp_spread == amp)[0][0]] = dis
+                        # current[RANK][np.where(amp_spread == amp)[0][0]] = dis
+                        current[RANK][i_amp] = dis
                         # print("DEBUG 1 rank {}".format(RANK))
 
-                        c_vext[RANK][np.where(amp_spread == amp)[0][0]] = v_cell_ext[detail_spike[1]][detail_spike[0]]
+                        # c_vext[RANK][np.where(amp_spread == amp)[0][0]] = v_cell_ext[detail_spike[1]][detail_spike[0]]
+                        c_vext[RANK][i_amp] = v_cell_ext[detail_spike[1]][detail_spike[0]]
                         # print("DEBUG 2 rank {}".format(RANK))
-                        ap_loc[RANK][np.where(amp_spread == amp)[0][0]] = detail_spike[1]
+                        # ap_loc[RANK][np.where(amp_spread == amp)[0][0]] = detail_spike[1]
+                        ap_loc[RANK][i_amp] = detail_spike[1]
                         # print("DEBUG 3 rank {}".format(RANK))
+                        max_vmem[RANK][i_amp] = np.max(cell.vmem[0])
+                        t_max_vmem[RANK][i_amp] = np.argmax(cell.vmem[0])
+                        print("Max vmem {}, at t {} loop {} rank {}".format(
+                              max_vmem[RANK][i_amp], t_max_vmem[RANK][i_amp], loop, RANK))
+
                     else:
                         spiked = False
+                        if loop == 0:
+                            max_vmem[RANK][i_amp] = np.max(cell.vmem[0])
+                            t_max_vmem[RANK][i_amp] = np.argmax(cell.vmem[0])
+                            print("Max vmem {}, at t {}, loop {} rank {}".format(
+                                  max_vmem[RANK][i_amp], t_max_vmem[RANK][i_amp], loop, RANK))
+
                     loop += 1
                     # print('loop {}'.format(loop))
             print("loop: {}, dis: {}, spike: {}, amp: {}, rank: {}".format(loop, dis, spiked, amp, RANK))

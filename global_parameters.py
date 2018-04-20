@@ -48,12 +48,16 @@ class parameter(object):
         self.sim['spike_threshold'] = -20  # spike threshold (mV)
 
         self.sim['min_stim_current'] = -300 * 10**3  # uA
-        self.sim['max_stim_current'] = 0 * 10**3  # uA
-        self.sim['n_intervals'] = 50
+        self.sim['max_stim_current'] = 300 * 10**3  # uA
+        self.sim['n_intervals'] = 100
 
         self.sim['max_distance'] = 300
 
+        self.sim['safety_distance_surface_neuron'] = 10
+
+
         self.sim['layer'] = 'L23'
+        # self.sim['neuron_type'] = 'LBC_cNAC187'
         self.sim['neuron_type'] = ''
 
     def set_figures(self):
@@ -86,6 +90,7 @@ class parameter(object):
         self.filename['zend'] = 'zend.json'
 
         self.filename['compilation_folder'] = 'morphologies/hoc_combos_syn.1_0_10.allmods'  # relative path!
+        # self.filename['output_folder'] = "/media/erebus/oslo/code/darpa/bisc/outputs/"   # local machine path
         self.filename['output_folder'] = "/nird/home/berthetp/outputs/"
         self.filename['simulation_parameters_dump'] = 'simulation_parameters.json'
         self.filename['simulation_filenames_dump'] = 'simulation_filenames.json'
