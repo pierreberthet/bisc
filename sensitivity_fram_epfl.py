@@ -77,7 +77,7 @@ neuron_type = params.sim['neuron_type']
 # neurons = utils.init_neurons_epfl(layer_name, SIZE)
 neurons = utils.init_neurons_epfl(layer_name, SIZE, neuron_type)
 print("loaded models: {}".format(utils.get_epfl_model_name(neurons, short=True)))
-
+neurons.sort()
 print("REACH")
 
 # flag for cell template file to switch on (inactive) synapses
@@ -165,6 +165,7 @@ current = np.zeros((SIZE, n_intervals))
 c_vext = np.zeros((SIZE, n_intervals))
 ap_loc = np.zeros((SIZE, n_intervals), dtype=np.int)
 max_vmem = np.zeros((SIZE, n_intervals))
+vext_soma = np.zeros((SIZE, n_intervals))
 t_max_vmem = np.zeros((SIZE, n_intervals))
 
 
@@ -317,14 +318,16 @@ for i, NRN in enumerate(neurons):
                         # print("DEBUG 3 rank {}".format(RANK))
                         max_vmem[RANK][i_amp] = np.max(cell.vmem[0])
                         t_max_vmem[RANK][i_amp] = np.argmax(cell.vmem[0])
-                        print("Max vmem {}, at t {} loop {} rank {}".format(
-                              max_vmem[RANK][i_amp], t_max_vmem[RANK][i_amp], loop, RANK))
+                        vext_soma[RANK][i_amp] = cell.v_cell_ext[0][pulse_start + 10]
+                        print("Max vmem {}, at t {}, Vext {} loop {} rank {}".format(
+                              max_vmem[RANK][i_amp], t_max_vmem[RANK][i_amp], vext_soma[RANK][i_amp], loop, RANK))
 
                     else:
                         spiked = False
                         if loop == 0:
                             max_vmem[RANK][i_amp] = np.max(cell.vmem[0])
                             t_max_vmem[RANK][i_amp] = np.argmax(cell.vmem[0])
+                            vext_soma[RANK][i_amp] = cell.v_cell_ext[0][pulse_start + 10]
                             print("Max vmem {}, at t {}, loop {} rank {}".format(
                                   max_vmem[RANK][i_amp], t_max_vmem[RANK][i_amp], loop, RANK))
 
@@ -543,6 +546,25 @@ if RANK == 0:
     # print("DUMPING c_vext JSON to {}".format(f_tempdump))
     with open(os.path.join(output_f, f_tempdump), 'w') as f_dump:
         json.dump(t_max_vmem.tolist(), f_dump)
+    # print("DEBUG 1 dumping completed")
+
+COMM.Barrier()
+
+if RANK == 0:
+    for i_proc in range(1, SIZE):
+        vext_soma[i_proc] = COMM.recv(source=i_proc)
+else:
+    COMM.send(vext_soma[RANK], dest=0)
+
+t_max_vmem = COMM.bcast(vext_soma, root=0)
+
+COMM.Barrier()
+
+if RANK == 0:
+    f_tempdump = params.filename['vext_soma_dump']
+    # print("DUMPING c_vext JSON to {}".format(f_tempdump))
+    with open(os.path.join(output_f, f_tempdump), 'w') as f_dump:
+        json.dump(vext_soma.tolist(), f_dump)
     # print("DEBUG 1 dumping completed")
 
 COMM.Barrier()

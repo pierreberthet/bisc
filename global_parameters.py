@@ -49,14 +49,13 @@ class parameter(object):
 
         self.sim['min_stim_current'] = -300 * 10**3  # uA
         self.sim['max_stim_current'] = 300 * 10**3  # uA
-        self.sim['n_intervals'] = 100
+        self.sim['n_intervals'] = 40
 
         self.sim['max_distance'] = 300
 
         self.sim['safety_distance_surface_neuron'] = 10
 
-
-        self.sim['layer'] = 'L23'
+        self.sim['layer'] = 'L1'
         # self.sim['neuron_type'] = 'LBC_cNAC187'
         self.sim['neuron_type'] = ''
 
@@ -76,6 +75,7 @@ class parameter(object):
         self.filename['c_vext_dump'] = 'c_vext.json'
         self.filename['max_vmem_dump'] = 'max_vmem.json'
         self.filename['t_max_vmem_dump'] = 't_max_vmem.json'
+        self.filename['vext_soma_dump'] = 'vext_soma.json'
 
         self.filename['model_names'] = 'names.json'
 
