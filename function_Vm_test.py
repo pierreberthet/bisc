@@ -1,34 +1,79 @@
 #!/usr/bin/env python
 import matplotlib
 matplotlib.use('TkAgg')
-
+import neuron
 import LFPy
 import numpy as np
 import matplotlib.pyplot as plt
 import utils
+import os
+
+output_f = '/media/erebus/oslo/code/darpa/bisc/outputs/'
+name_model = 'hallermann_soma_axon_myelin'
+name_shape_ecog = 'monopole'
 
 # Define cell parameters
-cell_parameters = {          # various cell parameters,
-    'morphology': 'morphologies/ball_and_stick.hoc',
-    'cm': 1.0,         # membrane capacitance
-    'Ra': 150,        # axial resistance
-    'passive_parameters': dict(g_pas=1 / 30000., e_pas=-65),
-    'v_init': -65.,    # initial crossmembrane potential
-    'passive': True,   # switch on passive mechs
-    'nsegs_method': 'lambda_f',
-    'lambda_f': 500.,
-    'dt': 2.**-7,   # [ms] dt's should be in powers of 2 for both,
-    'tstart': 0.,    # start time of simulation, recorders start at t=0
-    'tstop': 3.,   # stop simulation at 200 ms. These can be overridden
-                        # by setting these arguments i cell.simulation()
-    "extracellular": True,
-}
+# BALL AND STICK
+if name_model == 'ball_and_stick':
+    cell_parameters = {          # various cell parameters,
+        'morphology': 'morphologies/ball_and_stick.hoc',
+        'cm': 1.0,         # membrane capacitance
+        'Ra': 150,        # axial resistance
+        'passive_parameters': dict(g_pas=1 / 30000., e_pas=-65),
+        'v_init': -65.,    # initial crossmembrane potential
+        'passive': True,   # switch on passive mechs
+        'nsegs_method': 'lambda_f',
+        'lambda_f': 500.,
+        'dt': 2.**-7,   # [ms] dt's should be in powers of 2 for both,
+        'tstart': 0.,    # start time of simulation, recorders start at t=0
+        'tstop': 3.,   # stop simulation at 200 ms. These can be overridden
+                            # by setting these arguments i cell.simulation()
+        "extracellular": True,
+    }
+
+# HALLERMANN STICK
+if name_model[:10] == 'hallermann':
+    folder = "morphologies/cell_hallermann_myelin"
+    # folder = "morphologies/cell_hallermann_unmyelin"
+    # folder = "morphologies/simple_axon_hallermann"
+    # folder = "morphologies/HallermannEtAl2012"
+    neuron.load_mechanisms(os.path.join(folder))
+    # morph = 'patdemo/cells/j4a.hoc', # Mainen&Sejnowski, 1996
+    # morph = join(folder, '28_04_10_num19.hoc') # HallermannEtAl2012
+    # morph = join('morphologies', 'axon.hoc') # Mainen&Sejnowski, 1996
+    # morph = join(folder, 'cell_simple.hoc')
+    morph = os.path.join(folder, 'cell_simple.hoc')
+    custom_code = [os.path.join(folder, 'Cell parameters.hoc'),
+                   os.path.join(folder, 'charge.hoc'),
+                   os.path.join(folder, 'pruning.hoc')]
+    # Define cell parameters
+    cell_parameters = {          # various cell parameters,
+        'morphology': morph,  # simplified neuron model from HallermannEtAl2012
+        # rm': 30000.,      # membrane resistance
+        'cm': 1.0,         # membrane capacitance
+        'Ra': 150,        # axial resistance
+        # 'passive_parameters':dict(g_pas=1/30., e_pas=-65),
+        'v_init': -85.,    # initial crossmembrane potential
+        # 'e_pas': -65.,     # reversal potential passive mechs
+        'passive': False,   # switch on passive mechs
+        'nsegs_method': 'lambda_f',
+        'lambda_f': 300.,
+        'dt': 2.**-4,   # [ms] dt's should be in powers of 2 for both,
+        'tstart': -50.,    # start time of simulation, recorders start at t=0
+        'tstop': 50.,   # stop simulation at 200 ms. These can be overridden
+                            # by setting these arguments in cell.simulation()
+        "extracellular": True,
+        "pt3d": True,
+        'custom_code': custom_code}
+
+
+
 
 # Make a linear external field
 # ext_field = np.vectorize(lambda z: 0. + z/np.max(cell.zmid) * 10.)
 
+
 sigma = 0.3
-name_shape_ecog = 'monopole'
 polarity, n_elec, positions = utils.create_array_shape(name_shape_ecog, 25)
 dura_height = 50
 displacement_source = 50
@@ -110,7 +155,7 @@ fig = plt.figure(figsize=[12, 6])
 # fig.subplots_adjust(wspace=0.6, top=0.83)
 # fig.suptitle("Vmem = f(I) in Stick cell")
 
-ax1 = plt.subplot(131, title="Stick cell", aspect='auto', frameon=False, xlim=[-100, 100], xlabel="x [$\mu$m]", ylabel="y [$\mu$m]")
+ax1 = plt.subplot(131, title=name_model, aspect='auto', frameon=False, xlim=[-100, 100], xlabel="x [$\mu$m]", ylabel="y [$\mu$m]")
 ax2 = plt.subplot(132, title="External potential\n(Ue)", xlabel="I [uA]", ylabel="mV")
 ax3 = plt.subplot(133, title="Membrane potential\n(Vm)", xlabel="I [uA]", ylabel="[mV]")
 # ax4 = plt.subplot(154, title="Ui = Ue + Vm", sharex=ax3, xlabel="Time [ms]", ylabel="[mV]")
@@ -124,10 +169,10 @@ color = iter(plt.cm.rainbow(np.linspace(0, 1, n_intervals)))
           c='k', clip_on=False) for idx in range(cell.totnsegs)]
 
 ax1.plot(cell.xmid, cell.zmid, 'D', c='k')
-ax1.scatter(source_xs, source_ys, c=source_amps, s=100, vmin=-1.4, vmax=1.4,
+ax1.scatter(source_xs, source_zs, c=source_amps, s=100, vmin=-1.4, vmax=1.4,
             edgecolor='k', lw=2, cmap=plt.cm.bwr)
-[ax1.scatter(source_xs[i], source_ys[i], marker='+', s=50, lw=2, c='k') for i in np.where(source_amps > 0)[0]]
-[ax1.scatter(source_xs[i], source_ys[i], marker='_', s=50, lw=2, c='k') for i in np.where(source_amps < 0)[0]]
+[ax1.scatter(source_xs[i], source_zs[i], marker='+', s=50, lw=2, c='k') for i in np.where(source_amps > 0)[0]]
+[ax1.scatter(source_xs[i], source_zs[i], marker='_', s=50, lw=2, c='k') for i in np.where(source_amps < 0)[0]]
 
 for i, dis in enumerate(distance):
     current_color = next(color)
@@ -140,5 +185,5 @@ for i, dis in enumerate(distance):
     lgd = ax2.legend(title="distance [$\mu$m]", fancybox=True, loc=9, prop={'size': 8}, bbox_to_anchor=(1.1, -0.1), ncol=6)
     art.append(lgd)
 # plt.tight_layout()
-plt.savefig('Vm_function_I_stick.png', bbox_extra_artists=(lgd,), bbox_inches='tight', dpi=200)
+plt.savefig(os.path.join(output_f, 'Vm_function_I_'+ name_model +'_' + name_shape_ecog + '.png'), bbox_extra_artists=(lgd,), bbox_inches='tight', dpi=200)
 plt.show()

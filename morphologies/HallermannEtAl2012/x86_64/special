@@ -1,13 +1,13 @@
 #!/bin/sh
 if test "x${NRNHOME}" = "x" ; then
-	NRNHOME="/nird/home/berthetp/.local/nrn"
+	NRNHOME="/usr/local/nrn"
 fi
 if test "x${NRNBIN}" = "x" ; then
-	NRNBIN="/nird/home/berthetp/.local/nrn/x86_64/bin/"
+	NRNBIN="/usr/local/nrn/x86_64/bin/"
 fi
 if test "" = "yes" ; then
 	NRNIV="${NRNBIN}nrniv.app/Contents/MacOS/nrniv"
 else
 	NRNIV="${NRNBIN}nrniv"
 fi
-"${NRNIV}" -dll "/nird/home/berthetp/darpa/bisc/morphologies/HallermannEtAl2012/x86_64/.libs/libnrnmech.so" "$@"
+"${NRNIV}" -dll "/media/erebus/oslo/code/darpa/bisc/morphologies/HallermannEtAl2012/x86_64/.libs/libnrnmech.so" "$@"

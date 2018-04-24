@@ -42,10 +42,11 @@ sigma = 0.3
 # source_geometry = np.array([stim_amp, stim_amp, stim_amp, stim_amp, -stim_amp])
 
 # source_geometry = np.array([-1, -1, 1, 1, 1, 1, -1, -1])
-name_shape_ecog = 'circle2'
+name_shape_ecog = 'multipole3'
 polarity, n_elec, positions = utils.create_array_shape(name_shape_ecog, 25)
 
-amp = (200. * 10**3) / n_elec  # uA
+# amp = (200. * 10**3) / n_elec  # uA
+amp = (200. * 10**3)   # uA
 voltage = 5000
 
 cortical_surface_height = 20

@@ -73,9 +73,9 @@ neuron.h.load_file("import3d.hoc")
 
 # get names of neuron models, layers options are 'L1', 'L23', 'L4', 'L5' and 'L6'
 layer_name = params.sim['layer']
-# neuron_type = 'MC'
-neurons = utils.init_neurons_epfl(layer_name, SIZE)
-# neurons = utils.init_neurons_epfl(layer_name, SIZE, neuron_type)
+neuron_type = params.sim['neuron_type']
+# neurons = utils.init_neurons_epfl(layer_name, SIZE)
+neurons = utils.init_neurons_epfl(layer_name, SIZE, neuron_type)
 print("loaded models: {}".format(utils.get_epfl_model_name(neurons, short=True)))
 
 print("REACH")
@@ -164,6 +164,8 @@ displacement_source = 50
 current = np.zeros((SIZE, n_intervals))
 c_vext = np.zeros((SIZE, n_intervals))
 ap_loc = np.zeros((SIZE, n_intervals), dtype=np.int)
+max_vmem = np.zeros((SIZE, n_intervals))
+t_max_vmem = np.zeros((SIZE, n_intervals))
 
 
 source_xs = positions[0]
@@ -177,8 +179,10 @@ COMM_DICT = {}
 COUNTER = 0
 for i, NRN in enumerate(neurons):
     if RANK == i:
-        os.chdir(CWD)
+        print("DEBUG that is me !!! rank {}".format(RANK))
+        # os.chdir(CWD)
         os.chdir(NRN)
+        print("Now in {} rank {}".format(NRN, RANK))
 
         # get the template name
         f = open("template.hoc", 'r')
@@ -219,38 +223,37 @@ for i, NRN in enumerate(neurons):
 
         for idx, morphologyfile in enumerate(glob(os.path.join('morphology', '*'))):
             # Instantiate the cell(s) using LFPy
-            cell = LFPy.TemplateCell(morphology=morphologyfile,
-                                     templatefile=posixpth(os.path.join(NRN, 'template.hoc')),
-                                     templatename=templatename,
-                                     templateargs=1 if add_synapses else 0,
-                                     tstop=tstop,
-                                     dt=dt,
-                                     extracellular=True,
-                                     nsegs_method=None)
+            print("debug idx {} rank {} morph {}".format(idx, RANK, morphologyfile))
+            # cell = LFPy.TemplateCell(morphology=morphologyfile,
+            #                          templatefile=posixpth(os.path.join(NRN, 'template.hoc')),
+            #                          templatename=templatename,
+            #                          templateargs=1 if add_synapses else 0,
+            #                          tstop=tstop,
+            #                          dt=dt,
+            #                          extracellular=True,
+            #                          nsegs_method=None)
 
-            # set view as in most other examples
-            cell.set_rotation(x=np.pi / 2)
-            cell.set_pos(z=utils.set_z_layer(layer_name, cell))
-            # cell.set_pos(z=-np.max(cell.zend))
+            # # set view as in most other examples
+            # cell.set_rotation(x=np.pi / 2)
+            # cell.set_pos(z=utils.set_z_layer(layer_name, cell))
+            # # cell.set_pos(z=-np.max(cell.zend))
 
             spiked = True  # artificially set to True, to engage the loop, but anyway tested for distance = 0
-            for amp in amp_spread:
+            for i_amp, amp in enumerate(amp_spread):
                 dis = distance[0]
                 loop = 0
                 spiked = True  # artificially set to True, to engage the loop, but anyway tested for distance = 0
+                print("debug01 loop {} rank {} amp {} distance {}".format(loop, RANK, amp, dis))
+
                 while spiked and loop < len(distance):
                     # displacement, amp, loop, PROBLEM
                     dis = distance[loop]
+                    print("debug001 loop {} rank {} amp {} distance {}".format(loop, RANK, amp, dis))
 
                     source_amps = np.multiply(polarity, amp)
                     ExtPot = utils.ImposedPotentialField(source_amps, positions[0], positions[1] + displacement_source,
                                                          positions[2] + dura_height, sigma)
-
-                    v_cell_ext = np.zeros((cell.totnsegs, n_tsteps))
-
-                    v_cell_ext[:, :] = ExtPot.ext_field(cell.xmid, cell.ymid, cell.zmid
-                                                        ).reshape(cell.totnsegs, 1) * pulse.reshape(1, n_tsteps)
-
+                    LFPy.cell.neuron.init()
                     cell = LFPy.TemplateCell(morphology=morphologyfile,
                                              templatefile=posixpth(os.path.join(NRN, 'template.hoc')),
                                              templatename=templatename,
@@ -264,6 +267,11 @@ for i, NRN in enumerate(neurons):
                     cell.set_rotation(x=np.pi / 2)
                     cell.set_pos(z=utils.set_z_layer(layer_name, cell))
                     # cell.set_pos(z=-np.max(cell.zend) - dis)
+
+                    v_cell_ext = np.zeros((cell.totnsegs, n_tsteps))
+
+                    v_cell_ext[:, :] = ExtPot.ext_field(cell.xmid, cell.ymid, cell.zmid
+                                                        ).reshape(cell.totnsegs, 1) * pulse.reshape(1, n_tsteps)
 
                     cell.insert_v_ext(v_cell_ext, t)
                     # print("DEBUG i5 rank {}".format(RANK))
@@ -281,29 +289,44 @@ for i, NRN in enumerate(neurons):
                     # cell.simulate(electrode=electrode)
                     # print("DEBUG about to simulate rank {}".format(RANK))
                     cell.simulate(rec_vmem=True, rec_imem=True)
-                    print("simulation running ... loop {} ; amp {}nA ; distance {}um ; cell {}".format(loop, amp, dis, RANK))
+                    print("simulation running ... loop {} ; amp {}nA ; distance {}um ; rank {}".format(loop, amp, dis, RANK))
                     # DEBUG
                     if np.isnan(cell.vmem).any():
                         print("NaN for cell {}".format(RANK))
 
                     utils.dendritic_spike(cell)
                     spike_time_loc = utils.spike_soma(cell)
+
                     if spike_time_loc[0] is not None:
                         spiked = True
 
                         detail_spike = utils.return_first_spike_time_and_idx(cell.vmem)
-                        print("!spike! at time {0} and position {1}, cell {2}".format(
+                        print("!spike! at time {0} and position {1}, rank {2}".format(
                             detail_spike[0], cell.get_idx_name(detail_spike[1])[1], RANK))
                         # print("DEBUG 0 rank {}".format(RANK))
-                        current[RANK][np.where(amp_spread == amp)[0][0]] = dis
+                        # current[RANK][np.where(amp_spread == amp)[0][0]] = dis
+                        current[RANK][i_amp] = dis
                         # print("DEBUG 1 rank {}".format(RANK))
 
-                        c_vext[RANK][np.where(amp_spread == amp)[0][0]] = v_cell_ext[detail_spike[1]][detail_spike[0]]
+                        # c_vext[RANK][np.where(amp_spread == amp)[0][0]] = v_cell_ext[detail_spike[1]][detail_spike[0]]
+                        c_vext[RANK][i_amp] = v_cell_ext[detail_spike[1]][detail_spike[0]]
                         # print("DEBUG 2 rank {}".format(RANK))
-                        ap_loc[RANK][np.where(amp_spread == amp)[0][0]] = detail_spike[1]
+                        # ap_loc[RANK][np.where(amp_spread == amp)[0][0]] = detail_spike[1]
+                        ap_loc[RANK][i_amp] = detail_spike[1]
                         # print("DEBUG 3 rank {}".format(RANK))
+                        max_vmem[RANK][i_amp] = np.max(cell.vmem[0])
+                        t_max_vmem[RANK][i_amp] = np.argmax(cell.vmem[0])
+                        print("Max vmem {}, at t {} loop {} rank {}".format(
+                              max_vmem[RANK][i_amp], t_max_vmem[RANK][i_amp], loop, RANK))
+
                     else:
                         spiked = False
+                        if loop == 0:
+                            max_vmem[RANK][i_amp] = np.max(cell.vmem[0])
+                            t_max_vmem[RANK][i_amp] = np.argmax(cell.vmem[0])
+                            print("Max vmem {}, at t {}, loop {} rank {}".format(
+                                  max_vmem[RANK][i_amp], t_max_vmem[RANK][i_amp], loop, RANK))
+
                     loop += 1
                     # print('loop {}'.format(loop))
             print("loop: {}, dis: {}, spike: {}, amp: {}, rank: {}".format(loop, dis, spiked, amp, RANK))
@@ -456,7 +479,7 @@ output_f = COMM.bcast(output_f, root=0)
 COMM.Barrier()
 
 if RANK == 0:
-    f_tempdump = 'currents.json'
+    f_tempdump = params.filename['current_dump']
     # print("DUMPING data JSON to {}".format(f_tempdump))
     with open(os.path.join(output_f, f_tempdump), 'w') as f_dump:
         json.dump(current.tolist(), f_dump)
@@ -477,13 +500,53 @@ c_vext = COMM.bcast(c_vext, root=0)
 COMM.Barrier()
 
 if RANK == 0:
-    f_tempdump = 'c_vext.json'
+    f_tempdump = params.filename['c_vext_dump']
     # print("DUMPING c_vext JSON to {}".format(f_tempdump))
     with open(os.path.join(output_f, f_tempdump), 'w') as f_dump:
         json.dump(c_vext.tolist(), f_dump)
     # print("DEBUG 1 dumping completed")
 
 COMM.Barrier()
+
+if RANK == 0:
+    for i_proc in range(1, SIZE):
+        max_vmem[i_proc] = COMM.recv(source=i_proc)
+else:
+    COMM.send(max_vmem[RANK], dest=0)
+
+max_vmem = COMM.bcast(max_vmem, root=0)
+
+COMM.Barrier()
+
+if RANK == 0:
+    f_tempdump = params.filename['max_vmem_dump']
+    # print("DUMPING c_vext JSON to {}".format(f_tempdump))
+    with open(os.path.join(output_f, f_tempdump), 'w') as f_dump:
+        json.dump(max_vmem.tolist(), f_dump)
+    # print("DEBUG 1 dumping completed")
+
+COMM.Barrier()
+
+if RANK == 0:
+    for i_proc in range(1, SIZE):
+        t_max_vmem[i_proc] = COMM.recv(source=i_proc)
+else:
+    COMM.send(t_max_vmem[RANK], dest=0)
+
+t_max_vmem = COMM.bcast(t_max_vmem, root=0)
+
+COMM.Barrier()
+
+if RANK == 0:
+    f_tempdump = params.filename['t_max_vmem_dump']
+    # print("DUMPING c_vext JSON to {}".format(f_tempdump))
+    with open(os.path.join(output_f, f_tempdump), 'w') as f_dump:
+        json.dump(t_max_vmem.tolist(), f_dump)
+    # print("DEBUG 1 dumping completed")
+
+COMM.Barrier()
+
+
 
 if RANK == 0:
     for i_proc in range(1, SIZE):
@@ -498,13 +561,13 @@ ap_loc = COMM.bcast(ap_loc, root=0)
 names = utils.get_epfl_model_name(neurons, short=True)
 
 if RANK == 0:
-    f_tempdump = 'ap_loc.json'
+    f_tempdump = params.filename['ap_loc_dump']
     # print("DUMPING ap_loc JSON to {}".format(f_tempdump))
     with open(os.path.join(output_f, f_tempdump), 'w') as f_dump:
         json.dump(ap_loc.tolist(), f_dump)
     # print("DEBUG 2 dumping completed")
 
-    f_tempdump = "names.json"
+    f_tempdump = params.filename['model_names']
     # print("DUMPING names JSON to {}".format(f_tempdump))
     with open(os.path.join(output_f, f_tempdump), 'w') as f_dump:
         json.dump(names, f_dump)

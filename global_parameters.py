@@ -36,11 +36,11 @@ class parameter(object):
         # SIMULATION ####################################
         self.sim = {}
 
-        self.sim['t_stop'] = 200.
+        self.sim['t_stop'] = 100.
         self.sim['dt'] = 2**-6
 
-        self.sim['pulse_start'] = 80
-        self.sim['pulse_duration'] = 50
+        self.sim['pulse_start'] = 3000
+        self.sim['pulse_duration'] = 64   # 1 ms
         self.sim['ampere'] = 100 * 10**3  # uA
 
         self.sim['ecog_type'] = 'circle2'
@@ -48,18 +48,19 @@ class parameter(object):
         self.sim['spike_threshold'] = -20  # spike threshold (mV)
 
         self.sim['min_stim_current'] = -300 * 10**3  # uA
-        self.sim['max_stim_current'] = 300 * 10**3  # uA
-        self.sim['n_intervals'] = 30
+        self.sim['max_stim_current'] = -150 * 10**3  # uA
+        self.sim['n_intervals'] = 10
 
         self.sim['max_distance'] = 300
 
-        self.sim['layer'] = 'L5'
+        self.sim['layer'] = 'L1'
+        self.sim['neuron_type'] = 'LBC_cNAC187'
 
     def set_figures(self):
 
         # FIGURES #####################################
         self.fig = {}
-        self.fig['space_between_neurons'] = 400  # 100
+        self.fig['space_between_neurons'] = 1000  # 100
 
     def set_filenames(self):
 
@@ -69,6 +70,8 @@ class parameter(object):
         self.filename['current_dump'] = 'currents.json'
         self.filename['ap_loc_dump'] = 'ap_loc.json'
         self.filename['c_vext_dump'] = 'c_vext.json'
+        self.filename['max_vmem_dump'] = 'max_vmem.json'
+        self.filename['t_max_vmem_dump'] = 't_max_vmem.json'
 
         self.filename['model_names'] = 'names.json'
 
@@ -83,7 +86,7 @@ class parameter(object):
         self.filename['zend'] = 'zend.json'
 
         self.filename['compilation_folder'] = 'morphologies/hoc_combos_syn.1_0_10.allmods'  # relative path!
-        self.filename['output_folder'] = "/nird/home/berthetp/outputs/"
+        self.filename['output_folder'] = "/media/erebus/oslo/code/darpa/bisc/outputs/"
         self.filename['simulation_parameters_dump'] = 'simulation_parameters.json'
         self.filename['simulation_filenames_dump'] = 'simulation_filenames.json'
 

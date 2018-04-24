@@ -57,11 +57,10 @@ def mpi_dump_geo(cells, size, output_folder):
         f_tempdump = geo + '.json'
         geo_temp = []
         for n in range(size):
-            geo_temp.append(cells[n][geo])
-        # print("DUMPING geo JSON to {}".format(f_tempdump))
+            geo_temp.append(cells[n][geo].tolist())
         with open(os.path.join(output_folder, f_tempdump), 'w') as f_dump:
-            json.dump(np.asarray(geo_temp).tolist(), f_dump)  # Cumbersome, must be a better way!
-        # print("Geometries dumping completed")
+            json.dump(geo_temp, f_dump)  # Cumbersome, must be a better way!
+    return
 
 
 def return_first_spike_time_and_idx(vmem):

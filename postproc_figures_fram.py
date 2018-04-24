@@ -12,7 +12,7 @@ source_folder = sys.argv[1]
 # print("source folder is {}".format(source_folder))
 cwd = os.getcwd()
 
-params = g_param.parameter(source_folder)
+params = g_param.parameter(params_fn=source_folder)
 
 # params = {}
 # params.filename = json.load(open(os.path.join(source_folder, 'simulation_filenames.json'), 'r'))
@@ -24,6 +24,8 @@ os.chdir(source_folder)
 currents = json.load(open(params.filename['current_dump'], 'r'))
 ap_loc = json.load(open(params.filename['ap_loc_dump'], 'r'))
 c_vext = json.load(open(params.filename['c_vext_dump'], 'r'))
+max_vmem = json.load(open(params.filename['max_vmem_dump'], 'r'))
+t_max_vmem = json.load(open(params.filename['t_max_vmem_dump'], 'r'))
 
 neuron_names = json.load(open(params.filename['model_names'], 'r'))
 
@@ -37,13 +39,66 @@ zstart = json.load(open(params.filename['zstart'], 'r'))
 zmid = json.load(open(params.filename['zmid'], 'r'))
 zend = json.load(open(params.filename['zend'], 'r'))
 
+min_current = params.sim['min_stim_current']
+max_current = params.sim['max_stim_current']
+n_intervals = params.sim['n_intervals']
+
 print("DATA LOADED")
 os.chdir(cwd)
 
 # PROCESSING ############################################################################
 SIZE = len(currents)
 
-amp_spread = np.linspace(params.sim['min_stim_current'], params.sim['max_stim_current'], params.sim['n_intervals'])
+amp_spread = np.linspace(min_current, max_current, n_intervals)
+
+
+pos_vmem = []
+for i in range(SIZE):
+    if np.max(max_vmem[i]) > -50:
+        pos_vmem.append(max_vmem[i])
+        # if np.max(max_vmem[i]) > -20:
+        #     print("{} fired".format(neuron_names[i]))
+
+print("{} over -50mV out of {}".format(len(pos_vmem), SIZE))
+
+print("DETAIL")
+if min_current < 0 and max_current > 0:
+    neg = []
+    pos = []
+    both = []
+    never = []
+    # print("Negative Current")
+    for i in range(SIZE):
+        if np.max(max_vmem[i][:len(np.where(amp_spread < 0)[0])]) > -20:
+            # print("{} fired".format(neuron_names[i]))
+            if np.max(max_vmem[i][len(np.where(amp_spread > 0)[0]):]) > -20:
+                both.append(neuron_names[i])
+            else:
+                neg.append(neuron_names[i])
+        elif not np.max(max_vmem[i][len(np.where(amp_spread > 0)[0]):]) > -20:
+                never.append(neuron_names[i])
+
+    # print("Positive Current")
+    for i in range(SIZE):
+        if np.max(max_vmem[i][len(np.where(amp_spread > 0)[0]):]) > -20:
+            # print("{} fired".format(neuron_names[i]))
+            if not np.max(max_vmem[i][:len(np.where(amp_spread < 0)[0])]) > -20:
+                pos.append(neuron_names[i])
+
+print("################################")
+print("{} positive only / {} total".format(len(pos), len(neuron_names)))
+print(pos)
+print('')
+print("{} negative only / {} total".format(len(neg), len(neuron_names)))
+print(neg)
+print('')
+print("{} positive and negative / {} total".format(len(both), len(neuron_names)))
+print(both)
+print('')
+print("{} never / {} total".format(len(never), len(neuron_names)))
+# [print(item) for item in never]
+print(never)
+
 
 # FIGURES ###############################################################################
 
@@ -64,14 +119,14 @@ spread = np.linspace(-hbetween * (SIZE - 1), hbetween * (SIZE - 1), SIZE)
 # axview = plt.subplot(111, title="2D view XZ", aspect='auto', xlabel="x [$\mu$m]", ylabel="z [$\mu$m]")
 # for nc in range(0, SIZE):
 #     # spread cells along x-axis for a better overview in the 2D view
-#     xstart += spread[nc]
-#     xmid += spread[nc]
-#     xend += spread[nc]
+#     xstart[nc] = np.asarray(xstart[nc]) + spread[nc]
+#     xmid[nc] = np.asarray(xmid[nc]) + spread[nc]
+#     xend[nc] = np.asarray(xend[nc]) + spread[nc]
 #     current_color = next(color)
-#     [axview.plot([xstart[idx], xend[idx]],
-#                  [zstart[idx], zend[idx]], '-',
-#                  c=current_color, clip_on=False) for idx in range(len(xstart))]
-#     axview.scatter(xmid[0], zmid[0],
+#     [axview.plot([xstart[nc][idx], xend[nc][idx]],
+#                  [zstart[nc][idx], zend[nc][idx]], '-',
+#                  c=current_color, clip_on=False) for idx in range(len(xstart[nc]))]
+#     axview.scatter(xmid[nc][0], zmid[nc][0],
 #                    c=current_color, label=neuron_names[nc])
 # art = []
 # lgd = axview.legend(loc=9, prop={'size': 6}, bbox_to_anchor=(0.5, -0.1), ncol=6)
@@ -89,10 +144,10 @@ spread = np.linspace(-hbetween * (SIZE - 1), hbetween * (SIZE - 1), SIZE)
 #     # current_color = color.next()
 #     current_color = next(color)
 
-#     [axview.plot([ystart[idx], yend[idx]],
-#                  [zstart[idx], zend[idx]], '-',
-#                  c=current_color, clip_on=False) for idx in range(len(xstart))]
-#     axview.scatter(ymid[0], zmid[0],
+#     [axview.plot([ystart[nc][idx], yend[nc][idx]],
+#                  [zstart[nc][idx], zend[nc][idx]], '-',
+#                  c=current_color, clip_on=False) for idx in range(len(xstart[nc]))]
+#     axview.scatter(ymid[nc][0], zmid[nc][0],
 #                    c=current_color, label=neuron_names[nc])
 #     axview.legend()
 # art = []
@@ -104,9 +159,9 @@ spread = np.linspace(-hbetween * (SIZE - 1), hbetween * (SIZE - 1), SIZE)
 
 color = iter(plt.cm.rainbow(np.linspace(0, 1, SIZE)))
 
-fig = plt.figure(figsize=[10, 7])
+fig = plt.figure(figsize=[15, 7])
 fig.subplots_adjust(wspace=.6)
-ax = plt.subplot(111, title="Stimulation threshold")
+ax = plt.subplot(131, title="Stimulation threshold")
 # axd = ax.twinx()
 ax.set_xlabel("stimulation current [$\mu$A]")
 ax.set_ylabel("depth [$\mu$m]")
@@ -114,6 +169,7 @@ ax.set_ylabel("depth [$\mu$m]")
 for i in range(SIZE):
     ax.plot(amp_spread, currents[i],
             color=next(color), label=neuron_names[i])
+            # color=next(color))
     # ax.plot(distance[:len(gather_current[i]['current'].nonzero()[0])],
     #         gather_current[i]['current'][gather_current[i]['current'].nonzero()[0]] / 1000.,
     #         color=next(color), label=names[i])
@@ -123,9 +179,9 @@ for i in range(SIZE):
 # if max_current < 0:
 #     plt.gca().invert_yaxis()
 # plt.legend(loc="upper left")
-art = []
-lgd = ax.legend(loc=9, prop={'size': 6}, bbox_to_anchor=(0.5, -0.1), ncol=6)
-art.append(lgd)
+# art = []
+# lgd = ax.legend(loc=9, prop={'size': 6}, bbox_to_anchor=(0.5, -0.1), ncol=6)
+# art.append(lgd)
 # plt.savefig(os.path.join(output_f, "2d_view_YZ.png"),  dpi=200)
 
 # if max_current > 0:
@@ -152,4 +208,123 @@ art.append(lgd)
 
 # axview.scatter(source_xs, source_ys, source_zs, c=source_amps)
 plt.tight_layout()
+
+color = iter(plt.cm.rainbow(np.linspace(0, 1, SIZE)))
+
+# fig = plt.figure(figsize=[10, 7])
+# fig.subplots_adjust(wspace=.6)
+ax = plt.subplot(132, title="Max Vmem @ soma")
+# axd = ax.twinx()
+ax.set_xlabel("stimulation current [$\mu$A]")
+ax.set_ylabel("Vmem @ soma [mV]")
+# axd.set_ylabel("V_Ext [mV]")
+for i in range(SIZE):
+    ax.plot(amp_spread, max_vmem[i],
+            color=next(color), label=neuron_names[i])
+            # color=next(color))
+    # ax.plot(distance[:len(gather_current[i]['current'].nonzero()[0])],
+    #         gather_current[i]['current'][gather_current[i]['current'].nonzero()[0]] / 1000.,
+    #         color=next(color), label=names[i])
+    # axd.plot(gather_current[i]['v_ext_at_pulse'], label="v_ext" + names[i])
+# plt.xticks(np.linspace(0, max_distance, 10))
+# plt.locator_params(tight=True)
+# if max_current < 0:
+#     plt.gca().invert_yaxis()
+# plt.legend(loc="upper left")
+art = []
+lgd = ax.legend(loc=9, prop={'size': 6}, bbox_to_anchor=(0.5, -0.1), ncol=6)
+art.append(lgd)
+
+# plt.tight_layout()
+
+
+color = iter(plt.cm.rainbow(np.linspace(0, 1, SIZE)))
+
+# fig = plt.figure(figsize=[10, 7])
+# fig.subplots_adjust(wspace=.6)
+ax = plt.subplot(133, title="Time of maximum Vmem @ soma")
+# axd = ax.twinx()
+ax.set_xlabel("stimulation current [$\mu$A]")
+ax.set_ylabel("time of max Vmem @ soma [ms]")
+# axd.set_ylabel("V_Ext [mV]")
+for i in range(SIZE):
+    col = next(color)
+    if np.max(max_vmem[i]) > -50:
+        ax.plot(amp_spread, np.multiply(t_max_vmem[i], params.sim['dt']),
+                color=col, label=neuron_names[i])
+                # color=col)
+    # ax.plot(distance[:len(gather_current[i]['current'].nonzero()[0])],
+    #         gather_current[i]['current'][gather_current[i]['current'].nonzero()[0]] / 1000.,
+    #         color=next(color), label=names[i])
+    # axd.plot(gather_current[i]['v_ext_at_pulse'], label="v_ext" + names[i])
+# plt.xticks(np.linspace(0, max_distance, 10))
+# plt.locator_params(tight=True)
+# if max_current < 0:
+#     plt.gca().invert_yaxis()
+# plt.legend(loc="upper left")
+# art = []
+# lgd = ax.legend(loc=9, prop={'size': 6}, bbox_to_anchor=(0.5, -0.1), ncol=6)
+# art.append(lgd)
+
+plt.tight_layout()
+
+color = iter(plt.cm.rainbow(np.linspace(0, 1, SIZE)))
+
+fig = plt.figure(figsize=[15, 7])
+fig.subplots_adjust(wspace=.6)
+fig.subplots_adjust(bottom=.33)
+ax1 = plt.subplot(111)
+
+# ax2 = plt.subplot(111, title="Stimulation threshold Responsive")
+# ax1.clear()
+ax2 = fig.add_axes(ax1)
+# axd = ax.twinx()
+ax1.set_xlabel("stimulation current [$\mu$A]")
+ax1.set_ylabel("depth [$\mu$m]")
+
+
+# axd.set_ylabel("V_Ext [mV]")
+for i in range(SIZE):
+    colr = next(color)
+    if np.max(max_vmem[i][:len(np.where(amp_spread < 0)[0])]) > -20:
+        ax1.plot(amp_spread, currents[i],
+                 color=colr, label=neuron_names[i])
+        # print("current name = {}".format(neuron_names[i]))
+# art1 = []
+
+# h1, l1 = ax1.get_legend_handles_labels()
+lgd1 = ax1.legend(loc=9, prop={'size': 6}, bbox_to_anchor=(0.25, -0.1), ncol=3)
+
+ax1.clear()
+# ax2.set_label('')
+# ax2 = []
+color = iter(plt.cm.rainbow(np.linspace(0, 1, SIZE)))
+for i in range(SIZE):
+    colr = next(color)
+
+    if np.max(max_vmem[i][len(np.where(amp_spread < 0)[0]):]) > -20:
+        ax2.plot(amp_spread, currents[i],
+                 color=colr, label=neuron_names[i])
+        # ax2.append(line2)
+        # print("current name = {}".format(neuron_names[i]))
+# lgd2 = ax2.get_legend()
+# art1.append(lgd1)
+
+
+# art2 = []
+ax2.legend(loc=9, prop={'size': 6}, bbox_to_anchor=(0.75, -0.1), ncol=3)
+# art2.append(lgd2)
+# plt.gca().add_artist(lgd2)
+plt.gca().add_artist(lgd1)
+
+color = iter(plt.cm.rainbow(np.linspace(0, 1, SIZE)))
+for i in range(SIZE):
+    colr = next(color)
+    if np.max(max_vmem[i][:len(np.where(amp_spread < 0)[0])]) > -20:
+        ax1.plot(amp_spread, currents[i],
+                 color=colr)
+
+
+# plt.tight_layout()
+
 plt.show()
