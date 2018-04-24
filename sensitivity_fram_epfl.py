@@ -318,7 +318,7 @@ for i, NRN in enumerate(neurons):
                         # print("DEBUG 3 rank {}".format(RANK))
                         max_vmem[RANK][i_amp] = np.max(cell.vmem[0])
                         t_max_vmem[RANK][i_amp] = np.argmax(cell.vmem[0])
-                        vext_soma[RANK][i_amp] = cell.v_cell_ext[0][pulse_start + 10]
+                        vext_soma[RANK][i_amp] = cell.v_ext[0][pulse_start + 10]
                         print("Max vmem {}, at t {}, Vext {} loop {} rank {}".format(
                               max_vmem[RANK][i_amp], t_max_vmem[RANK][i_amp], vext_soma[RANK][i_amp], loop, RANK))
 
@@ -327,13 +327,13 @@ for i, NRN in enumerate(neurons):
                         if loop == 0:
                             max_vmem[RANK][i_amp] = np.max(cell.vmem[0])
                             t_max_vmem[RANK][i_amp] = np.argmax(cell.vmem[0])
-                            vext_soma[RANK][i_amp] = cell.v_cell_ext[0][pulse_start + 10]
+                            vext_soma[RANK][i_amp] = cell.v_ext[0][pulse_start + 10]
                             print("Max vmem {}, at t {}, loop {} rank {}".format(
                                   max_vmem[RANK][i_amp], t_max_vmem[RANK][i_amp], loop, RANK))
 
                     loop += 1
                     # print('loop {}'.format(loop))
-            print("loop: {}, dis: {}, spike: {}, amp: {}, rank: {}".format(loop, dis, spiked, amp, RANK))
+                print("loop: {}, dis: {}, spike: {}, amp: {}, rank: {}".format(loop, dis, spiked, amp, RANK))
 #             #electrode.calc_lfp()
 #             LFP = electrode.LFP
 #             if apply_filter:
@@ -463,7 +463,8 @@ COMM.Barrier()
 
 if RANK == 0:
     output_f = os.path.join(output_f, "D_sensitivity_" + layer_name + '_' + name_shape_ecog +
-                            "_" + str(int(min(amp_spread))) + "." + str(int(max(amp_spread))))
+                            "_" + str(int(min(amp_spread))) + "." + str(int(max(amp_spread))) +
+                            "_" + str(pulse_duration * dt) + "ms")
     try:
         os.mkdir(output_f)
     except OSError:

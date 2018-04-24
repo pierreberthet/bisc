@@ -40,7 +40,7 @@ class parameter(object):
         self.sim['dt'] = 2**-6
 
         self.sim['pulse_start'] = 3000
-        self.sim['pulse_duration'] = 64   # 1 ms
+        self.sim['pulse_duration'] = 32   # 64 = 1 ms
         self.sim['ampere'] = 100 * 10**3  # uA
 
         self.sim['ecog_type'] = 'circle2'
@@ -49,13 +49,13 @@ class parameter(object):
 
         self.sim['min_stim_current'] = -300 * 10**3  # uA
         self.sim['max_stim_current'] = 300 * 10**3  # uA
-        self.sim['n_intervals'] = 40
+        self.sim['n_intervals'] = 50
 
         self.sim['max_distance'] = 300
 
         self.sim['safety_distance_surface_neuron'] = 10
 
-        self.sim['layer'] = 'L1'
+        self.sim['layer'] = 'L23'
         # self.sim['neuron_type'] = 'LBC_cNAC187'
         self.sim['neuron_type'] = ''
 
