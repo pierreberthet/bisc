@@ -61,6 +61,17 @@ for i in range(SIZE):
 
 print("{} over -50mV out of {}".format(len(pos_vmem), SIZE))
 
+
+activ_currents = []
+activ_names = []
+for i in range(SIZE):
+    if np.max(max_vmem[i]) > -20:
+        activ_currents.append(currents[i])
+        activ_names.append(neuron_names[i])
+
+
+
+
 print("DETAIL")
 if min_current < 0 and max_current > 0:
     neg = []
@@ -98,6 +109,9 @@ print('')
 print("{} never / {} total".format(len(never), len(neuron_names)))
 # [print(item) for item in never]
 print(never)
+
+
+
 
 
 # FIGURES ###############################################################################
@@ -164,7 +178,7 @@ fig.subplots_adjust(wspace=.6)
 ax = plt.subplot(131, title="Stimulation threshold")
 # axd = ax.twinx()
 ax.set_xlabel("stimulation current [$\mu$A]")
-ax.set_ylabel("depth [$\mu$m]")
+ax.set_ylabel("relative distance [$\mu$m]")
 # axd.set_ylabel("V_Ext [mV]")
 for i in range(SIZE):
     ax.plot(amp_spread, currents[i],
@@ -280,7 +294,7 @@ ax1 = plt.subplot(111)
 ax2 = fig.add_axes(ax1)
 # axd = ax.twinx()
 ax1.set_xlabel("stimulation current [$\mu$A]")
-ax1.set_ylabel("depth [$\mu$m]")
+ax1.set_ylabel("relative distance [$\mu$m]")
 
 
 # axd.set_ylabel("V_Ext [mV]")
@@ -289,15 +303,10 @@ for i in range(SIZE):
     if np.max(max_vmem[i][:len(np.where(amp_spread < 0)[0])]) > -20:
         ax1.plot(amp_spread, currents[i],
                  color=colr, label=neuron_names[i])
-        # print("current name = {}".format(neuron_names[i]))
-# art1 = []
 
-# h1, l1 = ax1.get_legend_handles_labels()
 lgd1 = ax1.legend(loc=9, prop={'size': 6}, bbox_to_anchor=(0.25, -0.1), ncol=3)
 
 ax1.clear()
-# ax2.set_label('')
-# ax2 = []
 color = iter(plt.cm.rainbow(np.linspace(0, 1, SIZE)))
 for i in range(SIZE):
     colr = next(color)
@@ -305,16 +314,8 @@ for i in range(SIZE):
     if np.max(max_vmem[i][len(np.where(amp_spread < 0)[0]):]) > -20:
         ax2.plot(amp_spread, currents[i],
                  color=colr, label=neuron_names[i])
-        # ax2.append(line2)
-        # print("current name = {}".format(neuron_names[i]))
-# lgd2 = ax2.get_legend()
-# art1.append(lgd1)
 
-
-# art2 = []
 ax2.legend(loc=9, prop={'size': 6}, bbox_to_anchor=(0.75, -0.1), ncol=3)
-# art2.append(lgd2)
-# plt.gca().add_artist(lgd2)
 plt.gca().add_artist(lgd1)
 
 color = iter(plt.cm.rainbow(np.linspace(0, 1, SIZE)))
@@ -325,6 +326,50 @@ for i in range(SIZE):
                  color=colr)
 
 
-# plt.tight_layout()
+# AVERAGES ###########
+
+nnames = np.asarray(neuron_names)
+color = iter(plt.cm.nipy_spectral(np.linspace(0, 1, len(np.unique(nnames)))))
+
+fig = plt.figure(figsize=[12, 7])
+fig.subplots_adjust(wspace=.6)
+ax = plt.subplot(111, title="Stimulation threshold by cell types")
+# axd = ax.twinx()
+ax.set_xlabel("stimulation current [$\mu$A]")
+ax.set_ylabel("relative distance [$\mu$m]")
+
+cur = np.asarray(currents)
+for cell_type in np.unique(neuron_names):
+    col = next(color)
+    avg = np.mean(cur[np.argwhere(nnames == cell_type).flatten()], 0)
+    std = np.std(cur[np.argwhere(nnames == cell_type).flatten()], 0)
+    ax.plot(amp_spread, avg,
+            color=col, label=cell_type)
+    ax.fill_between(amp_spread, avg - std, avg + std, alpha=.1, color=col, antialiased=True)
+
+ax.legend(loc=9, prop={'size': 6}, bbox_to_anchor=(0.5, -0.1), ncol=3)
+# #############
+
+nnames = np.asarray(activ_names)
+color = iter(plt.cm.nipy_spectral(np.linspace(0, 1, len(np.unique(nnames)))))
+
+fig = plt.figure(figsize=[12, 7])
+fig.subplots_adjust(wspace=.6)
+ax = plt.subplot(111, title="Stimulation threshold by cell types [Vmem > -20 mV only]")
+# axd = ax.twinx()
+ax.set_xlabel("stimulation current [$\mu$A]")
+ax.set_ylabel("relative distance [$\mu$m]")
+
+cur = np.asarray(activ_currents)
+for cell_type in np.unique(nnames):
+    col = next(color)
+    avg = np.mean(cur[np.argwhere(nnames == cell_type).flatten()], 0)
+    std = np.std(cur[np.argwhere(nnames == cell_type).flatten()], 0)
+    ax.plot(amp_spread, avg,
+            color=col, label=cell_type)
+    ax.fill_between(amp_spread, avg - std, avg + std, alpha=.1, color=col, antialiased=True)
+
+ax.legend(loc=9, prop={'size': 6}, bbox_to_anchor=(0.5, -0.1), ncol=3)
+# #############
 
 plt.show()
