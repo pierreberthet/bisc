@@ -1,4 +1,0 @@
-xopen("Cell parameters.hoc")
-xopen("initialize_mechs.hoc")
-load_3dcell("A140612.hoc")
-density()

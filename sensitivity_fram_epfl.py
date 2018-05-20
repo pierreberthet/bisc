@@ -75,7 +75,7 @@ neuron.h.load_file("import3d.hoc")
 layer_name = params.sim['layer']
 neuron_type = params.sim['neuron_type']
 # neurons = utils.init_neurons_epfl(layer_name, SIZE)
-neurons = utils.init_neurons_epfl(layer_name, SIZE, neuron_type)
+neurons = utils.init_neurons_epfl(layer_name, SIZE, neuron_type, full_axon=params.sim['full_axon'])
 print("loaded models: {}".format(utils.get_epfl_model_name(neurons, short=True)))
 neurons.sort()
 print("REACH")
@@ -108,7 +108,6 @@ output_f = params.filename['output_folder']
 '''
 SIMULATION SETUP
 pulse duration  should be set to .2 ms, 200 us (typical of empirical in vivo microstimulation experiments)
-
 '''
 
 # PointProcParams = {'idx': 0,
@@ -133,6 +132,7 @@ t = np.arange(n_tsteps) * dt
 
 pulse_start = params.sim['pulse_start']
 pulse_duration = params.sim['pulse_duration']
+phase_length = params.sim['phase_length']
 amp = params.sim['ampere']
 min_current = params.sim['min_stim_current']
 max_current = params.sim['max_stim_current']
@@ -148,6 +148,9 @@ if RANK == 0:
 
 pulse = np.zeros(n_tsteps)
 pulse[pulse_start:(pulse_start + pulse_duration)] = 1.
+
+# create the electric pulse wave form
+# pulse = utils.form_pulse(pulse_start, pulse_duration, phase_length, dt, tstop)
 
 
 # TO DETERMINE OR NOT, maybe just start from zmin = - max cortical thickness
@@ -246,7 +249,7 @@ for i, NRN in enumerate(neurons):
                 spiked = True  # artificially set to True, to engage the loop, but anyway tested for distance = 0
                 print("debug01 loop {} rank {} amp {} distance {}".format(loop, RANK, amp, dis))
 
-                while spiked and loop <= len(distance):
+                while spiked and loop < len(distance):
                     # displacement, amp, loop, PROBLEM
                     dis = distance[loop]
                     print("debug001 loop {} rank {} amp {} distance {}".format(loop, RANK, amp, dis))
@@ -458,13 +461,38 @@ print("i got out! rank {}".format(RANK))
 COMM.Barrier()
 
 
-# DATA DUMP ##########################################################################3
+# DATA PROCESSING ##########################################################################
 
+channels = {}
+for sec in neuron.h.allsec():
+    for seg in sec:
+        if 'axon' in str(seg):
+            for attribute in seg.__dict__.keys():
+                attribute = 'AXON_' + attribute
+                if attribute in channels:
+                    channels[attribute] += 1
+                else:
+                    channels[attribute] = 1
+
+        else:
+            for attribute in seg.__dict__.keys():
+                if attribute in channels:
+                    channels[attribute] += 1
+                else:
+                    channels[attribute] = 1
+
+COMM.Barrier()
+# DATA DUMP ##########################################################################
 
 if RANK == 0:
+    axon = ''
+    if params.sim['full_axon']:
+        axon_text = 'full_axon'
+    else:
+        axon_text = 'stub_axon'
     output_f = os.path.join(output_f, "D_sensitivity_" + layer_name + '_' + name_shape_ecog +
                             "_" + str(int(min(amp_spread))) + "." + str(int(max(amp_spread))) +
-                            "_" + str(pulse_duration * dt) + "ms")
+                            "_" + str(pulse_duration * dt) + "ms_" + axon_text)
     try:
         os.mkdir(output_f)
     except OSError:
@@ -493,6 +521,36 @@ if RANK == 0:
 current = COMM.bcast(current, root=0)
 
 COMM.Barrier()
+
+
+if RANK == 0:
+    channels_list = {}
+    channels_list[0] = channels
+    for i_proc in range(1, SIZE):
+        channels_list[i_proc] = COMM.recv(source=i_proc)
+else:
+    COMM.send(channels, dest=0)
+
+COMM.Barrier()
+
+if RANK == 0:
+    f_tempdump = params.filename['channels_dump']
+    # print("DUMPING c_vext JSON to {}".format(f_tempdump))
+    with open(os.path.join(output_f, f_tempdump), 'w') as f_dump:
+        json.dump(channels_list, f_dump)
+    # print("DEBUG 1 dumping completed")
+
+COMM.Barrier()
+
+
+
+
+
+
+
+
+
+
 
 if RANK == 0:
     for i_proc in range(1, SIZE):

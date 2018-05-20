@@ -1,3 +1,0 @@
-// Delete apical and dendrites from the whole stick cell model
-forsec "apic" delete_section()
-forsec "dend" delete_section()

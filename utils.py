@@ -4,6 +4,11 @@ import numpy as np
 import matplotlib.pyplot as plt
 from glob import glob
 import json
+
+import global_parameters as glob_params
+
+
+params = glob_params.parameter()
 # import neuron
 
 
@@ -16,7 +21,8 @@ voltage = [mV]
 
 
 def built_for_mpi_comm(cell, glb_vext, glb_vmem, v_idxs, widx, rank):
-    '''
+    '''sudo apt-get install apt-transport-https
+
     Return a dict of array useful for plotting in parallel simulation
     (cell objet can not be communicated directly between thread).
     '''
@@ -248,6 +254,16 @@ def reposition_cell_flip(cell, x=0, y=0, z=0):
     return
 
 
+def form_pulse(pulse_start, pulse_duration, phase_length, dt, tstop):
+    pulse = np.zeros(int(tstop / dt + 1))
+
+    for i in range(pulse_duration // phase_length):
+        pulse[pulse_start + (i * phase_length * 2): pulse_start + (i * phase_length * 2) + phase_length] = 1.
+        pulse[pulse_start + phase_length + (i * phase_length * 2): pulse_start + (i * phase_length * 2) + 2 * phase_length] = -1.
+
+    return pulse
+
+
 def create_bisc_array():
     '''
     to be edited from create_array_shape()
@@ -369,9 +385,12 @@ def get_minmax(multid_array):
     return mi, ma
 
 
-def init_neurons_epfl(layer, n_threads, neuron_type=''):
+def init_neurons_epfl(layer, n_threads, neuron_type='', full_axon=False):
     '''Return a list of neurons from the EPFL models '''
-    neurons = glob(os.path.join('morphologies/hoc_combos_syn.1_0_10.allzips', layer + '_*' + neuron_type + '*_*'))
+    if full_axon:
+        neurons = glob(os.path.join(params.filename['bbp_models_full_axon_folder'], layer + '_*' + neuron_type + '*_*'))
+    else:
+        neurons = glob(os.path.join(params.filename['bbp_models_stub_axon_folder'], layer + '_*' + neuron_type + '*_*'))
     # assert len(neurons) > n_cells, "More threads than available neuron models"
     if len(neurons) < n_threads:
         print("More threads than available neuron models")
@@ -435,7 +454,6 @@ def set_z_layer(layer_name):
 
 class ImposedPotentialField:
     """Class to make the imposed external from given current sources.
-
     Parameters
     ----------
     source_amps : array, list
@@ -448,7 +466,6 @@ class ImposedPotentialField:
         x-positions of current sources
     sigma : float
         Extracellular conductivity in S/m, defaults to 0.3 S/m
-
     """
     def __init__(self, source_amps, source_xs, source_ys, source_zs, sigma=0.3):
 
@@ -882,3 +899,22 @@ def get_sections_number(cell):
             nlist.append(name)
     n = len(nlist)
     return n, nlist
+
+
+def change_multiple_file_data(filein, replace, replace_with):
+    neurons = glob(os.path.join(params.filename['bbp_models_full_axon_folder'], '*'))
+    source_dir = os.getcwd()
+    for neuron in neurons:
+        os.chdir(neuron)
+        print(neuron)
+        f = open(filein, 'r')
+        filedata = f.read()
+        f.close()
+
+        newdata = filedata.replace(replace, replace_with)
+        # print(newdata)
+
+        f = open(filein, 'w')
+        f.write(newdata)
+        f.close()
+        os.chdir(source_dir)
