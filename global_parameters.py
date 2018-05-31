@@ -38,29 +38,30 @@ class parameter(object):
 
         self.sim['full_axon'] = True  # use the full axon description of the models, not the stub axon
 
-        self.sim['t_stop'] = 100.
+        self.sim['t_stop'] = 500.  # ms
         self.sim['dt'] = 2**-6  # 1.5 us
 
-        self.sim['pulse_start'] = 3000
-        self.sim['pulse_duration'] = 100   # 64 = 1 ms
+        self.sim['pulse_start'] = int(250. / self.sim['dt'] + 1)  # 64 = 1 ms
+        self.sim['pulse_duration'] = int(.5 / self.sim['dt'] + 1)   # 64 = 1 ms
+        self.sim['buffer'] = int(.01 / self.sim['dt'] + 1)  # disregard what happened before pulse_start - buffer
         self.sim['phase_length'] = 3   # 64 = 1 ms
         self.sim['ampere'] = 100 * 10**3  # uA
 
-        self.sim['ecog_type'] = 'circle2'
+        self.sim['ecog_type'] = 'plausible_monopole'
 
         self.sim['spike_threshold'] = -20  # spike threshold (mV)
 
         self.sim['min_stim_current'] = -300 * 10**3  # uA
         self.sim['max_stim_current'] = 300 * 10**3  # uA
-        self.sim['n_intervals'] = 33
+        self.sim['n_intervals'] = 20
 
         self.sim['max_distance'] = 300
 
         self.sim['safety_distance_surface_neuron'] = 10
 
-        self.sim['layer'] = 'L6'
+        self.sim['layer'] = 'L23'
         # self.sim['neuron_type'] = 'LBC_cNAC187'
-        self.sim['neuron_type'] = ''
+        self.sim['neuron_type'] = 'LBC'
 
     def set_figures(self):
 
@@ -72,6 +73,8 @@ class parameter(object):
 
         # FILENAME ####################################
         self.filename = {}
+
+        self.filename['short_name'] = False
 
         self.filename['current_dump'] = 'currents.json'
         self.filename['ap_loc_dump'] = 'ap_loc.json'

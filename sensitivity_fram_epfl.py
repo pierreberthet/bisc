@@ -76,7 +76,7 @@ layer_name = params.sim['layer']
 neuron_type = params.sim['neuron_type']
 # neurons = utils.init_neurons_epfl(layer_name, SIZE)
 neurons = utils.init_neurons_epfl(layer_name, SIZE, neuron_type, full_axon=params.sim['full_axon'])
-print("loaded models: {}".format(utils.get_epfl_model_name(neurons, short=True)))
+print("loaded models: {}".format(utils.get_epfl_model_name(neurons, short=params.filename['short_name'])))
 neurons.sort()
 print("REACH")
 
@@ -300,7 +300,8 @@ for i, NRN in enumerate(neurons):
                         print("NaN for cell {}".format(RANK))
 
                     utils.dendritic_spike(cell)
-                    spike_time_loc = utils.spike_soma(cell)
+                    # print('rank {}, pulse_start {}, buffer {}'.format(RANK, pulse_start, params.sim['buffer']))
+                    spike_time_loc = utils.spike_soma(cell, from_t=(pulse_start - params.sim['buffer']))
 
                     if spike_time_loc[0] is not None:
                         spiked = True
@@ -328,8 +329,8 @@ for i, NRN in enumerate(neurons):
                     else:
                         spiked = False
                         if loop == 0:
-                            max_vmem[RANK][i_amp] = np.max(cell.vmem[0])
-                            t_max_vmem[RANK][i_amp] = np.argmax(cell.vmem[0])
+                            max_vmem[RANK][i_amp] = np.max(cell.vmem[0][pulse_start - params.sim['buffer']:])
+                            t_max_vmem[RANK][i_amp] = np.argmax(cell.vmem[0][pulse_start - params.sim['buffer']:])
                             vext_soma[RANK][i_amp] = cell.v_ext[0][pulse_start + 10]
                             print("Max vmem {}, at t {}, loop {} rank {}".format(
                                   max_vmem[RANK][i_amp], t_max_vmem[RANK][i_amp], loop, RANK))
@@ -640,7 +641,7 @@ COMM.Barrier()
 
 ap_loc = COMM.bcast(ap_loc, root=0)
 
-names = utils.get_epfl_model_name(neurons, short=True)
+names = utils.get_epfl_model_name(neurons, short=params.filename['short_name'])
 
 if RANK == 0:
     f_tempdump = params.filename['ap_loc_dump']

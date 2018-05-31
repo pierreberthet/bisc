@@ -84,21 +84,26 @@ def return_first_spike_time_and_idx(vmem):
             return [t_idx, np.argmax(vmem.T[t_idx])]
 
 
-def spike_soma(cell):
+def spike_soma(cell, from_t=0):
     ''' Return the index of the compartment of the soma where Vmem first crossed the threshold (Usually set at -20 mV.
     If many compartments crossed threshold during a unique time step, it returns the index of the compartment
     with the most depolarized membrane value. Also contains the time step when this occurred.'''
     idx = cell.get_idx('soma')
-    if np.nanmax(cell.vmem[idx]) < -20:
-        print("No spikes detected")
-        return [None, None]
-    else:
-        if idx.size == 1:
-            t_ap = np.where(cell.vmem[idx[0]] > -20)[0][0]
-            return [t_ap, idx[0]]
+    # print('len vmem[idx] {}, idx {}, from_t {}'.format(len(cell.vmem[idx[0]]), idx[0], from_t))
+    if idx.size == 1:
+        if np.nanmax(cell.vmem[idx[0]]) < -20:
+            print("No spikes detected")
+            return [None, None]
         else:
-            t_ap = np.nanmin(np.where(cell.vmem[idx] > -20)[1])
-            return [t_ap, idx[np.argmax(cell.vmem[idx].T[t_ap])]]
+            t_ap = np.where(cell.vmem[idx[0][from_t:]] > -20)[0][0]
+            return [t_ap + from_t, idx[0]]
+    else:
+        if np.nanmax(cell.vmem[idx]) < -20:
+            print("No spikes detected")
+            return [None, None]
+        else:
+            t_ap = np.nanmin(np.where(cell.vmem[idx][from_t:] > -20)[1])
+            return [t_ap + from_t, idx[np.argmax(cell.vmem[idx][from_t:].T[t_ap])]]
 
 
 def spike_segments(cell):
