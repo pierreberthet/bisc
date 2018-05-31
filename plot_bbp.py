@@ -29,10 +29,10 @@ print("Size {}, Rank {}".format(SIZE, RANK))
 
 base_dir = os.getcwd()
 
-bbp_f = 'morphologies/hoc_combos_syn.1_0_10.allzips/'  # set to where the models have been downloaded
+bbp_f = 'morphologies/hoc_combos_syn.1_0_10.allzips_full_axon/'  # set to where the models have been downloaded
 NMODL = 'morphologies/hoc_combos_syn.1_0_10.allmods'
 
-FIGS = 'outputs/epfl_column/morphologies'
+FIGS = 'outputs/epfl_column/morphologies_full'
 if not os.path.isdir(FIGS):
     os.mkdir(FIGS)
 
@@ -192,8 +192,8 @@ for i, NRN in enumerate(neurons):
 
             # run simulation
             # cell.simulate(electrode=electrode)
-            cell.simulate(rec_vmem=True, rec_imem=True)
-            print("simulation running ... cell {}".format(RANK))
+            # cell.simulate(rec_vmem=True, rec_imem=True)
+            # print("simulation running ... cell {}".format(RANK))
             # print(utils.spike_segments(cell))
             # plot
             gs = GridSpec(2, 3)

@@ -75,9 +75,9 @@ neuron.h.load_file("import3d.hoc")
 layer_name = params.sim['layer']
 neuron_type = params.sim['neuron_type']
 # neurons = utils.init_neurons_epfl(layer_name, SIZE)
-neurons = utils.init_neurons_epfl(layer_name, SIZE, neuron_type)
+neurons = utils.init_neurons_epfl(layer_name, SIZE, neuron_type, full_axon=params.sim['full_axon'])
 print("loaded models: {}".format(utils.get_epfl_model_name(neurons, short=True)))
-
+neurons.sort()
 print("REACH")
 
 # flag for cell template file to switch on (inactive) synapses
@@ -94,7 +94,7 @@ if not os.path.isdir(FIGS):
 
 
 # load the LFPy SinSyn mechanism for stimulus
-neuron.load_mechanisms(os.path.join(LFPy.__path__[0], "test"))
+# neuron.load_mechanisms(os.path.join(LFPy.__path__[0], "test"))
 
 
 # PARAMETERS
@@ -108,19 +108,18 @@ output_f = params.filename['output_folder']
 '''
 SIMULATION SETUP
 pulse duration  should be set to .2 ms, 200 us (typical of empirical in vivo microstimulation experiments)
-
 '''
 
-PointProcParams = {'idx': 0,
-                   'pptype': 'SinSyn',
-                   'delay': 200.,
-                   'dur': tstop - 30.,
-                   'pkamp': 0.5,
-                   'freq': 0.,
-                   'phase': np.pi / 2,
-                   'bias': 0.,
-                   'record_current': False
-                   }
+# PointProcParams = {'idx': 0,
+#                    'pptype': 'SinSyn',
+#                    'delay': 200.,
+#                    'dur': tstop - 30.,
+#                    'pkamp': 0.5,
+#                    'freq': 0.,
+#                    'phase': np.pi / 2,
+#                    'bias': 0.,
+#                    'record_current': False
+#                    }
 
 
 # spike sampling
@@ -159,12 +158,13 @@ sigma = 0.3
 name_shape_ecog = params.sim['ecog_type']
 polarity, n_elec, positions = utils.create_array_shape(name_shape_ecog, 25)
 dura_height = 50
-displacement_source = 50
+displacement_source = 0
 
 current = np.zeros((SIZE, n_intervals))
 c_vext = np.zeros((SIZE, n_intervals))
 ap_loc = np.zeros((SIZE, n_intervals), dtype=np.int)
 max_vmem = np.zeros((SIZE, n_intervals))
+vext_soma = np.zeros((SIZE, n_intervals))
 t_max_vmem = np.zeros((SIZE, n_intervals))
 
 
@@ -220,7 +220,7 @@ for i, NRN in enumerate(neurons):
         if not hasattr(neuron.h, templatename):
             # Load main cell template
             neuron.h.load_file(1, "template.hoc")
-
+        print("DEBUG_ morphology file {}".format(glob(os.path.join('morphology', '*'))))
         for idx, morphologyfile in enumerate(glob(os.path.join('morphology', '*'))):
             # Instantiate the cell(s) using LFPy
             print("debug idx {} rank {} morph {}".format(idx, RANK, morphologyfile))
@@ -237,15 +237,15 @@ for i, NRN in enumerate(neurons):
             # cell.set_rotation(x=np.pi / 2)
             # cell.set_pos(z=utils.set_z_layer(layer_name, cell))
             # # cell.set_pos(z=-np.max(cell.zend))
-
-            spiked = True  # artificially set to True, to engage the loop, but anyway tested for distance = 0
+            z_init = utils.set_z_layer(layer_name)
+            # spiked = True  # artificially set to True, to engage the loop, but anyway tested for distance = 0
             for i_amp, amp in enumerate(amp_spread):
                 dis = distance[0]
                 loop = 0
                 spiked = True  # artificially set to True, to engage the loop, but anyway tested for distance = 0
                 print("debug01 loop {} rank {} amp {} distance {}".format(loop, RANK, amp, dis))
 
-                while spiked and loop < len(distance):
+                while spiked and loop <= len(distance):
                     # displacement, amp, loop, PROBLEM
                     dis = distance[loop]
                     print("debug001 loop {} rank {} amp {} distance {}".format(loop, RANK, amp, dis))
@@ -265,11 +265,12 @@ for i, NRN in enumerate(neurons):
 
                     # set view as in most other examples
                     cell.set_rotation(x=np.pi / 2)
-                    cell.set_pos(z=utils.set_z_layer(layer_name, cell))
-                    # cell.set_pos(z=-np.max(cell.zend) - dis)
+                    if np.max((cell.zend) + z_init) > 0:
+                        cell.set_pos(z=-np.max(cell.zend) - (dis + params.sim['safety_distance_surface_neuron']))
+                    else:
+                        cell.set_pos(z=z_init - dis)
 
                     v_cell_ext = np.zeros((cell.totnsegs, n_tsteps))
-
                     v_cell_ext[:, :] = ExtPot.ext_field(cell.xmid, cell.ymid, cell.zmid
                                                         ).reshape(cell.totnsegs, 1) * pulse.reshape(1, n_tsteps)
 
@@ -316,20 +317,22 @@ for i, NRN in enumerate(neurons):
                         # print("DEBUG 3 rank {}".format(RANK))
                         max_vmem[RANK][i_amp] = np.max(cell.vmem[0])
                         t_max_vmem[RANK][i_amp] = np.argmax(cell.vmem[0])
-                        print("Max vmem {}, at t {} loop {} rank {}".format(
-                              max_vmem[RANK][i_amp], t_max_vmem[RANK][i_amp], loop, RANK))
+                        vext_soma[RANK][i_amp] = cell.v_ext[0][pulse_start + 10]
+                        print("Max vmem {}, at t {}, Vext {} loop {} rank {}".format(
+                              max_vmem[RANK][i_amp], t_max_vmem[RANK][i_amp], vext_soma[RANK][i_amp], loop, RANK))
 
                     else:
                         spiked = False
                         if loop == 0:
                             max_vmem[RANK][i_amp] = np.max(cell.vmem[0])
                             t_max_vmem[RANK][i_amp] = np.argmax(cell.vmem[0])
+                            vext_soma[RANK][i_amp] = cell.v_ext[0][pulse_start + 10]
                             print("Max vmem {}, at t {}, loop {} rank {}".format(
                                   max_vmem[RANK][i_amp], t_max_vmem[RANK][i_amp], loop, RANK))
 
                     loop += 1
                     # print('loop {}'.format(loop))
-            print("loop: {}, dis: {}, spike: {}, amp: {}, rank: {}".format(loop, dis, spiked, amp, RANK))
+                print("loop: {}, dis: {}, spike: {}, amp: {}, rank: {}".format(loop, dis, spiked, amp, RANK))
 #             #electrode.calc_lfp()
 #             LFP = electrode.LFP
 #             if apply_filter:
@@ -454,12 +457,38 @@ print("i got out! rank {}".format(RANK))
 COMM.Barrier()
 
 
-# DATA DUMP ##########################################################################3
+# DATA PROCESSING ##########################################################################
 
+channels = {}
+for sec in neuron.h.allsec():
+    for seg in sec:
+        if 'axon' in str(seg):
+            for attribute in seg.__dict__.keys():
+                attribute = 'AXON_' + attribute
+                if attribute in channels:
+                    channels[attribute] += 1
+                else:
+                    channels[attribute] = 1
+
+        else:
+            for attribute in seg.__dict__.keys():
+                if attribute in channels:
+                    channels[attribute] += 1
+                else:
+                    channels[attribute] = 1
+
+
+# DATA DUMP ##########################################################################
 
 if RANK == 0:
+    axon = ''
+    if params.sim['full_axon']:
+        axon_text = 'full_axon'
+    else:
+        axon_text = 'stub_axon'
     output_f = os.path.join(output_f, "D_sensitivity_" + layer_name + '_' + name_shape_ecog +
-                            "_" + str(int(min(amp_spread))) + "." + str(int(max(amp_spread))))
+                            "_" + str(int(min(amp_spread))) + "." + str(int(max(amp_spread))) +
+                            "_" + str(pulse_duration * dt) + "ms_" + axon_text)
     try:
         os.mkdir(output_f)
     except OSError:
@@ -488,6 +517,36 @@ if RANK == 0:
 current = COMM.bcast(current, root=0)
 
 COMM.Barrier()
+
+
+if RANK == 0:
+    channels_list = {}
+    channels_list[0] = channels
+    for i_proc in range(1, SIZE):
+        channels_list[i_proc] = COMM.recv(source=i_proc)
+else:
+    COMM.send(channels, dest=0)
+
+COMM.Barrier()
+
+if RANK == 0:
+    f_tempdump = params.filename['channels_dump']
+    # print("DUMPING c_vext JSON to {}".format(f_tempdump))
+    with open(os.path.join(output_f, f_tempdump), 'w') as f_dump:
+        json.dump(channels_list.tolist(), f_dump)
+    # print("DEBUG 1 dumping completed")
+
+COMM.Barrier()
+
+
+
+
+
+
+
+
+
+
 
 if RANK == 0:
     for i_proc in range(1, SIZE):
@@ -542,6 +601,25 @@ if RANK == 0:
     # print("DUMPING c_vext JSON to {}".format(f_tempdump))
     with open(os.path.join(output_f, f_tempdump), 'w') as f_dump:
         json.dump(t_max_vmem.tolist(), f_dump)
+    # print("DEBUG 1 dumping completed")
+
+COMM.Barrier()
+
+if RANK == 0:
+    for i_proc in range(1, SIZE):
+        vext_soma[i_proc] = COMM.recv(source=i_proc)
+else:
+    COMM.send(vext_soma[RANK], dest=0)
+
+t_max_vmem = COMM.bcast(vext_soma, root=0)
+
+COMM.Barrier()
+
+if RANK == 0:
+    f_tempdump = params.filename['vext_soma_dump']
+    # print("DUMPING c_vext JSON to {}".format(f_tempdump))
+    with open(os.path.join(output_f, f_tempdump), 'w') as f_dump:
+        json.dump(vext_soma.tolist(), f_dump)
     # print("DEBUG 1 dumping completed")
 
 COMM.Barrier()

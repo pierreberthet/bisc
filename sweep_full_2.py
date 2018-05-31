@@ -24,7 +24,7 @@ RANK = COMM.Get_rank()
 n_cells = SIZE
 cell_id = RANK
 
-lambdaf = 500.
+lambdaf = 300.
 
 print("cell {0} of {1}").format(cell_id + 1, n_cells)
 # plt.interactive(1)
@@ -46,8 +46,8 @@ if RANK == 1:
     # morph = join(folder, 'cell_simple.hoc')
     # morph = join(folder, 'cell_simple.hoc')
     custom_code = [join(folder, 'Cell parameters.hoc'),
-                   join(folder, 'charge.hoc')]
-                   # join(folder, 'pruning_full.hoc')]
+                   join(folder, 'charge.hoc'),
+                   join(folder, 'pruning.hoc')]
 
 
 if RANK == 0:
@@ -173,7 +173,7 @@ cortical_surface_height = 50
 
 # Parameters for the external field
 sigma = 0.3
-name_shape_ecog = 'minicross'
+name_shape_ecog = 'circle'
 polarity, n_elec, positions = utils.create_array_shape(name_shape_ecog, 25)
 source_xs = positions[0]
 source_ys = positions[1]
@@ -198,9 +198,9 @@ dura_height = 50
 # source_geometry = np.array([-1, -1, 1, 1, 1, 1, -1, -1])
 
 # while loop? For loop?
-spatial_resolution = 50
+spatial_resolution = 30
 min_distance = 0
-max_distance = 200
+max_distance = 300
 distance = np.linspace(min_distance, max_distance, spatial_resolution)
 current = np.zeros((n_cells, spatial_resolution))
 c_vext = np.zeros((n_cells, spatial_resolution))
@@ -209,9 +209,9 @@ ap_loc = np.zeros((n_cells, spatial_resolution), dtype=np.int)
 # source_zs = np.ones(len(source_xs)) * dura_height
 
 # Stimulation Parameters:
-max_current = -150. * 10**3   # uA
-min_current = -1. * 10**3  # uA
-current_resolution = 50
+max_current = 1000. * 10**3   # uA
+min_current = 1. * 10**3  # uA
+current_resolution = 30
 # amp_range = np.exp(np.linspace(1, np.log(max_current), current_resolution))
 amp_range = np.linspace(min_current, max_current, current_resolution)
 amp = amp_range[0]

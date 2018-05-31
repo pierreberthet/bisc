@@ -5,6 +5,9 @@ import sys
 import matplotlib
 from matplotlib import pyplot as plt
 import global_parameters as g_param
+import plotting_convention
+import utils
+
 
 source_folder = sys.argv[1]
 
@@ -28,6 +31,12 @@ max_vmem = json.load(open(params.filename['max_vmem_dump'], 'r'))
 t_max_vmem = json.load(open(params.filename['t_max_vmem_dump'], 'r'))
 
 neuron_names = json.load(open(params.filename['model_names'], 'r'))
+os.chdir(cwd)
+neuron_names_long = utils.get_epfl_model_name(utils.init_neurons_epfl(params.sim['layer'],
+                                              len(neuron_names), params.sim['neuron_type'],
+                                              full_axon=params.sim['full_axon']), short=False)
+neuron_names_long.sort()
+os.chdir(source_folder)
 
 xstart = json.load(open(params.filename['xstart'], 'r'))
 xmid = json.load(open(params.filename['xmid'], 'r'))
@@ -110,8 +119,33 @@ print("{} never / {} total".format(len(never), len(neuron_names)))
 # [print(item) for item in never]
 print(never)
 
+spontaneous = []
+for i in range(SIZE):
+    if np.count_nonzero(ap_loc[i]) == n_intervals:
+        spontaneous.append(neuron_names_long[i])
+print('')
+print("{} spontaneous / {} total".format(len(spontaneous), len(neuron_names_long)))
+print(spontaneous)
+print('')
+print('spontaneous firing neurons')
+for u in neuron_names_long:
+    print('{}: {}/{}'.format(u, spontaneous.count(u), neuron_names_long.count(u)))
+
+spontaneous = []
+for i in range(SIZE):
+    if np.count_nonzero(ap_loc[i]) == n_intervals:
+        spontaneous.append(neuron_names[i])
+print('')
+print("{} spontaneous / {} total".format(len(spontaneous), len(neuron_names)))
+print(spontaneous)
+print('')
+print('spontaneous firing neurons')
+for u in np.unique(neuron_names):
+    print('{}: {}/{}'.format(u, spontaneous.count(u), neuron_names.count(u)))
 
 
+
+amp_spread = amp_spread / 1000
 
 
 # FIGURES ###############################################################################
@@ -246,7 +280,7 @@ for i in range(SIZE):
 #     plt.gca().invert_yaxis()
 # plt.legend(loc="upper left")
 art = []
-lgd = ax.legend(loc=9, prop={'size': 6}, bbox_to_anchor=(0.5, -0.1), ncol=6)
+lgd = ax.legend(loc=9, prop={'size': 12}, bbox_to_anchor=(0.5, -0.1), ncol=6)
 art.append(lgd)
 
 # plt.tight_layout()
@@ -304,7 +338,7 @@ for i in range(SIZE):
         ax1.plot(amp_spread, currents[i],
                  color=colr, label=neuron_names[i])
 
-lgd1 = ax1.legend(loc=9, prop={'size': 6}, bbox_to_anchor=(0.25, -0.1), ncol=3)
+lgd1 = ax1.legend(loc=9, prop={'size': 12}, bbox_to_anchor=(0.25, -0.1), ncol=3)
 
 ax1.clear()
 color = iter(plt.cm.rainbow(np.linspace(0, 1, SIZE)))
@@ -315,7 +349,7 @@ for i in range(SIZE):
         ax2.plot(amp_spread, currents[i],
                  color=colr, label=neuron_names[i])
 
-ax2.legend(loc=9, prop={'size': 6}, bbox_to_anchor=(0.75, -0.1), ncol=3)
+ax2.legend(loc=9, prop={'size': 12}, bbox_to_anchor=(0.75, -0.1), ncol=3)
 plt.gca().add_artist(lgd1)
 
 color = iter(plt.cm.rainbow(np.linspace(0, 1, SIZE)))
@@ -347,7 +381,7 @@ for cell_type in np.unique(neuron_names):
             color=col, label=cell_type)
     ax.fill_between(amp_spread, avg - std, avg + std, alpha=.1, color=col, antialiased=True)
 
-ax.legend(loc=9, prop={'size': 6}, bbox_to_anchor=(0.5, -0.1), ncol=3)
+ax.legend(loc=9, prop={'size': 12}, bbox_to_anchor=(0.5, -0.1), ncol=3)
 # #############
 
 nnames = np.asarray(activ_names)
@@ -369,7 +403,7 @@ for cell_type in np.unique(nnames):
             color=col, label=cell_type)
     ax.fill_between(amp_spread, avg - std, avg + std, alpha=.1, color=col, antialiased=True)
 
-ax.legend(loc=9, prop={'size': 6}, bbox_to_anchor=(0.5, -0.1), ncol=3)
+ax.legend(loc=9, prop={'size': 12}, bbox_to_anchor=(0.5, -0.1), ncol=3)
 # #############
 
 plt.show()

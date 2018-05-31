@@ -5,7 +5,7 @@ CWD = os.getcwd()
 
 NMODL = 'morphologies/hoc_combos_syn.1_0_10.allmods'
 
-neurons = glob(os.path.join('morphologies/hoc_combos_syn.1_0_10.allzips', 'L6*'))
+neurons = glob(os.path.join('morphologies/hoc_combos_syn.1_0_10.allzips', 'L23*'))
 mech = 'mechanisms'
 
 if not os.path.isdir(NMODL):
