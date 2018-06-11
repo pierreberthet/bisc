@@ -69,36 +69,47 @@ def mpi_dump_geo(cells, size, output_folder):
     return
 
 
-def return_first_spike_time_and_idx(vmem):
+def get_spikes(vmem, threshold=0.):
+    '''return the time steps where the segment went from below the threshold to above'''
+    spikes = []
+    for i in range(len(vmem)):
+        if vmem[i] > threshold and vmem[i - 1] < threshold:
+            spikes.append(i)
+    return np.asarray(spikes)
+
+
+def return_first_spike_time_and_idx(vmem, from_t=0):
     '''
     Return the index of the segment where Vmem first crossed the threshold (Usually set at -20 mV.
     If many segments crossed threshold during a unique time step, it returns the index of the segment
     with the most depolarized membrane value.
     Also contains the time step when this occurred.
     '''
-    if np.max(vmem) < -20:
+    if np.max(vmem[:][from_t:]) < -20:
         print("No spikes detected")
         return [None, None]
-    for t_idx in range(1, vmem.shape[1]):
+    for t_idx in range(from_t, vmem.shape[1]):
         if np.max(vmem.T[t_idx]) > -20:
             return [t_idx, np.argmax(vmem.T[t_idx])]
 
 
-def spike_soma(cell, from_t=0):
+def spike_soma(cell, from_t=0, to_t=params.sim['total_tsteps']):
     ''' Return the index of the compartment of the soma where Vmem first crossed the threshold (Usually set at -20 mV.
     If many compartments crossed threshold during a unique time step, it returns the index of the compartment
     with the most depolarized membrane value. Also contains the time step when this occurred.'''
+    if to_t > params.sim['total_tsteps']:
+        to_t = params.sim['total_tsteps']
     idx = cell.get_idx('soma')
     # print('len vmem[idx] {}, idx {}, from_t {}'.format(len(cell.vmem[idx[0]]), idx[0], from_t))
     if idx.size == 1:
-        if np.nanmax(cell.vmem[idx[0]]) < -20:
+        if np.nanmax(cell.vmem[idx[0]][from_t:to_t]) < -20:
             print("No spikes detected")
             return [None, None]
         else:
-            t_ap = np.where(cell.vmem[idx[0][from_t:]] > -20)[0][0]
+            t_ap = np.where(cell.vmem[idx[0]][from_t:] > -20)[0][0]
             return [t_ap + from_t, idx[0]]
     else:
-        if np.nanmax(cell.vmem[idx]) < -20:
+        if np.nanmax(cell.vmem[idx][from_t:to_t]) < -20:
             print("No spikes detected")
             return [None, None]
         else:

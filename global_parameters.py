@@ -47,7 +47,9 @@ class parameter(object):
         self.sim['phase_length'] = 3   # 64 = 1 ms
         self.sim['ampere'] = 100 * 10**3  # uA
 
-        self.sim['ecog_type'] = 'plausible_monopole'
+        self.sim['total_tsteps'] = int(self.sim['t_stop'] / self.sim['dt'])
+
+        self.sim['ecog_type'] = 'circle2'
 
         self.sim['spike_threshold'] = -20  # spike threshold (mV)
 
@@ -59,9 +61,9 @@ class parameter(object):
 
         self.sim['safety_distance_surface_neuron'] = 10
 
-        self.sim['layer'] = 'L23'
+        self.sim['layer'] = 'L5'
         # self.sim['neuron_type'] = 'LBC_cNAC187'
-        self.sim['neuron_type'] = 'LBC'
+        self.sim['neuron_type'] = ''
 
     def set_figures(self):
 
@@ -83,6 +85,8 @@ class parameter(object):
         self.filename['t_max_vmem_dump'] = 't_max_vmem.json'
         self.filename['vext_soma_dump'] = 'vext_soma.json'
         self.filename['channels_dump'] = 'channels.json'
+        self.filename['spikes_soma_dump'] = 'spikes.json'
+        self.filename['vmem_soma_dump'] = 'vmem_soma.json'
 
         self.filename['model_names'] = 'names.json'
 
@@ -102,6 +106,9 @@ class parameter(object):
         self.filename['bbp_models_full_axon_folder'] = '/cluster/projects/nn9272k/pierre/darpa/models/hoc_combos_syn.1_0_10.allzips_full_axon'
         self.filename['bbp_models_stub_axon_folder'] = '/cluster/projects/nn9272k/pierre/darpa/models/hoc_combos_syn.1_0_10.allzips'
 
+
+        # self.filename['bbp_models_full_axon_folder'] = '/media/terror/code/darpa/bisc/morphologies/hoc_combos_syn.1_0_10.allzips_full_axon'
+        # self.filename['bbp_models_stub_axon_folder'] = '/media/terror/code/darpa/bisc/morphologies/hoc_combos_syn.1_0_10.allzips'
 
         # self.filename['output_folder'] = "/media/erebus/oslo/code/darpa/bisc/outputs/"   # local machine path
         self.filename['output_folder'] = "/nird/home/berthetp/outputs/"
